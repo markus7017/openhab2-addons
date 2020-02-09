@@ -33,6 +33,7 @@ import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.types.Command;
+import org.openhab.binding.shelly.internal.ShellyTranslationProvider;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyControlRoller;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsDimmer;
@@ -69,9 +70,10 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param localIP local IP of the openHAB host
      * @param httpPort port of the openHAB HTTP API
      */
-    public ShellyRelayHandler(Thing thing, ShellyBindingConfiguration bindingConfig,
-            @Nullable ShellyCoapServer coapServer, String localIP, int httpPort) {
-        super(thing, bindingConfig, coapServer, localIP, httpPort);
+    public ShellyRelayHandler(Thing thing, @Nullable ShellyTranslationProvider translationProvider,
+            ShellyBindingConfiguration bindingConfig, @Nullable ShellyCoapServer coapServer, String localIP,
+            int httpPort) {
+        super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort);
     }
 
     @Override
@@ -328,7 +330,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                         if (relay.extTemperature != null) {
                             // Shelly 1/1PM support up to 3 external sensors
                             // for whatever reason those are not represented as an array, but 3 elements
-                            logger.debug("{}: Updating external sensor", thingName);
+                            logger.debug("{}: Updating external sensors", thingName);
                             if (relay.extTemperature.sensor1 != null) {
                                 updated |= updateChannel(groupName, CHANNEL_ETEMP_SENSOR1,
                                         toQuantityType(getDouble(relay.extTemperature.sensor1.tC), SIUnits.CELSIUS));

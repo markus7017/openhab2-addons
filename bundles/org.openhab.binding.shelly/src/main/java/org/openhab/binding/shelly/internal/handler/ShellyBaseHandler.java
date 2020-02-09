@@ -41,6 +41,7 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
+import org.openhab.binding.shelly.internal.ShellyTranslationProvider;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyInputState;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
@@ -63,6 +64,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     protected final Logger logger = LoggerFactory.getLogger(ShellyBaseHandler.class);
 
     public String thingName = "";
+    private final @Nullable ShellyTranslationProvider translationProvider;
     protected ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
     protected ShellyThingConfiguration config = new ShellyThingConfiguration();
     protected @Nullable ShellyHttpApi api;
@@ -71,8 +73,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     private final @Nullable ShellyCoapServer coapServer;
     protected boolean lockUpdates = false;
 
-    @SuppressWarnings("unused")
-    private long lastUpdateTs = 0;
     private long lastUptime = 0;
     private long lastAlarmTs = 0;
     private Integer lastTimeoutErros = -1;
@@ -104,10 +104,12 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param localIP local IP address from networkAddressService
      * @param httpPort from httpService
      */
-    public ShellyBaseHandler(Thing thing, ShellyBindingConfiguration bindingConfig,
-            @Nullable ShellyCoapServer coapServer, String localIP, int httpPort) {
+    public ShellyBaseHandler(Thing thing, @Nullable ShellyTranslationProvider translationProvider,
+            ShellyBindingConfiguration bindingConfig, @Nullable ShellyCoapServer coapServer, String localIP,
+            int httpPort) {
         super(thing);
 
+        this.translationProvider = translationProvider;
         this.bindingConfig = bindingConfig;
         this.coapServer = coapServer;
         this.localIP = localIP;
@@ -175,8 +177,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         refreshSettings = false;
         lockUpdates = false;
 
-        Map<String, String> properties = getThing().getProperties();
-        String thingType = getThing().getThingTypeUID().getId();
+        final Map<String, String> properties = getThing().getProperties();
+        final String thingType = getThing().getThingTypeUID().getId();
         thingName = properties.get(PROPERTY_SERVICE_NAME) != null ? properties.get(PROPERTY_SERVICE_NAME).toLowerCase()
                 : thingType;
         logger.debug("{}: Start initializing thing {}, type {}, ip address {}, CoIoT: {}", thingName,
@@ -216,10 +218,18 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         // update thing properties
         ShellySettingsStatus status = api.getStatus();
         updateProperties(tmpPrf, status);
-        if (tmpPrf.fwVersion.compareTo(SHELLY_API_MIN_FWVERSION) < 0) {
-            logger.warn(
-                    "{}: WARNING: Firmware might be too old (or beta release), installed: {}/{} ({}), required minimal {}. The binding was tested with version 1.50+ only. Older versions might work, but do not support all features or show technical issues. Please consider upgrading to v1.5.0 or newer!",
-                    thingName, tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
+        if (tmpPrf.fwVersion.contains("v") && tmpPrf.fwVersion.contains(".")) {
+            String s = tmpPrf.fwVersion.replaceAll("v", "");
+            s = s.replaceAll("\\.", "");
+            Integer fw = Integer.parseInt(s);
+            if (fw < 999) { // unify v1.5.2 and v1.5.10
+                fw = fw * 10;
+            }
+            if (fw < SHELLY_API_MIN_FWVERSION) {
+                logger.warn(
+                        "{}: WARNING: Firmware might be too old (or beta release), installed: {}/{} ({}), required minimal {}. The binding was tested with version 1.5.2+ only. Older versions might work, but do not support all features or show technical issues. Please consider upgrading to latest release!",
+                        tmpPrf.hostname, tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
+            }
         }
         if (status.update.hasUpdate) {
             logger.info("{} - INFO: New firmware available: current version: {}, new version: {}", thingName,
@@ -239,11 +249,12 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         // Validate device mode
         String reqMode = thingType.contains("-") ? StringUtils.substringAfter(thingType, "-") : "";
         if (!reqMode.isEmpty() && !tmpPrf.mode.equals(reqMode)) {
-            logger.info(
-                    "{}: Thing is in mode {}, expecting mode {} - going offline. Re-run discovery to changed device mode.",
-                    thingName, profile.mode, reqMode);
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
-                    "@text/offline.conf-error-wrong-mode");
+            String message = translationProvider.getText("@text/offline.conf-error-wrong-mode", reqMode, tmpPrf.mode);
+            // logger.info(
+            // "{}: Thing is in mode {}, expecting mode {} - going offline. Re-run discovery to changed device mode.",
+            // thingName, profile.mode, reqMode);
+            logger.info("{}: {}", thingName, message);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, message);
             return false;
         }
 
@@ -268,7 +279,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     /**
      * Handle Channel Command
      */
-    @SuppressWarnings("null")
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         try {
@@ -290,6 +300,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             switch (channelUID.getIdWithoutGroup()) {
                 case CHANNEL_SENSE_KEY: // Shelly Sense: Send Key
                     logger.debug("{}: Send key {}", thingName, command.toString());
+                    Validate.notNull(api);
                     api.sendIRKey(command.toString());
                     update = true;
                     break;
@@ -412,9 +423,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         Map<String, String> propertyUpdates = new HashMap<String, String>();
 
         // Update uptime and WiFi
-        if (updated) {
-            lastUpdateTs = now();
-        }
         long uptime = getLong(status.uptime);
         Integer rssi = getInteger(status.wifiSta.rssi);
         updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_UPTIME,
@@ -612,7 +620,10 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param response exception details including the http respone
      * @return true if the authorization failed
      */
-    private boolean authorizationFailed(String response) {
+    private boolean authorizationFailed(@Nullable String response) {
+        if (response == null) {
+            return false;
+        }
         if (response.contains(APIERR_HTTP_401_UNAUTHORIZED)) {
             // If the device is password protected the API doesn't provide settings to the device settings
             logger.warn("{}: Device {} reported 'Access Denied' (user id/password mismatch)", getThing().getLabel(),
@@ -688,7 +699,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param status Shelly device status
      * @return true: one or more inputs were updated
      */
-    @SuppressWarnings({ "null", "unused" })
+    @SuppressWarnings("null")
     public boolean updateInputs(String groupName, ShellySettingsStatus status, int index) {
         boolean updated = false;
         if ((status.input != null) && (index == 0)) {
@@ -697,7 +708,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             updated |= updateChannel(groupName, CHANNEL_INPUT,
                     getInteger(status.input) == 0 ? OnOffType.OFF : OnOffType.ON);
         } else if (status.inputs != null) {
-            if (profile.isDimmer || profile.isRoller) {
+            if ((profile != null) && profile.isDimmer || profile.isRoller) {
                 ShellyInputState state1 = status.inputs.get(0);
                 ShellyInputState state2 = status.inputs.get(1);
                 logger.trace("{}: Updating {}#input1 with {}, input2 with {}", thingName, groupName,
@@ -919,7 +930,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     /**
      * Shutdown thing, make sure background jobs are canceled
      */
-    @SuppressWarnings("null")
     @Override
     public void dispose() {
         logger.debug("{}: Shutdown thing", thingName);

@@ -214,6 +214,8 @@ public class ShellyApiJsonDTO {
     public static final String SHELLY_API_EVENTURL_ROLLER_CLOSE = "roller_close_url";
     public static final String SHELLY_API_EVENTURL_ROLLER_STOP = "roller_stop_url";
     public static final String SHELLY_API_EVENTURL_REPORT = "report_url";
+    public static final String SHELLY_API_EVENTURL_DARK = "dark_url";
+    public static final String SHELLY_API_EVENTURL_TWILIGHT = "twilight_url";
 
     public static final String SHELLY_EVENT_BTN_ON = "btn_on";
     public static final String SHELLY_EVENT_BTN_OFF = "btn_off";
@@ -553,11 +555,23 @@ public class ShellyApiJsonDTO {
         public Integer currentPos; // current position 0..100, 100=open
     }
 
-    public static final String SHELLY_STOPR_NORMAL = "normal";
-    public static final String SHELLY_STOPR_SAFETYSW = "safety_switch";
-    public static final String SHELLY_STOPR_OBSTACLE = "obstacle";
+    public static final String SHELLY_API_STOPR_NORMAL = "normal";
+    public static final String SHELLY_API_STOPR_SAFETYSW = "safety_switch";
+    public static final String SHELLY_API_STOPR_OBSTACLE = "obstacle";
+
+    // Door/Window sensor
+    public final static String SHELLY_API_ILLUM_DARK = "dark";
+    public final static String SHELLY_API_ILLUM_TWILIGHT = "twilight";
+    public final static String SHELLY_API_ILLUM_BRIGHT = "bright";
+    public final static String SHELLY_API_DWSTATE_OPEN = "open";
+    public final static String SHELLY_API_DWSTATE_CLOSE = "close";
 
     public static class ShellySettingsSensor {
+        public class ShellySettingsSensorSleepMode {
+            public Integer period;
+            public String unit;
+        }
+
         @SerializedName("temperature_units")
         public String temperatureUnits; // Either'C'or'F'
         @SerializedName("temperature_threshold")
@@ -568,6 +582,18 @@ public class ShellyApiJsonDTO {
         public Integer sleepModePeriod; // Periodic update period in hours, between 1 and 24
         @SerializedName("report_url")
         public String reportUrl; // URL gets posted on updates with sensor data
+
+        // Shelly Door/Window
+        @SerializedName("led_status_disable")
+        public Boolean ledStatusDisabled;
+        public Integer dark_threshold;
+        public Integer twilight_threshold;
+        @SerializedName("sleep_mode")
+        ShellySettingsSensorSleepMode sleepMode;
+        @SerializedName("dark_url")
+        public String darkUrl; // URL gets posted on updates with sensor data
+        @SerializedName("twilight_url")
+        public String twilightUrl; // URL gets posted on updates with sensor data
     }
 
     public static class ShellyStatusSensor {
@@ -594,6 +620,14 @@ public class ShellyApiJsonDTO {
             @SerializedName("is_valid")
             public Boolean isValid; // whether the internal sensor is operating properly
             public Double value;
+
+            public String illumination;
+        }
+
+        public static class ShellySensorState {
+            @SerializedName("is_valid")
+            public Boolean isValid; // whether the internal sensor is operating properly
+            public String state; // Shelly Door/Window
         }
 
         public static class ShellyExtTemperature {
@@ -616,6 +650,7 @@ public class ShellyApiJsonDTO {
         public ShellySensorHum hum;
         public ShellySensorLux lux;
         public ShellySensorBat bat;
+        public ShellySensorState sensor;
 
         public Boolean flood; // Shelly Flood: true = flood condition detected
         @SerializedName("rain_sensor")

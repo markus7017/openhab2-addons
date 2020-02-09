@@ -249,6 +249,18 @@
 		</state>
 	</channel-type>
 
+	<channel-type id="sensorState">
+		<item-type>Contact</item-type>
+		<label>Contact</label>
+		<description>State of the contact: open/close</description>
+		<category>Contact</category>
+		<state pattern="%s" readOnly="true">
+			<options>
+				<option value="open">Open</option>
+				<option value="close">Closed</option>
+			</options>
+		</state>
+	</channel-type>
 	<channel-type id="sensorTemp">
 		<item-type>Number:Temperature</item-type>
 		<label>Temperature</label>
@@ -299,6 +311,18 @@
 		<label>Lux</label>
 		<description>Brightness from the sensor (Lux)</description>
 		<state readOnly="true" pattern="%f %unit%">
+		</state>
+	</channel-type>
+	<channel-type id="sensorIllumination">
+		<item-type>Switch</item-type>
+		<label>Illumination</label>
+		<description>Current illumination: dark/twilight/bright</description>
+		<state readOnly="true">
+			<options>
+				<option value="dark">Dark</option>
+				<option value="twilight">Twilight</option>
+				<option value="bright">Bright</option>
+			</options>
 		</state>
 	</channel-type>
 	<channel-type id="sensorCharger">

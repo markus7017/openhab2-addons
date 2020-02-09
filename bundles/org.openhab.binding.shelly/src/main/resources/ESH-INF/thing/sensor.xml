@@ -32,9 +32,22 @@
 
 	<thing-type id="shellyflood">
 		<label>Shelly Flood (SHWT-1)</label>
-		<description>Shelly Flood sensor device (battery powered)</description>
+		<description>Shelly Flood Sensor (battery powered)</description>
 		<channel-groups>
 			<channel-group id="sensors" typeId="floodSensor" />
+			<channel-group id="battery" typeId="batteryStatus" />
+			<channel-group id="device" typeId="deviceStatus" />
+		</channel-groups>
+
+		<config-description-ref uri="thing-type:shelly:battery" />
+	</thing-type>
+
+	<thing-type id="shellydw">
+		<label>Shelly Door/Window (SHDW-1)</label>
+		<description>Shelly Door/Window Sensor (battery powered)</description>
+
+		<channel-groups>
+			<channel-group id="sensors" typeId="doorWinSensors" />
 			<channel-group id="battery" typeId="batteryStatus" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
@@ -81,6 +94,16 @@
 		<channels>
 			<channel id="temperature" typeId="sensorTemp" />
 			<channel id="skmoke" typeId="sensorSmoke" />
+			<channel id="lastUpdate" typeId="timestamp" />
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="doorWinSensors">
+		<label>Sensors</label>
+		<description>Data from the sensors</description>
+		<channels>
+			<channel id="state" typeId="sensorState" />
+			<channel id="illumination" typeId="sensorIllumination" />
+			<channel id="lux" typeId="sensorLux" />
 			<channel id="lastUpdate" typeId="timestamp" />
 		</channels>
 	</channel-group-type>

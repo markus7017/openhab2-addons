@@ -88,6 +88,9 @@ public class ShellyThingCreator {
         if (name.startsWith(THING_TYPE_SHELLYFLOOD_STR)) {
             return THING_TYPE_SHELLYFLOOD_STR;
         }
+        if (name.startsWith(THING_TYPE_SHELLYDOORWIN_STR)) {
+            return THING_TYPE_SHELLYDOORWIN_STR;
+        }
         if (name.startsWith(THING_TYPE_SHELLYSENSE_STR)) {
             return THING_TYPE_SHELLYSENSE_STR;
         }

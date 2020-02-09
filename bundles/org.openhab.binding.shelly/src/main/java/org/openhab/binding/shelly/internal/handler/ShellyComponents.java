@@ -22,6 +22,7 @@ import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.OpenClosedType;
 import org.eclipse.smarthome.core.library.unit.SIUnits;
 import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsEMeter;
@@ -200,10 +201,22 @@ public class ShellyComponents {
                             toQuantityType(getDouble(sdata.hum.value), DIGITS_PERCENT, SmartHomeUnits.PERCENT));
                 }
                 if ((sdata.lux != null) && getBool(sdata.lux.isValid)) {
+                    // “lux”:{“value”:30, “illumination”: “dark”, “is_valid”:true},
                     th.logger.trace("{}: Updating lux", th.thingName);
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX,
                             toQuantityType(getDouble(sdata.lux.value), DIGITS_LUX, SmartHomeUnits.LUX));
+                    if (sdata.lux.illumination != null) {
+                        updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ILLUM,
+                                getStringType(sdata.lux.illumination));
+                    }
                 }
+                if ((sdata.sensor != null) && sdata.sensor.isValid) {
+                    // Shelly DW: “sensor”:{“state”:“open”, “is_valid”:true},
+                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
+                            sdata.sensor.state.equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN) ? OpenClosedType.OPEN
+                                    : OpenClosedType.CLOSED);
+                }
+
                 if (sdata.flood != null) {
                     th.logger.trace("{}: Updating flood", th.thingName);
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD, getOnOff(sdata.flood));

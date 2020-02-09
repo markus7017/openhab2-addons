@@ -54,6 +54,7 @@ public class ShellyBindingConstants {
     public static final String THING_TYPE_SHELLYHT_STR = "shellyht";
     public static final String THING_TYPE_SHELLYSMOKE_STR = "shellysmoke";
     public static final String THING_TYPE_SHELLYFLOOD_STR = "shellyflood";
+    public static final String THING_TYPE_SHELLYDOORWIN_STR = "shellydw";
     public static final String THING_TYPE_SHELLYEYE_STR = "shellyseye";
     public static final String THING_TYPE_SHELLYSENSE_STR = "shellysense";
     public static final String THING_TYPE_SHELLYPROTECTED_STR = "shellydevice";
@@ -84,6 +85,8 @@ public class ShellyBindingConstants {
     public static final ThingTypeUID THING_TYPE_SHELLYSENSE = new ThingTypeUID(BINDING_ID, THING_TYPE_SHELLYSENSE_STR);
     public static final ThingTypeUID THING_TYPE_SHELLYSMOKE = new ThingTypeUID(BINDING_ID, THING_TYPE_SHELLYSMOKE_STR);
     public static final ThingTypeUID THING_TYPE_SHELLYFLOOD = new ThingTypeUID(BINDING_ID, THING_TYPE_SHELLYFLOOD_STR);
+    public static final ThingTypeUID THING_TYPE_SHELLYDOORWIN = new ThingTypeUID(BINDING_ID,
+            THING_TYPE_SHELLYDOORWIN_STR);
     public static final ThingTypeUID THING_TYPE_SHELLYEYE = new ThingTypeUID(BINDING_ID, THING_TYPE_SHELLYEYE_STR);
     public static final ThingTypeUID THING_TYPE_SHELLYRGBW2_COLOR = new ThingTypeUID(BINDING_ID,
             THING_TYPE_SHELLYRGBW2_COLOR_STR);
@@ -92,13 +95,14 @@ public class ShellyBindingConstants {
     public static final ThingTypeUID THING_TYPE_SHELLYUNKNOWN = new ThingTypeUID(BINDING_ID,
             THING_TYPE_SHELLYPROTECTED_STR);
 
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableSet(
-            Stream.of(THING_TYPE_SHELLY1, THING_TYPE_SHELLY1PM, THING_TYPE_SHELLYEM, THING_TYPE_SHELLY2_RELAY,
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableSet(Stream
+            .of(THING_TYPE_SHELLY1, THING_TYPE_SHELLY1PM, THING_TYPE_SHELLYEM, THING_TYPE_SHELLY2_RELAY,
                     THING_TYPE_SHELLY2_ROLLER, THING_TYPE_SHELLY25_RELAY, THING_TYPE_SHELLY25_ROLLER,
                     THING_TYPE_SHELLY4PRO, THING_TYPE_SHELLYPLUG, THING_TYPE_SHELLYPLUGS, THING_TYPE_SHELLYDIMMER,
                     THING_TYPE_SHELLYBULB, THING_TYPE_SHELLYRGBW2_COLOR, THING_TYPE_SHELLYRGBW2_WHITE,
                     THING_TYPE_SHELLYHT, THING_TYPE_SHELLYSENSE, THING_TYPE_SHELLYEYE, THING_TYPE_SHELLYSMOKE,
-                    THING_TYPE_SHELLYFLOOD, THING_TYPE_SHELLYUNKNOWN).collect(Collectors.toSet()));
+                    THING_TYPE_SHELLYFLOOD, THING_TYPE_SHELLYDOORWIN, THING_TYPE_SHELLYUNKNOWN)
+            .collect(Collectors.toSet()));
 
     // check for updates every x sec
     public static final int UPDATE_STATUS_INTERVAL_SECONDS = 3;
@@ -185,7 +189,9 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_SENSOR_TEMP = "temperature";
     public static final String CHANNEL_SENSOR_HUM = "humidity";
     public static final String CHANNEL_SENSOR_LUX = "lux";
+    public static final String CHANNEL_SENSOR_ILLUM = "illumination";
     public static final String CHANNEL_SENSOR_FLOOD = "flood";
+    public static final String CHANNEL_SENSOR_STATE = "state";
     public static final String CHANNEL_SENSOR_MOTION = "motion";
     public static final String CHANNEL_SENSOR_CHARGER = "charger";
 
@@ -230,7 +236,7 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_BUTTON_TRIGGER = "button";
 
     public static final String SERVICE_TYPE = "_http._tcp.local.";
-    public static final String SHELLY_API_MIN_FWVERSION = "v1.5.2";
+    public static final int SHELLY_API_MIN_FWVERSION = 1520; // v1.5.2
     public static final int SHELLY_API_TIMEOUT_MS = 5000;
 
     // Alarm types/messages

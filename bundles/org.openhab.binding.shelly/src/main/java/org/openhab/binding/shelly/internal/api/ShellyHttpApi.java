@@ -133,8 +133,14 @@ public class ShellyHttpApi {
     @SuppressWarnings("null")
     public void setRelayTurn(Integer relayIndex, String turnMode) throws IOException {
         Validate.notNull(profile);
-        request((!profile.isDimmer ? SHELLY_URL_CONTROL_RELEAY : SHELLY_URL_CONTROL_LIGHT) + "/" + relayIndex.toString()
-                + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
+        if (profile.isLight) {
+            request((profile.inColor ? SHELLY_MODE_COLOR : SHELLY_MODE_WHITE) + "/" + relayIndex.toString() + "?"
+                    + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
+
+        } else {
+            request((!profile.isDimmer ? SHELLY_URL_CONTROL_RELEAY : SHELLY_URL_CONTROL_LIGHT) + "/"
+                    + relayIndex.toString() + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
+        }
     }
 
     public void setDimmerBrightness(Integer relayIndex, Integer brightness, boolean autoOn) throws IOException {
@@ -403,6 +409,12 @@ public class ShellyHttpApi {
             String eventUrl = "http://" + config.localIp + ":" + config.httpPort.toString() + SHELLY_CALLBACK_URI + "/"
                     + profile.thingName + "/" + EVENT_TYPE_SENSORDATA;
             request(SHELLY_URL_SETTINGS + "?" + SHELLY_API_EVENTURL_REPORT + "=" + urlEncode(eventUrl));
+            if (profile.settingsJson.contains(SHELLY_API_EVENTURL_DARK)) {
+                request(SHELLY_URL_SETTINGS + "?" + SHELLY_API_EVENTURL_DARK + "=" + urlEncode(eventUrl));
+            }
+            if (profile.settingsJson.contains(SHELLY_API_EVENTURL_TWILIGHT)) {
+                request(SHELLY_URL_SETTINGS + "?" + SHELLY_API_EVENTURL_TWILIGHT + "=" + urlEncode(eventUrl));
+            }
         }
     }
 
@@ -471,15 +483,14 @@ public class ShellyHttpApi {
         try {
             result = innerRequest(uri);
         } catch (IOException e) {
-            String type = StringUtils.substringAfterLast(e.getCause().toString(), ".");
+            String type = getExceptionType(e);
             if (e.getMessage().contains("Timeout") || type.toLowerCase().contains("timeout")
-                    || e.getMessage().contains("Connection reset")) {
+                    || e.getMessage().contains("Connection reset") || e.getMessage().contains("InterruptedException")) {
                 logger.debug("{}: Shelly API timeout ({}), retry", thingName, type);
                 timeoutErrors++;
                 retry = true;
             } else {
-                throw new IOException(
-                        thingName + ": Shelly API call failed (" + type + "), uri=" + uri);
+                throw new IOException(thingName + ": Shelly API call failed (" + type + "), uri=" + uri);
             }
         }
         if (retry && !profile.hasBattery) {
@@ -489,14 +500,12 @@ public class ShellyHttpApi {
                 timeoutsRecovered++;
                 logger.debug("Shelly API timeout recovered");
             } catch (IOException e) {
-                String type = StringUtils.substringAfterLast(e.getCause().toString(), ".");
+                String type = getExceptionType(e);
                 if (e.getMessage().contains("Timeout") || type.toLowerCase().contains("timeout")
                         || e.getMessage().contains("Connection reset")) {
-                    throw new IOException(
-                            thingName + ": Shelly API timeout (" + type + "), uri=" + uri);
+                    throw new IOException(thingName + ": Shelly API timeout (" + type + "), uri=" + uri);
                 } else {
-                    throw new IOException(
-                            thingName + ": Shelly API call failed: " + type + ", uri=" + uri);
+                    throw new IOException(thingName + ": Shelly API call failed: " + type + ", uri=" + uri);
                 }
             }
         }
@@ -539,4 +548,17 @@ public class ShellyHttpApi {
     public int getTimeoutsRecovered() {
         return timeoutsRecovered;
     }
+
+    private String getExceptionType(@Nullable IOException e) {
+        if ((e == null) || (e.getCause() == null) || e.getCause().toString().isEmpty()) {
+            return "";
+        }
+
+        String msg = StringUtils.substringAfterLast(e.getCause().toString(), ".");
+        if (msg != null) {
+            return msg;
+        }
+        return e.getCause().toString();
+    }
+
 }

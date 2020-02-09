@@ -32,6 +32,7 @@ import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.types.Command;
+import org.openhab.binding.shelly.internal.ShellyTranslationProvider;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyShortLightStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusLight;
@@ -62,9 +63,10 @@ public class ShellyLightHandler extends ShellyBaseHandler {
      * @param localIP local IP of the openHAB host
      * @param httpPort port of the openHAB HTTP API
      */
-    public ShellyLightHandler(Thing thing, ShellyBindingConfiguration bindingConfig,
-            @Nullable ShellyCoapServer coapServer, String localIP, int httpPort) {
-        super(thing, bindingConfig, coapServer, localIP, httpPort);
+    public ShellyLightHandler(Thing thing, @Nullable ShellyTranslationProvider translationProvider,
+            ShellyBindingConfiguration bindingConfig, @Nullable ShellyCoapServer coapServer, String localIP,
+            int httpPort) {
+        super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort);
         channelColors = new HashMap<Integer, ShellyColorUtils>();
     }
 
@@ -139,6 +141,10 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                     logger.debug("Switch light {}", command.toString());
                     api.setRelayTurn(lightId, (OnOffType) command == OnOffType.ON ? SHELLY_API_ON : SHELLY_API_OFF);
                     requestUpdates(1, false);
+                    break;
+                }
+                if (profile.isLight && !profile.inColor) {
+                    logger.debug("{}: Not in white mode, brightness not available", thingName);
                     break;
                 }
 
