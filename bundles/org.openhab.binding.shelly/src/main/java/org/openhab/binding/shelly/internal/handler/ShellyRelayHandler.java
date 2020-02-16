@@ -327,21 +327,22 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
                         updated |= updateChannel(groupName, CHANNEL_OUTPUT, getOnOff(relay.ison));
                         updated |= updateChannel(groupName, CHANNEL_TIMER_ACTIVE, getOnOff(relay.hasTimer));
-                        if (relay.extTemperature != null) {
+                        logger.debug("Check external temp sensor");
+                        if (rstatus.extTemperature != null) {
                             // Shelly 1/1PM support up to 3 external sensors
                             // for whatever reason those are not represented as an array, but 3 elements
                             logger.debug("{}: Updating external sensors", thingName);
-                            if (relay.extTemperature.sensor1 != null) {
+                            if (rstatus.extTemperature.sensor1 != null) {
                                 updated |= updateChannel(groupName, CHANNEL_ETEMP_SENSOR1,
-                                        toQuantityType(getDouble(relay.extTemperature.sensor1.tC), SIUnits.CELSIUS));
+                                        toQuantityType(getDouble(rstatus.extTemperature.sensor1.tC), SIUnits.CELSIUS));
                             }
-                            if (relay.extTemperature.sensor2 != null) {
+                            if (rstatus.extTemperature.sensor2 != null) {
                                 updated |= updateChannel(groupName, CHANNEL_ETEMP_SENSOR2,
-                                        toQuantityType(getDouble(relay.extTemperature.sensor2.tC), SIUnits.CELSIUS));
+                                        toQuantityType(getDouble(rstatus.extTemperature.sensor2.tC), SIUnits.CELSIUS));
                             }
-                            if (relay.extTemperature.sensor3 != null) {
+                            if (rstatus.extTemperature.sensor3 != null) {
                                 updated |= updateChannel(groupName, CHANNEL_ETEMP_SENSOR3,
-                                        toQuantityType(getDouble(relay.extTemperature.sensor3.tC), SIUnits.CELSIUS));
+                                        toQuantityType(getDouble(rstatus.extTemperature.sensor3.tC), SIUnits.CELSIUS));
                             }
                         }
 

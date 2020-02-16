@@ -461,9 +461,6 @@ public class ShellyApiJsonDTO {
         public Boolean overpower; // Shelly1PM only if maximum allowed power was exceeded
         public Double temperature; // Internal device temperature
         public Boolean overtemperature; // Device over heated
-
-        @SerializedName("ext_temperature")
-        public ShellyStatusSensor.ShellyExtTemperature extTemperature; // Shelly 1/1PM: sensor values
     }
 
     public static class ShellyShortLightStatus {
@@ -482,6 +479,8 @@ public class ShellyApiJsonDTO {
         public String mac; // MAC
         public ArrayList<ShellyShortStatusRelay> relays; // relay status
         public ArrayList<ShellySettingsMeter> meters; // current meter value
+        @SerializedName("ext_temperature")
+        public ShellyStatusSensor.ShellyExtTemperature extTemperature; // Shelly 1/1PM: sensor values
 
         @SerializedName("has_update")
         public Boolean hasUpdate; // If a newer firmware version is available

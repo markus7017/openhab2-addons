@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -78,7 +80,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private int lastSerial = -1;
     private String lastPayload = "";
     private Map<String, CoIotDescrBlk> blockMap = new HashMap<String, CoIotDescrBlk>();
-    private Map<String, CoIotDescrSen> sensorMap = new HashMap<String, CoIotDescrSen>();
+    private SortedMap<String, CoIotDescrSen> sensorMap = new TreeMap<String, CoIotDescrSen>();
 
     public ShellyCoapHandler(ShellyThingConfiguration config, ShellyBaseHandler thingHandler,
             @Nullable ShellyCoapServer coapServer) {
@@ -371,8 +373,17 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                 toQuantityType(s.value, DIGITS_PERCENT, SmartHomeUnits.PERCENT));
                         break;
                     case "t" /* Temperature */:
-                        updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
-                                toQuantityType(s.value, DIGITS_TEMP, SIUnits.CELSIUS));
+                        if (!sen.desc.equalsIgnoreCase("External_temperature")) {
+                            updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
+                                    toQuantityType(s.value, DIGITS_TEMP, SIUnits.CELSIUS));
+                        } else {
+                            logger.debug("{}: Update external sensor from Coap update", thingName);
+                            Integer idx = getExtTempId(sen.id);
+                            if (idx > 0) {
+                                updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP + idx,
+                                        toQuantityType(s.value, DIGITS_TEMP, SIUnits.CELSIUS));
+                            }
+                        }
                         break;
                     case "h" /* Humidity */:
                         updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM,
@@ -705,7 +716,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         for (Map.Entry<String, CoIotDescrSen> se : sensorMap.entrySet()) {
             @Nullable
             CoIotDescrSen sen = se.getValue();
-            if (sen.id.equalsIgnoreCase("Input")) {
+            if (sen.desc.equalsIgnoreCase("Input")) {
                 idx++; // iterate from input1..2..n
             }
             if (sen.id.equalsIgnoreCase(sensorId)) {
@@ -713,7 +724,25 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 if ((blk != null) && StringUtils.substring(blk.desc, 5).equalsIgnoreCase("Relay")) {
                     idx = Integer.parseInt(StringUtils.substringAfter(blk.desc, "Relay"));
                 }
-                logger.trace("{}:    map to input{} channel", thingName, idx);
+                logger.trace("{}:    map sensor id {} to input{} channel", thingName, sensorId, idx);
+                return idx;
+            }
+        }
+        logger.debug("{}: sensorId {} not found in sensorMap!", thingName, sensorId);
+        return null;
+    }
+
+    @Nullable
+    private Integer getExtTempId(String sensorId) {
+        Integer idx = 0;
+        for (Map.Entry<String, CoIotDescrSen> se : sensorMap.entrySet()) {
+            @Nullable
+            CoIotDescrSen sen = se.getValue();
+            if (sen.desc.equalsIgnoreCase("External_temperature")) {
+                idx++; // iterate from temperature1..2..n
+            }
+            if (sen.id.equalsIgnoreCase(sensorId)) {
+                logger.trace("{}:    map sensir id {} to temperature{} channel", thingName, sensorId, idx);
                 return idx;
             }
         }
