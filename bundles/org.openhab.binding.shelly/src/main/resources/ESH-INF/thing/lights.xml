@@ -21,7 +21,7 @@
 
 	<thing-type id="shellyduo">
 		<label>Shelly Duo (SHBDUO-1)</label>
-		<description>Shelly Duao</description>
+		<description>Shelly Duo</description>
 		<category>Lightbulb</category>
 
 		<channel-groups>
