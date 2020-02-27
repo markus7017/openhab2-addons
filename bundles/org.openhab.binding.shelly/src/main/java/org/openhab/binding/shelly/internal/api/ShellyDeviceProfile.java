@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.shelly.internal.api;
 
-import static org.openhab.binding.shelly.internal.ShellyBindingConstants.SHELLYDT_DIMMER;
+import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 import static org.openhab.binding.shelly.internal.ShellyUtils.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 
@@ -62,13 +62,14 @@ public class ShellyDeviceProfile {
 
     public Boolean hasMeter = false; // true if it has at least 1 power meter
     public Integer numMeters = 0;
-    public Boolean isEMeter = false; // true for ShellyEM
+    public Boolean isEMeter = false; // true for ShellyEM/EM3
 
     public Boolean hasBattery = false; // true if battery device
     public Boolean hasLed = false; // true if battery device
     public Boolean isPlugS = false; // true if it is a Shelly Plug S
     public Boolean isLight = false; // true if it is a Shelly Bulb/RGBW2
-    public Boolean isBulb = false; // true pnly if it is a Bulb
+    public Boolean isBulb = false; // true only if it is a Bulb
+    public Boolean isDuo = false; // true only if it is a Duo
     public Boolean isSense = false; // true if thing is a Shelly Sense
     public Boolean inColor = false; // true if bulb/rgbw2 is in color mode
     public Boolean isSensor = false; // true for HT & Smoke
@@ -108,25 +109,25 @@ public class ShellyDeviceProfile {
         profile.fwId = getString(StringUtils.substringAfter(profile.settings.fw, "@"));
 
         profile.isRoller = profile.mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
-        profile.isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS.getId());
+        profile.isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
         profile.hasLed = profile.isPlugS;
-        profile.isBulb = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYBULB.getId());
+        profile.isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR);
+        profile.isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
         profile.isDimmer = profile.deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
-        profile.isLight = profile.isBulb
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYRGBW2_COLOR.getId())
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYRGBW2_WHITE.getId());
+        profile.isLight = profile.isBulb || profile.isDuo
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
         profile.inColor = profile.isLight && profile.mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
 
-        profile.isSmoke = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYSMOKE.getId());
-        profile.isSense = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYSENSE.getId());
-        profile.isSensor = profile.isSense || profile.isSmoke
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYHT.getId())
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYFLOOD.getId())
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYSENSE.getId());
-        profile.hasBattery = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYHT.getId())
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYSMOKE.getId())
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYFLOOD.getId())
-                || thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYSENSE.getId());
+        profile.isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
+        profile.isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
+        profile.isSensor = profile.isSense || profile.isSmoke || thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
+        profile.hasBattery = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
 
         profile.numRelays = !profile.isLight ? getInteger(profile.settings.device.numOutputs) : 0;
         if ((profile.numRelays > 0) && (profile.settings.relays == null)) {

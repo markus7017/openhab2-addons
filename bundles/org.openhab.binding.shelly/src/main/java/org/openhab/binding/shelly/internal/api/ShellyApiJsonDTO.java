@@ -22,6 +22,52 @@ import com.google.gson.annotations.SerializedName;
  * @author Markus Michels - Initial contribution
  */
 public class ShellyApiJsonDTO {
+    public static final String SHELLY_NULL_URL = "null";
+    public static final String SHELLY_URL_DEVINFO = "/shelly";
+    public static final String SHELLY_URL_STATUS = "/status";
+    public static final String SHELLY_URL_SETTINGS = "/settings";
+    public static final String SHELLY_URL_SETTINGS_AP = "/settings/ap";
+    public static final String SHELLY_URL_SETTINGS_STA = "/settings/sta";
+    public static final String SHELLY_URL_SETTINGS_LOGIN = "/settings/sta";
+    public static final String SHELLY_URL_SETTINGS_CLOUD = "/settings/cloud";
+    public static final String SHELLY_URL_LIST_IR = "/ir/list";
+    public static final String SHELLY_URL_SEND_IR = "/ir/emit";
+
+    public static final String SHELLY_URL_SETTINGS_RELAY = "/settings/relay";
+    public static final String SHELLY_URL_STATUS_RELEAY = "/status/relay";
+    public static final String SHELLY_URL_CONTROL_RELEAY = "/relay";
+
+    public static final String SHELLY_URL_SETTINGS_EMETER = "/settings/emeter";
+    public static final String SHELLY_URL_STATUS_EMETER = "/emeter";
+    public static final String SHELLY_URL_DATA_EMETER = "/emeter/{0}/em_data.csv";
+
+    public static final String SHELLY_URL_CONTROL_ROLLER = "/roller";
+    public static final String SHELLY_URL_SETTINGS_ROLLER = "/settings/roller";
+
+    public static final String SHELLY_URL_SETTINGS_LIGHT = "/settings/light";
+    public static final String SHELLY_URL_STATUS_LIGHT = "/light";
+    public static final String SHELLY_URL_CONTROL_LIGHT = "/light";
+
+    public static final String SHELLY_URL_SETTINGS_DIMMER = "/settings/light";
+
+    public static final String SHELLY_CALLBACK_URI = "/shelly/event";
+    public static final String EVENT_TYPE_RELAY = "relay";
+    public static final String EVENT_TYPE_ROLLER = "roller";
+    public static final String EVENT_TYPE_SENSORDATA = "sensordata";
+    public static final String EVENT_TYPE_LIGHT = "light";
+
+    public static final String SHELLY_IR_CODET_STORED = "stored";
+    public static final String SHELLY_IR_CODET_PRONTO = "pronto";
+    public static final String SHELLY_IR_CODET_PRONTO_HEX = "pronto_hex";
+
+    public static final String HTTP_DELETE = "DELETE";
+    public static final String HTTP_HEADER_AUTH = "Authorization";
+    public static final String HTTP_AUTH_TYPE_BASIC = "Basic";
+    public static final String CONTENT_TYPE_XML = "text/xml; charset=UTF-8";
+
+    public static final String APIERR_HTTP_401_UNAUTHORIZED = "401 Unauthorized";
+    public static final String APIERR_TIMEOUT = "Timeout";
+    public static final String APIERR_NOT_CALIBRATED = "Not calibrated!";
 
     public static final String SHELLY_API_ON = "on";
     public static final String SHELLY_API_OFF = "off";
@@ -91,6 +137,11 @@ public class ShellyApiJsonDTO {
         public Boolean retain;
         @SerializedName("update_period")
         public Integer updatePeriod;
+    }
+
+    public static class ShellySettingsCoiot { // FW 1.6+
+        @SerializedName("update_period")
+        public String updatePeriod;
     }
 
     public static class ShellySettingsSntp {
@@ -312,6 +363,9 @@ public class ShellyApiJsonDTO {
         public Double total; // Total consumed energy, Wh
         @SerializedName("total_returned")
         public Double totalReturned; // Total returned energy, Wh
+
+        public Double pf; // EM3
+        public Double current; // EM3
     }
 
     public static class ShellySettingsUpdate {
@@ -335,6 +389,7 @@ public class ShellyApiJsonDTO {
         public ShellySettingsWiFiNetwork wifiSta1;
         // public ShellySettingsMqtt mqtt; // not used for now
         // public ShellySettingsSntp sntp; // not used for now
+        public ShellySettingsCoiot coiot; // Firmware 1.6+
         public ShellySettingsLogin login;
         @SerializedName("pin_code")
         public String pinCode;
@@ -345,11 +400,20 @@ public class ShellyApiJsonDTO {
         @SerializedName("build_info")
         ShellySettingsBuildInfo buildInfo;
         ShellyStatusCloud cloud;
+
         public String timezone;
         public Double lat;
         public Double lng;
         public Boolean tzautodetect;
         public String time;
+        // @SerializedName("tz_utc_offset")
+        // public Integer tzUTCOoffset; // FW 1.6+
+        // @SerializedName("tz_dst")
+        // public Boolean tzDdst; // FW 1.6+
+        // @SerializedName("tz_dst_auto")
+        // public Boolean tzDstAuto; // FW 1.6+
+        // public Long unixtime; // FW 1.6+
+
         public ShellySettingsHwInfo hwinfo;
         public String mode;
         @SerializedName("max_power")
@@ -409,11 +473,14 @@ public class ShellyApiJsonDTO {
         @SerializedName("has_update")
         public Boolean hasUpdate;
         public String mac;
+        public String discoverable; // FW 1.6+
         public ArrayList<ShellySettingsRelay> relays;
         public ArrayList<ShellySettingsRoller> rollers;
         public Integer input; // RGBW2 has no JSON array
         public ArrayList<ShellyInputState> inputs;
         public ArrayList<ShellySettingsLight> lights;
+        // @SerializedName("night_mode") // FW 1.5.7+
+        // public ShellySettingsNightMode nightMode;
         public ArrayList<ShellyShortLightStatus> dimmers;
         public ArrayList<ShellySettingsMeter> meters;
         public ArrayList<ShellySettingsEMeter> emeters;
@@ -474,7 +541,8 @@ public class ShellyApiJsonDTO {
         public ShellySettingsWiFiNetwork wifiSta; // WiFi status
         // public ShellyStatusCloud cloud; // Cloud status
         // public ShellyStatusMqtt mqtt; // mqtt status
-        public String time; // current time
+        public ShellySettingsCoiot coiot; // Firmware 1.6+
+        // public String time; // current time
         public Integer serial;
         public String mac; // MAC
         public ArrayList<ShellyShortStatusRelay> relays; // relay status
@@ -699,6 +767,15 @@ public class ShellyApiJsonDTO {
         public Boolean ison;
     }
 
+    public static class ShellySettingsNightMode { // FW1.5.7+
+        public Integer enabled;
+        @SerializedName("start_time")
+        public String startTime;
+        @SerializedName("end_time")
+        public String endTime;
+        public Integer brightness;
+    }
+
     public static final int SHELLY_MIN_EFFECT = 0;
     public static final int SHELLY_MAX_EFFECT = 6;
 
@@ -777,9 +854,12 @@ public class ShellyApiJsonDTO {
     public static final int SHELLY_DIM_STEPSIZE = 10;
 
     // color temperature: 3000 = warm, 4750 = white, 6565 = cold; gain: 0..100
-    public static final int MIN_COLOR_TEMPERATURE = 3000;
-    public static final int MAX_COLOR_TEMPERATURE = 6500;
-    public static final int COLOR_TEMPERATURE_RANGE = MAX_COLOR_TEMPERATURE - MIN_COLOR_TEMPERATURE;
+    public static final int MIN_COLOR_TEMP_BULB = 3000;
+    public static final int MAX_COLOR_TEMP_BULB = 6500;
+    public static final int MIN_COLOR_TEMP_DUO = 2700;
+    public static final int MAX_COLOR_TEMP_DUO = 6500;
+    public static final int COLOR_TEMP_RANGE_BULB = MAX_COLOR_TEMP_DUO - MIN_COLOR_TEMP_DUO;
+    public static final int COLOR_TEMP_RANGE_DUO = MAX_COLOR_TEMP_DUO - MIN_COLOR_TEMP_DUO;
     public static final double MIN_BRIGHTNESS = 0.0;
     public static final double MAX_BRIGHTNESS = 100.0;
     public static final double SATURATION_FACTOR = 2.55;

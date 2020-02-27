@@ -29,21 +29,9 @@ import org.eclipse.smarthome.core.library.types.PercentType;
  */
 @NonNullByDefault
 public class ShellyColorUtils {
-    public ShellyColorUtils() {
-    }
-
-    public ShellyColorUtils(ShellyColorUtils col) {
-        setRed(col.red);
-        setGreen(col.green);
-        setBlue(col.blue);
-        setWhite(col.white);
-        setGain(col.gain);
-        setBrightness(col.brightness);
-        setTemp(col.temp);
-    }
-
     OnOffType power = OnOffType.OFF;
     String mode = "";
+
     Integer red = 0;
     Integer green = 0;
     Integer blue = 0;
@@ -53,8 +41,38 @@ public class ShellyColorUtils {
     PercentType percentBlue = new PercentType(0);
     PercentType percentWhite = new PercentType(0);
 
+    Integer gain = 0;
+    Integer brightness = 0;
+    Integer temp = 0;
+    Integer minTemp = 0;
+    Integer maxTemp = 0;
+    PercentType percentGain = new PercentType(0);
+    PercentType percentBrightness = new PercentType(0);
+    PercentType percentTemp = new PercentType(0);
+    Integer effect = 0;
+
+    public ShellyColorUtils() {
+    }
+
+    public ShellyColorUtils(ShellyColorUtils col) {
+        minTemp = col.minTemp;
+        maxTemp = col.maxTemp;
+        setRed(col.red);
+        setGreen(col.green);
+        setBlue(col.blue);
+        setWhite(col.white);
+        setGain(col.gain);
+        setBrightness(col.brightness);
+        setTemp(col.temp);
+    }
+
     void setMode(String mode) {
         this.mode = mode;
+    }
+
+    void setMinMaxTemp(int min, int max) {
+        minTemp = min;
+        maxTemp = max;
     }
 
     boolean setRGBW(int red, int green, int blue, int white) {
@@ -93,13 +111,6 @@ public class ShellyColorUtils {
         return changed;
     }
 
-    Integer gain = 0;
-    Integer brightness = 0;
-    Integer temp = 0;
-    PercentType percentGain = new PercentType(0);
-    PercentType percentBrightness = new PercentType(0);
-    PercentType percentTemp = new PercentType(0);
-
     boolean setBrightness(int value) {
         boolean changed = brightness != value;
         brightness = value;
@@ -117,11 +128,9 @@ public class ShellyColorUtils {
     boolean setTemp(int value) {
         boolean changed = temp != value;
         temp = value;
-        percentTemp = toPercent(temp, MIN_COLOR_TEMPERATURE, MAX_COLOR_TEMPERATURE);
+        percentTemp = toPercent(temp, minTemp, maxTemp);
         return changed;
     }
-
-    Integer effect = 0;
 
     boolean setEffect(int value) {
         boolean changed = effect != value;

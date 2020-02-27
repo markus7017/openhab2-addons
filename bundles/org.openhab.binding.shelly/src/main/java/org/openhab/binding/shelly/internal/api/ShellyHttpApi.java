@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.shelly.internal.api;
 
-import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
+import static org.openhab.binding.shelly.internal.ShellyBindingConstants.SHELLY_API_TIMEOUT_MS;
 import static org.openhab.binding.shelly.internal.ShellyUtils.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 
@@ -477,6 +477,7 @@ public class ShellyHttpApi {
      *
      * @param uri: URI (e.g. "/settings")
      */
+    @SuppressWarnings("null")
     private String request(String uri) throws IOException {
         String result = "";
         boolean retry = false;
@@ -484,8 +485,8 @@ public class ShellyHttpApi {
             result = innerRequest(uri);
         } catch (IOException e) {
             String type = getExceptionType(e);
-            if (e.getMessage().contains("Timeout") || type.toLowerCase().contains("timeout")
-                    || e.getMessage().contains("Connection reset") || e.getMessage().contains("InterruptedException")) {
+            if (getString(e).contains("Timeout") || getString(type.toLowerCase()).contains("timeout")
+                    || getString(e).contains("Connection reset") || getString(e).contains("InterruptedException")) {
                 logger.debug("{}: Shelly API timeout ({}), retry", thingName, type);
                 timeoutErrors++;
                 retry = true;
@@ -493,16 +494,16 @@ public class ShellyHttpApi {
                 throw new IOException(thingName + ": Shelly API call failed (" + type + "), uri=" + uri);
             }
         }
-        if (retry && !profile.hasBattery) {
+        if (retry && (profile != null) && !profile.hasBattery) {
             try {
                 // retry to recover
                 result = innerRequest(uri);
                 timeoutsRecovered++;
                 logger.debug("Shelly API timeout recovered");
             } catch (IOException e) {
-                String type = getExceptionType(e);
-                if (e.getMessage().contains("Timeout") || type.toLowerCase().contains("timeout")
-                        || e.getMessage().contains("Connection reset")) {
+                String type = getString(getExceptionType(e));
+                if (getString(e).contains("Timeout") || getString(type).toLowerCase().contains("timeout")
+                        || getString(e).contains("Connection reset")) {
                     throw new IOException(thingName + ": Shelly API timeout (" + type + "), uri=" + uri);
                 } else {
                     throw new IOException(thingName + ": Shelly API call failed: " + type + ", uri=" + uri);
@@ -539,6 +540,20 @@ public class ShellyHttpApi {
 
         logger.trace("HTTP response from {}: {}", thingName, httpResponse);
         return httpResponse;
+    }
+
+    public static String buildSetEventUrl(String localIp, String localPort, String deviceName, Integer index,
+            String deviceType, String urlParm) throws IOException {
+        return SHELLY_URL_SETTINGS + "/" + deviceType + "/" + index + "?" + urlParm + "="
+                + buildCallbackUrl(localIp, localPort, deviceName, index, deviceType, urlParm);
+    }
+
+    @SuppressWarnings("unused")
+    private static String buildCallbackUrl(String localIp, String localPort, String deviceName, Integer index,
+            String type, String parameter) throws IOException {
+        String url = "http://" + localIp + ":" + localPort + SHELLY_CALLBACK_URI + "/" + deviceName + "/" + type + "/"
+                + index + "?type=" + StringUtils.substringBefore(parameter, "_url");
+        return urlEncode(url);
     }
 
     public int getTimeoutErrors() {

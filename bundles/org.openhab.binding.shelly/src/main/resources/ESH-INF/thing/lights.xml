@@ -19,6 +19,20 @@
 		<config-description-ref uri="thing-type:shelly:light" />
 	</thing-type>
 
+	<thing-type id="shellyduo">
+		<label>Shelly Duo (SHBDUO-1)</label>
+		<description>Shelly Duao</description>
+		<category>Lightbulb</category>
+
+		<channel-groups>
+			<channel-group id="control" typeId="duoControl" />
+			<channel-group id="white" typeId="whiteSettings" />
+			<channel-group id="device" typeId="deviceStatus" />
+		</channel-groups>
+
+		<config-description-ref uri="thing-type:shelly:light" />
+	</thing-type>
+
 	<thing-type id="shellyrgbw2-color">
 		<label>Shelly RGBW2 Color Mode (SHRGBW2)</label>
 		<description>Shelly RGBW2 Controller - Color Mode</description>
@@ -75,6 +89,16 @@
 		<channels>
 			<channel id="power" typeId="system.power" />
 			<channel id="mode" typeId="colorMode" />
+			<channel id="autoOn" typeId="timerAutoOn" />
+			<channel id="autoOff" typeId="timerAutoOff" />
+			<channel id="timerActive" typeId="timerActive" />
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="duoControl">
+		<label>Light Control</label>
+		<description>Control your light</description>
+		<channels>
+			<channel id="power" typeId="system.power" />
 			<channel id="autoOn" typeId="timerAutoOn" />
 			<channel id="autoOff" typeId="timerAutoOff" />
 			<channel id="timerActive" typeId="timerActive" />

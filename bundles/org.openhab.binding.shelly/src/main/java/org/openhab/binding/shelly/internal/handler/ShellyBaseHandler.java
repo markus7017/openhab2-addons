@@ -41,7 +41,9 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
+import org.openhab.binding.shelly.internal.ShellyBindingConstants;
 import org.openhab.binding.shelly.internal.ShellyTranslationProvider;
+import org.openhab.binding.shelly.internal.ShellyVersion;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyInputState;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
@@ -133,11 +135,11 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 updateStatus(ThingStatus.UNKNOWN);
                 start = initializeThing();
             } catch (NullPointerException | IOException e) {
-                if (authorizationFailed(e.getMessage())) {
+                if (authorizationFailed(getString(e))) {
                     start = false;
                 }
                 logger.debug("{}: Unable to initialize: {} ({}), retrying later\n{}", getThing().getLabel(),
-                        e.getMessage(), e.getClass(), e.getStackTrace());
+                        getString(e), e.getClass(), e.getStackTrace());
             } finally {
                 // even this initialization failed we start the status update
                 // the updateJob will then try to auto-initialize the thing
@@ -205,12 +207,12 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 tmpPrf.fwDate, tmpPrf.fwId);
         logger.debug("{}: Shelly settings info: {}", thingName, tmpPrf.settingsJson);
         logger.debug(
-                "{}: Device has relays: {} (numRelays={}, is roller: {} (numRoller={}), is Plug S: {}, is Dimmer: {}, "
+                "{}: Device has relays: {} (numRelays={}, is roller: {} (numRoller={}), is Plug S: {}, is Dimmer: {}, isDuao: {},"
                         + "has LEDs: {}, is Light: {}, has Meter: {} (numMeter={}, EMeter: {}), is Sensor: {}, is Sense: {}, has Battery: {} {}, "
                         + "event urls: btn:{},out:{},push{},roller:{},sensor:{}",
                 tmpPrf.hostname, tmpPrf.hasRelays, tmpPrf.numRelays, tmpPrf.isRoller, tmpPrf.numRollers, tmpPrf.isPlugS,
-                tmpPrf.isDimmer, tmpPrf.hasLed, tmpPrf.isLight, tmpPrf.hasMeter, tmpPrf.numMeters, tmpPrf.isEMeter,
-                tmpPrf.isSensor, tmpPrf.isSense, tmpPrf.hasBattery,
+                tmpPrf.isDimmer, tmpPrf.isDuo, tmpPrf.hasLed, tmpPrf.isLight, tmpPrf.hasMeter, tmpPrf.numMeters,
+                tmpPrf.isEMeter, tmpPrf.isSensor, tmpPrf.isSense, tmpPrf.hasBattery,
                 tmpPrf.hasBattery ? "(low battery threshold=" + config.lowBattery + "%)" : "",
                 tmpPrf.supportsButtonUrls, tmpPrf.supportsOutUrls, tmpPrf.supportsPushUrls, tmpPrf.supportsRollerUrls,
                 tmpPrf.supportsSensorUrls);
@@ -218,20 +220,20 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         // update thing properties
         ShellySettingsStatus status = api.getStatus();
         updateProperties(tmpPrf, status);
-        if (tmpPrf.fwVersion.contains("v") && tmpPrf.fwVersion.contains(".")) {
-            String s = tmpPrf.fwVersion.replaceAll("v", "");
-            s = s.replaceAll("\\.", "");
-            Integer fw = Integer.parseInt(s);
-            if (fw < 999) { // unify v1.5.2 and v1.5.10
-                fw = fw * 10;
-            }
-            if (fw < SHELLY_API_MIN_FWVERSION) {
-                logger.warn(
-                        "{}: WARNING: Firmware might be too old (or beta release), installed: {}/{} ({}), required minimal {}. The binding was tested with version 1.5.2+ only. Older versions might work, but do not support all features or show technical issues. Please consider upgrading to latest release!",
+        ShellyVersion fwvers = new ShellyVersion(tmpPrf.fwVersion);
+        ShellyVersion needed = new ShellyVersion(SHELLY_API_MIN_FWVERSION);
+        if (fwvers.checkBeta(getString(tmpPrf.fwVersion))) {
+            logger.info("{}: Device is running a Beta version: {}/{} ({}),required minimal {}. ", tmpPrf.hostname,
+                    tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
+        } else {
+            if (fwvers.compareTo(needed) < 0) {
+                logger.warn("{}: WARNING: Firmware might be too old, installed: {}/{} ({}), required minimal {}.",
                         tmpPrf.hostname, tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
             }
         }
-        if (status.update.hasUpdate) {
+        if (status.update.hasUpdate)
+
+        {
             logger.info("{} - INFO: New firmware available: current version: {}, new version: {}", thingName,
                     status.update.oldVersion, status.update.newVersion);
         }
@@ -314,14 +316,14 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 requestUpdates(1, false);
             }
         } catch (NullPointerException | IOException e) {
-            if (authorizationFailed(e.getMessage())) {
+            if (authorizationFailed(getString(e))) {
                 return;
             }
-            if (e.getMessage().contains(APIERR_NOT_CALIBRATED)) {
+            if (getString(e).contains(ShellyBindingConstants.APIERR_NOT_CALIBRATED)) {
                 logger.warn("Device is not calibrated, use Shelly App to perform initial roller calibration.");
             } else {
                 logger.warn("{} ERROR: Unable to process command for channel {}: {} ({})\nStack Trace: {}", thingName,
-                        channelUID.toString(), e.getMessage(), e.getClass(), e.getStackTrace());
+                        channelUID.toString(), getString(e), e.getClass(), e.getStackTrace());
             }
         } finally {
             lockUpdates = false;
@@ -383,7 +385,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 logger.debug("{}: Device is not reachable, update canceled ({} skips, {} scheduledUpdates)!", thingName,
                         skipCount, scheduledUpdates);
                 status = "@text/offline.status-error-timeout";
-            } else if (e.getMessage().contains(APIERR_HTTP_401_UNAUTHORIZED)) {
+            } else if (e.getMessage().contains(ShellyBindingConstants.APIERR_HTTP_401_UNAUTHORIZED)) {
                 logger.debug("{}: Unable to access device, check credentials!", thingName);
                 status = "@text/offline.conf-error-access-denied";
             } else if (e.getMessage().contains("Not calibrated!")) {
@@ -505,19 +507,19 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             } else {
                 String group = "";
                 Integer rindex = !deviceIndex.isEmpty() ? Integer.parseInt(deviceIndex) + 1 : -1;
-                if (type.equals(EVENT_TYPE_RELAY)) {
+                if (type.equals(ShellyBindingConstants.EVENT_TYPE_RELAY)) {
                     group = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
                             : CHANNEL_GROUP_RELAY_CONTROL + rindex.toString();
                 }
-                if (type.equals(EVENT_TYPE_ROLLER)) {
+                if (type.equals(ShellyBindingConstants.EVENT_TYPE_ROLLER)) {
                     group = profile.numRollers <= 1 ? CHANNEL_GROUP_ROL_CONTROL
                             : CHANNEL_GROUP_ROL_CONTROL + rindex.toString();
                 }
-                if (type.equals(EVENT_TYPE_LIGHT)) {
+                if (type.equals(ShellyBindingConstants.EVENT_TYPE_LIGHT)) {
                     group = profile.numRelays <= 1 ? CHANNEL_GROUP_LIGHT_CONTROL
                             : CHANNEL_GROUP_LIGHT_CONTROL + rindex.toString();
                 }
-                if (type.equals(EVENT_TYPE_SENSORDATA)) {
+                if (type.equals(ShellyBindingConstants.EVENT_TYPE_SENSORDATA)) {
                     group = CHANNEL_GROUP_SENSOR;
                 }
                 if (group.isEmpty()) {
@@ -528,7 +530,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 // map some of the events to system defined button triggers
                 String channel = "";
                 String payload = "";
-                String event = type.contentEquals(EVENT_TYPE_SENSORDATA) ? SHELLY_EVENT_SENSORDATA
+                String event = type.contentEquals(ShellyBindingConstants.EVENT_TYPE_SENSORDATA)
+                        ? SHELLY_EVENT_SENSORDATA
                         : parameters.get("type");
                 switch (event) {
                     case SHELLY_EVENT_SHORTPUSH:
@@ -624,7 +627,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         if (response == null) {
             return false;
         }
-        if (response.contains(APIERR_HTTP_401_UNAUTHORIZED)) {
+        if (response.contains(ShellyBindingConstants.APIERR_HTTP_401_UNAUTHORIZED)) {
             // If the device is password protected the API doesn't provide settings to the device settings
             logger.warn("{}: Device {} reported 'Access Denied' (user id/password mismatch)", getThing().getLabel(),
                     config.deviceIp);

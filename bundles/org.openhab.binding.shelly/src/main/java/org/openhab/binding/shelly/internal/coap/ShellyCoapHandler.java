@@ -417,7 +417,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                         break;
 
                     case "s" /* CatchAll */:
-                        switch (sen.desc.toLowerCase()) {
+                        String senValue = sen.desc.toLowerCase();
+                        switch (senValue) {
                             case "relay0": // Shelly1
                             case "state":
                             case "switch":
@@ -426,6 +427,25 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                 updateChannel(updates, rGroup, CHANNEL_OUTPUT,
                                         s.value == 1 ? OnOffType.ON : OnOffType.OFF);
                                 break;
+
+                            case "Energy counter 0 [W-min]":
+                                updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN1,
+                                        toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
+                                break;
+                            case "Energy counter 1 [W-min]":
+                                updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN2,
+                                        toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
+                                break;
+                            case "Energy counter 2 [W-min]":
+                                updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN3,
+                                        toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
+                                break;
+
+                            case "Energy counter total [W-min]":
+                                updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH,
+                                        toQuantityType(s.value / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                break;
+
                             case "position":
                                 // work around: Roller reports 101% instead max 100
                                 double pos = Math.max(SHELLY_MIN_ROLLER_POS, Math.min(s.value, SHELLY_MAX_ROLLER_POS));
@@ -486,9 +506,16 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                         ShellyColorUtils.toPercent((int) s.value, SHELLY_MIN_GAIN, SHELLY_MAX_GAIN));
                                 break;
                             case "temp":
-                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP, ShellyColorUtils
-                                        .toPercent((int) s.value, MIN_COLOR_TEMPERATURE, MAX_COLOR_TEMPERATURE));
+                                if (profile.isBulb) {
+                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
+                                            ShellyColorUtils.toPercent((int) s.value, MIN_COLOR_TEMP_BULB,
+                                                    MAX_COLOR_TEMP_BULB));
+                                } else if (profile.isDuo) {
+                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
+                                            ShellyColorUtils.toPercent((int) s.value, MIN_COLOR_TEMP_DUO,
+                                                    MAX_COLOR_TEMP_DUO));
 
+                                }
                                 break;
 
                             default:

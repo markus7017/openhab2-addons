@@ -55,6 +55,11 @@ public class ShellyUtils {
         return value != null ? value : "";
     }
 
+    public static String getString(Exception e) {
+        String message = e.getMessage();
+        return message != null ? message : "";
+    }
+
     public static Integer getInteger(@Nullable Integer value) {
         return (value != null ? (Integer) value : 0);
     }
@@ -114,19 +119,6 @@ public class ShellyUtils {
     public static void validateRange(String name, Integer value, Integer min, Integer max) {
         Validate.isTrue((value >= min) && (value <= max),
                 "Value " + name + " is out of range (" + min.toString() + "-" + max.toString() + ")");
-    }
-
-    public static String buildSetEventUrl(String localIp, String localPort, String deviceName, Integer index,
-            String deviceType, String urlParm) throws IOException {
-        return SHELLY_URL_SETTINGS + "/" + deviceType + "/" + index + "?" + urlParm + "="
-                + buildCallbackUrl(localIp, localPort, deviceName, index, deviceType, urlParm);
-    }
-
-    public static String buildCallbackUrl(String localIp, String localPort, String deviceName, Integer index,
-            String type, String parameter) throws IOException {
-        String url = "http://" + localIp + ":" + localPort + SHELLY_CALLBACK_URI + "/" + deviceName + "/" + type + "/"
-                + index + "?type=" + StringUtils.substringBefore(parameter, "_url");
-        return urlEncode(url);
     }
 
     public static String urlEncode(String input) throws IOException {

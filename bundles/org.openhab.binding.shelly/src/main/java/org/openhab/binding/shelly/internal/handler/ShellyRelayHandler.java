@@ -414,7 +414,8 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
             Validate.notNull(orgStatus, "orgStatus must not be null!");
 
             // We need to fixup the returned Json: The dimmer returns light[] element, which is ok, but it doesn't have
-            // the same structure as lights[] from Bulb and RGBW2. The tag gets replaced by dimmers[] so that Gson maps
+            // the same structure as lights[] from Bulb,RGBW2 and Duo. The tag gets replaced by dimmers[] so that Gson
+            // maps
             // to a different structure (ShellyShortLight).
             Gson gson = new Gson();
             ShellySettingsStatus dstatus = gson.fromJson(ShellyApiJsonDTO.fixDimmerJson(orgStatus.json),

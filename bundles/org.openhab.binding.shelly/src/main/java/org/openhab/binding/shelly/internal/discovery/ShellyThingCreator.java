@@ -43,9 +43,14 @@ public class ShellyThingCreator {
         return new ThingTypeUID(BINDING_ID, THING_TYPE_SHELLYPROTECTED_STR);
     }
 
-    public static String getThingType(String name, String mode) {
+    public static String getThingType(String hostname, String mode) {
+        String name = hostname.toLowerCase();
+
         if (name.startsWith(THING_TYPE_SHELLY1PN_STR)) {
             return THING_TYPE_SHELLY1PN_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYEM3_STR)) {
+            return THING_TYPE_SHELLYEM3_STR;
         }
         if (name.startsWith(THING_TYPE_SHELLYEM_STR)) {
             return THING_TYPE_SHELLYEM_STR;
@@ -72,6 +77,9 @@ public class ShellyThingCreator {
         }
         if (name.startsWith(THING_TYPE_SHELLYDIMMER_STR)) {
             return THING_TYPE_SHELLYDIMMER_STR;
+        }
+        if (name.startsWith(DEV_TYPE_SHELLYDUO_STR)) {
+            return THING_TYPE_SHELLYDUO_STR;
         }
         if (name.startsWith(THING_TYPE_SHELLYBULB_STR)) {
             return THING_TYPE_SHELLYBULB_STR;
@@ -103,5 +111,4 @@ public class ShellyThingCreator {
 
         return THING_TYPE_UNKNOWN_STR;
     }
-
 }
