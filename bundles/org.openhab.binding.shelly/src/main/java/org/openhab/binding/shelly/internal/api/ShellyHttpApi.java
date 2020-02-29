@@ -133,16 +133,22 @@ public class ShellyHttpApi {
     public void setRelayTurn(Integer relayIndex, String turnMode) throws IOException {
         Validate.notNull(profile);
         if (profile.isLight) {
-            request((profile.inColor ? SHELLY_MODE_COLOR : SHELLY_MODE_WHITE) + "/" + relayIndex.toString() + "?"
-                    + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
+            if (profile.isBulb) {
+                request((profile.inColor ? SHELLY_MODE_COLOR : SHELLY_MODE_WHITE) + "/" + relayIndex.toString() + "?"
+                        + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
+            } else {
+                request(SHELLY_URL_CONTROL_LIGHT + "/" + relayIndex.toString() + "?" + SHELLY_LIGHT_TURN + "="
+                        + turnMode.toLowerCase());
+            }
+        } else
 
-        } else {
+        {
             request((!profile.isDimmer ? SHELLY_URL_CONTROL_RELEAY : SHELLY_URL_CONTROL_LIGHT) + "/"
                     + relayIndex.toString() + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
         }
     }
 
-    public void setDimmerBrightness(Integer relayIndex, Integer brightness, boolean autoOn) throws IOException {
+    public void setBrightness(Integer relayIndex, Integer brightness, boolean autoOn) throws IOException {
         if (autoOn) {
             request(SHELLY_URL_CONTROL_LIGHT + "/" + relayIndex.toString() + "?" + SHELLY_LIGHT_TURN + "="
                     + SHELLY_API_ON + "&brightness=" + brightness.toString());
@@ -251,14 +257,14 @@ public class ShellyHttpApi {
         // Bulb, RGW2: /<color mode>/<light id>?parm?value
         // Dimmer: /light/<light id>?parm=value
         Validate.notNull(profile);
-        request((!profile.isDimmer ? "/" + profile.mode : SHELLY_URL_CONTROL_LIGHT) + "/" + lightIndex.toString() + "?"
+        request((profile.isBulb ? "/" + profile.mode : SHELLY_URL_CONTROL_LIGHT) + "/" + lightIndex.toString() + "?"
                 + parm + "=" + value);
     }
 
     public void setLightParms(Integer lightIndex, Map<String, String> parameters) throws IOException {
         Validate.notNull(profile);
         @SuppressWarnings("null")
-        String url = (!profile.isDimmer ? "/" + profile.mode : SHELLY_URL_CONTROL_LIGHT) + "/" + lightIndex.toString()
+        String url = (profile.isBulb ? "/" + profile.mode : SHELLY_URL_CONTROL_LIGHT) + "/" + lightIndex.toString()
                 + "?";
         int i = 0;
         for (String key : parameters.keySet()) {
@@ -490,8 +496,7 @@ public class ShellyHttpApi {
                 timeoutErrors++;
                 retry = true;
             } else {
-                throw new IOException(
-                        thingName + ": Shelly API call failed: " + message + " (" + type + "), uri=" + uri);
+                throw new IOException(thingName + ": Shelly API error: " + message + " (" + type + "), uri=" + uri);
             }
         }
         if (retry && (profile != null) && !profile.hasBattery) {
@@ -503,8 +508,7 @@ public class ShellyHttpApi {
             } catch (IOException e) {
                 String type = getExceptionType(e);
                 String message = getString(e);
-                throw new IOException(
-                        thingName + ": Shelly API call failed: " + message + " (" + type + "), uri=" + uri);
+                throw new IOException(thingName + ": Shelly API error: " + message + " (" + type + "), uri=" + uri);
             }
         }
         return result;
@@ -532,7 +536,7 @@ public class ShellyHttpApi {
                     APIERR_HTTP_401_UNAUTHORIZED + ", set/correct userid and password in the thing/binding config");
         }
         if (!httpResponse.startsWith("{") && !httpResponse.startsWith("[")) {
-            throw new IOException("Unexpected http response: " + httpResponse);
+            throw new IOException("Unexpected response: " + httpResponse);
         }
 
         logger.trace("HTTP response from {}: {}", thingName, httpResponse);

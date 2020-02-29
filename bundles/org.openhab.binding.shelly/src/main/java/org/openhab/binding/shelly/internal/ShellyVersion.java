@@ -178,7 +178,8 @@ public class ShellyVersion implements Comparator<Object> {
 
     @SuppressWarnings("null")
     public boolean checkBeta(@Nullable String version) {
-        return version != null & (version.toLowerCase().contains("master") || (version.toLowerCase().contains("-rc")));
+        return version != null & (version.isEmpty() || version.contains("???")
+                || version.toLowerCase().contains("master") || (version.toLowerCase().contains("-rc")));
 
     }
 }

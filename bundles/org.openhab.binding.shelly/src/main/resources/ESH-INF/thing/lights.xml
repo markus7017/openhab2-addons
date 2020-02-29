@@ -27,6 +27,7 @@
 		<channel-groups>
 			<channel-group id="control" typeId="duoControl" />
 			<channel-group id="white" typeId="whiteSettings" />
+			<channel-group id="meter" typeId="basicMeter" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 

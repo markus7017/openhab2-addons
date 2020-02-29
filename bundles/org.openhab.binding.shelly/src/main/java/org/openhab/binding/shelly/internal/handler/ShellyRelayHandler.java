@@ -112,7 +112,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                             channelUID.toString());
                 }
                 break;
-            case CHANNEL_BRIGHTNESS: // e.g.Dimmer
+            case CHANNEL_BRIGHTNESS: // e.g.Dimmer, Duo
                 handleBrightness(command, rIndex);
                 break;
 
@@ -201,7 +201,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
         validateRange("brightness", value, 0, 100);
         logger.debug("{}: Setting dimmer brightness to {}", thingName, value);
-        api.setDimmerBrightness(index, value, config.brightnessAutoOn);
+        api.setBrightness(index, value, config.brightnessAutoOn);
 
     }
 

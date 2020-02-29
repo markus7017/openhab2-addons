@@ -155,13 +155,13 @@ public class ShellyUtils {
 
     public static String buildControlGroupName(@Nullable ShellyDeviceProfile profile, Integer channelId) {
         Validate.notNull(profile);
-        return profile.isBulb || profile.inColor ? CHANNEL_GROUP_LIGHT_CONTROL
+        return profile.isBulb || profile.isDuo || profile.inColor ? CHANNEL_GROUP_LIGHT_CONTROL
                 : CHANNEL_GROUP_LIGHT_CHANNEL + channelId.toString();
     }
 
     public static String buildWhiteGroupName(@Nullable ShellyDeviceProfile profile, Integer channelId) {
         Validate.notNull(profile);
-        return profile.isBulb && !profile.inColor ? CHANNEL_GROUP_WHITE_CONTROL
+        return profile.isBulb || profile.isDuo && !profile.inColor ? CHANNEL_GROUP_WHITE_CONTROL
                 : CHANNEL_GROUP_LIGHT_CHANNEL + channelId.toString();
     }
 

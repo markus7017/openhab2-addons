@@ -39,13 +39,21 @@ public class ShellyTranslationProvider {
         this.localeProvider = localeProvider;
     }
 
+    public @Nullable String get(String key, @Nullable Object... arguments) {
+        return getText(key.contains("@text/") ? key : "message." + key, arguments);
+    }
+
     public @Nullable String getText(String key, @Nullable Object... arguments) {
         Locale locale = localeProvider != null ? localeProvider.getLocale() : Locale.ENGLISH;
         return i18nProvider != null ? i18nProvider.getText(bundle, key, getDefaultText(key), locale, arguments) : key;
     }
 
     public @Nullable String getDefaultText(String key) {
-        return i18nProvider != null ? i18nProvider.getText(bundle, key, key, Locale.ENGLISH) : key;
+        try {
+            return i18nProvider != null ? i18nProvider.getText(bundle, key, key, Locale.ENGLISH) : key;
+        } catch (NullPointerException e) {
+            return "Unable to get message with key 'key'" + e.getMessage();
+        }
     }
 
 }

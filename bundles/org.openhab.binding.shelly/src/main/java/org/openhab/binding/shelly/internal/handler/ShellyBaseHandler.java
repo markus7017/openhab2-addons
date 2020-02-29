@@ -66,7 +66,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     protected final Logger logger = LoggerFactory.getLogger(ShellyBaseHandler.class);
 
     public String thingName = "";
-    private final @Nullable ShellyTranslationProvider translationProvider;
+    private final @Nullable ShellyTranslationProvider messages;
     protected ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
     protected ShellyThingConfiguration config = new ShellyThingConfiguration();
     protected @Nullable ShellyHttpApi api;
@@ -111,7 +111,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             int httpPort) {
         super(thing);
 
-        this.translationProvider = translationProvider;
+        this.messages = translationProvider;
         this.bindingConfig = bindingConfig;
         this.coapServer = coapServer;
         this.localIP = localIP;
@@ -220,22 +220,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         // update thing properties
         ShellySettingsStatus status = api.getStatus();
         updateProperties(tmpPrf, status);
-        ShellyVersion version = new ShellyVersion();
-        if (version.checkBeta(getString(tmpPrf.fwVersion))) {
-            logger.info("{}: Device is running a Beta version: {}/{} ({}),required minimal {}. ", tmpPrf.hostname,
-                    tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
-        } else {
-            if (version.compare(tmpPrf.fwVersion, SHELLY_API_MIN_FWVERSION) < 0) {
-                logger.warn("{}: WARNING: Firmware might be too old, installed: {}/{} ({}), required minimal {}.",
-                        tmpPrf.hostname, tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
-            }
-        }
-        if (status.update.hasUpdate)
-
-        {
-            logger.info("{} - INFO: New firmware available: current version: {}, new version: {}", thingName,
-                    status.update.oldVersion, status.update.newVersion);
-        }
+        checkVersion(tmpPrf, status);
 
         // Set refresh interval for battery-powered devices to
         refreshCount = !tmpPrf.hasBattery
@@ -250,10 +235,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         // Validate device mode
         String reqMode = thingType.contains("-") ? StringUtils.substringAfter(thingType, "-") : "";
         if (!reqMode.isEmpty() && !tmpPrf.mode.equals(reqMode)) {
-            String message = translationProvider.getText("@text/offline.conf-error-wrong-mode", reqMode, tmpPrf.mode);
-            // logger.info(
-            // "{}: Thing is in mode {}, expecting mode {} - going offline. Re-run discovery to changed device mode.",
-            // thingName, profile.mode, reqMode);
+            String message = messages.get("@text/offline.conf-error-wrong-mode", reqMode, tmpPrf.mode);
             logger.info("{}: {}", thingName, message);
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, message);
             return false;
@@ -288,8 +270,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             }
 
             if (profile == null) {
-                logger.debug("{}: Thing not yet initialized, command {} triggers initialization", thingName,
-                        command.toString());
+                logger.debug("{}", messages.get("message.command.init", thingName, command.toString()));
                 initializeThing();
             } else {
                 profile = getProfile(false);
@@ -319,10 +300,10 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 return;
             }
             if (getString(e).contains(ShellyBindingConstants.APIERR_NOT_CALIBRATED)) {
-                logger.warn("Device is not calibrated, use Shelly App to perform initial roller calibration.");
+                logger.warn("{}", messages.get("roller.calibrating", thingName));
             } else {
-                logger.warn("{} ERROR: Unable to process command for channel {}: {} ({})\nStack Trace: {}", thingName,
-                        channelUID.toString(), getString(e), e.getClass(), e.getStackTrace());
+                logger.info("{}", messages.get("command.failed", thingName, channelUID.toString(), getString(e),
+                        e.getClass(), e.getStackTrace()));
             }
         } finally {
             lockUpdates = false;
@@ -399,11 +380,11 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, status);
             }
         } catch (NullPointerException e) {
-            logger.warn("{}: Unable to update status: {} ({})", thingName, e.getMessage(), e.getClass());
+            logger.warn("{}", messages.get("statusupdate.failed", thingName, e.getMessage(), e.getClass()));
         } finally {
             if (scheduledUpdates > 0) {
                 --scheduledUpdates;
-                logger.debug("{}: {} more updates requested", thingName, scheduledUpdates);
+                logger.trace("{}: {} more updates requested", thingName, scheduledUpdates);
             } else {
 
             }
@@ -477,7 +458,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             if (alarm.equals(ALARM_TYPE_NONE)) {
                 channelData.put(channelId, alarm); // init channel
             } else {
-                logger.warn("{}: Alarm condition: {}", thingName, alarm);
+                logger.warn("{}", messages.get("alarm.raised ", thingName, alarm));
                 triggerChannel(channelId, alarm);
                 channelData.replace(channelId, alarm);
                 lastAlarmTs = now();
@@ -603,7 +584,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         if (config.userId.isEmpty() && !bindingConfig.defaultUserId.isEmpty()) {
             config.userId = bindingConfig.defaultUserId;
             config.password = bindingConfig.defaultPassword;
-            logger.debug("{}: Using binding default userId", thingName);
+            logger.debug("{}: Using userId {} from bindingConfig", thingName, config.userId);
         }
         if (config.updateInterval == 0) {
             config.updateInterval = UPDATE_STATUS_INTERVAL_SECONDS * UPDATE_SKIP_COUNT;
@@ -612,6 +593,28 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             config.updateInterval = UPDATE_MIN_DELAY;
         }
         skipCount = config.updateInterval / UPDATE_STATUS_INTERVAL_SECONDS;
+    }
+
+    @SuppressWarnings("null")
+    private void checkVersion(@Nullable ShellyDeviceProfile prf, ShellySettingsStatus status) {
+        try {
+            ShellyVersion version = new ShellyVersion();
+            if (version.checkBeta(getString(prf.fwVersion))) {
+                logger.info("{}", messages.get("versioncheck.beta", prf.hostname, prf.fwVersion, prf.fwDate, prf.fwId,
+                        SHELLY_API_MIN_FWVERSION));
+            } else {
+                if (version.compare(prf.fwVersion, SHELLY_API_MIN_FWVERSION) < 0) {
+                    logger.warn("{}", messages.get("versioncheck.tooold", prf.hostname, prf.fwVersion, prf.fwDate,
+                            prf.fwId, SHELLY_API_MIN_FWVERSION));
+                }
+            }
+        } catch (IllegalArgumentException | NullPointerException e) {
+            logger.debug("{}", messages.get("versioncheck.failed", thingName, prf.fwVersion));
+        }
+        if (status.update.hasUpdate) {
+            logger.info("{}",
+                    messages.get("versioncheck.update", thingName, status.update.oldVersion, status.update.newVersion));
+        }
     }
 
     /**

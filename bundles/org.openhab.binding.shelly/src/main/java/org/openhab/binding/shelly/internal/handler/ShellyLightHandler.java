@@ -104,7 +104,8 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 api.setLightParm(lightId, SHELLY_LIGHT_TURN,
                         (OnOffType) command == OnOffType.ON ? SHELLY_API_ON : SHELLY_API_OFF);
                 col.power = (OnOffType) command;
-                update = (OnOffType) command == OnOffType.ON;
+                requestUpdates(1, false);
+                update = false;
                 break;
             case CHANNEL_LIGHT_COLOR_MODE:
                 logger.debug("{}: Select color mode {}", thingName, command.toString());
@@ -143,7 +144,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                     requestUpdates(1, false);
                     break;
                 }
-                if (profile.isLight && !profile.inColor) {
+                if (profile.isLight && profile.inColor) {
                     logger.debug("{}: Not in white mode, brightness not available", thingName);
                     break;
                 }
@@ -159,25 +160,27 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 if (value == 0) {
                     logger.debug("{}: Brightness=0 -> switch light OFF", thingName);
                     api.setRelayTurn(lightId, SHELLY_API_OFF);
-                    requestUpdates(1, false);
-                    break;
-                }
+                    update = false;
+                } else {
 
-                if (command instanceof IncreaseDecreaseType) {
-                    ShellyShortLightStatus light = api.getLightStatus(lightId);
-                    Validate.notNull(light, "Unable to get Light status for brightness");
+                    if (command instanceof IncreaseDecreaseType) {
+                        ShellyShortLightStatus light = api.getLightStatus(lightId);
+                        Validate.notNull(light, "Unable to get Light status for brightness");
 
-                    if (((IncreaseDecreaseType) command).equals(IncreaseDecreaseType.INCREASE)) {
-                        value = Math.min(light.brightness + DIM_STEPSIZE, 100);
-                    } else {
-                        value = Math.max(light.brightness - DIM_STEPSIZE, 0);
+                        if (((IncreaseDecreaseType) command).equals(IncreaseDecreaseType.INCREASE)) {
+                            value = Math.min(light.brightness + DIM_STEPSIZE, 100);
+                        } else {
+                            value = Math.max(light.brightness - DIM_STEPSIZE, 0);
+                        }
+                        logger.trace("{}: Change brightness from {} to {}", thingName, light.brightness, value);
                     }
-                    logger.trace("{}: Change brightness from {} to {}", thingName, light.brightness, value);
-                }
 
-                validateRange("brightness", value, 0, 100);
-                logger.debug("{}: Set brightness to", value);
-                col.setBrightness(value);
+                    validateRange("brightness", value, 0, 100);
+                    logger.debug("{}: Set brightness to", value);
+                    col.setBrightness(value);
+                }
+                updateChannel(CHANNEL_GROUP_LIGHT_CONTROL, CHANNEL_LIGHT_POWER,
+                        value > 0 ? OnOffType.ON : OnOffType.OFF);
                 break;
 
             case CHANNEL_COLOR_TEMP:
@@ -185,9 +188,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 if (command instanceof PercentType) {
                     logger.debug("{}: Set color temp to {}%", thingName, ((PercentType) command).floatValue());
                     Float percent = ((PercentType) command).floatValue() / 100;
-                    if (profile.isBulb) {
-                        temp = new DecimalType(col.minTemp + ((col.minTemp - col.maxTemp)) * percent).intValue();
-                    }
+                    temp = new DecimalType(col.minTemp + ((col.maxTemp - col.minTemp)) * percent).intValue();
                     logger.debug("{}: Converted color-temp {}% to {}K (from Percent to Integer)", thingName, percent,
                             temp);
                 } else if (command instanceof DecimalType) {
@@ -203,7 +204,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 logger.debug("{}: Set color effect to {}", thingName, effect);
                 validateRange("effect", effect, SHELLY_MIN_EFFECT, SHELLY_MAX_EFFECT);
                 col.setEffect(effect.intValue());
-                break;
         }
 
         if (update) {
@@ -308,8 +308,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         ShellyColorUtils col = channelColors.get(lightId);
         if (col == null) {
             col = new ShellyColorUtils(); // create a new entry
-            col.setMinMaxTemp(profile.isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO,
-                    profile.isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO);
+            col.setMinMaxTemp(profile.minTemp, profile.maxTemp);
             logger.trace("Colors entry created for lightId {}", lightId.toString());
         } else {
             logger.trace(
@@ -384,7 +383,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 logger.trace("update {}.color picker", colorGroup);
                 updated |= updateChannel(colorGroup, CHANNEL_COLOR_PICKER, col.toHSB());
             }
-            if (!profile.inColor || profile.isBulb || profile.isDuo) {
+            if (!profile.inColor || profile.isBulb) {
                 String whiteGroup = buildWhiteGroupName(profile, channelId);
                 logger.trace("update white settings for {}.{}", whiteGroup, channelId);
                 col.setBrightness(getInteger(light.brightness));
@@ -488,7 +487,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
             parms.put(SHELLY_COLOR_EFFECT, newCol.effect.toString());
         }
         if (parms.size() > 0) {
-            logger.debug("Send collor settings: {}", parms.toString());
+            logger.debug("Send color settings: {}", parms.toString());
             Validate.notNull(api);
             api.setLightParms(lightId, parms);
             updateCurrentColors(lightId, newCol);

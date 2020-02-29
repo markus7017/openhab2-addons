@@ -75,6 +75,9 @@ public class ShellyDeviceProfile {
     public Boolean isSensor = false; // true for HT & Smoke
     public Boolean isSmoke = false; // true for Smoke
 
+    public Integer minTemp = 0; // Bulb/Duo: Min Light Temp
+    public Integer maxTemp = 0; // Bulb/Duo: Max Light Temp
+
     public Map<String, String> irCodes = new HashMap<String, String>(); // Sense: list of stored IR codes
 
     public Boolean supportsButtonUrls = false; // true if the btn_xxx urls are supported
@@ -111,13 +114,21 @@ public class ShellyDeviceProfile {
         profile.isRoller = profile.mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
         profile.isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
         profile.hasLed = profile.isPlugS;
-        profile.isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR);
-        profile.isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
+        profile.isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
+        profile.isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR);
         profile.isDimmer = profile.deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
         profile.isLight = profile.isBulb || profile.isDuo
                 || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
                 || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
         profile.inColor = profile.isLight && profile.mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
+        if (profile.isBulb) {
+            profile.minTemp = MIN_COLOR_TEMP_BULB;
+            profile.maxTemp = MAX_COLOR_TEMP_BULB;
+        }
+        if (profile.isDuo) {
+            profile.minTemp = MIN_COLOR_TEMP_DUO;
+            profile.maxTemp = MAX_COLOR_TEMP_DUO;
+        }
 
         profile.isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
         profile.isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
