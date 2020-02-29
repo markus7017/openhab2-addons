@@ -510,11 +510,13 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                     updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
                                             ShellyColorUtils.toPercent((int) s.value, MIN_COLOR_TEMP_BULB,
                                                     MAX_COLOR_TEMP_BULB));
-                                } else if (profile.isDuo) {
+                                }
+                                break;
+                            case "ColorTemperature":
+                                if (profile.isDuo) {
                                     updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
                                             ShellyColorUtils.toPercent((int) s.value, MIN_COLOR_TEMP_DUO,
                                                     MAX_COLOR_TEMP_DUO));
-
                                 }
                                 break;
 

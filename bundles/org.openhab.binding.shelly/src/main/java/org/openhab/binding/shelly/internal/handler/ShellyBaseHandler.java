@@ -220,13 +220,12 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         // update thing properties
         ShellySettingsStatus status = api.getStatus();
         updateProperties(tmpPrf, status);
-        ShellyVersion fwvers = new ShellyVersion(tmpPrf.fwVersion);
-        ShellyVersion needed = new ShellyVersion(SHELLY_API_MIN_FWVERSION);
-        if (fwvers.checkBeta(getString(tmpPrf.fwVersion))) {
+        ShellyVersion version = new ShellyVersion();
+        if (version.checkBeta(getString(tmpPrf.fwVersion))) {
             logger.info("{}: Device is running a Beta version: {}/{} ({}),required minimal {}. ", tmpPrf.hostname,
                     tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
         } else {
-            if (fwvers.compareTo(needed) < 0) {
+            if (version.compare(tmpPrf.fwVersion, SHELLY_API_MIN_FWVERSION) < 0) {
                 logger.warn("{}: WARNING: Firmware might be too old, installed: {}/{} ({}), required minimal {}.",
                         tmpPrf.hostname, tmpPrf.fwVersion, tmpPrf.fwDate, tmpPrf.fwId, SHELLY_API_MIN_FWVERSION);
             }

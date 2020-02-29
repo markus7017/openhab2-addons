@@ -115,7 +115,6 @@ public class ShellyHttpApi {
      * @return Device settings/status as ShellySettingsStatus object
      * @throws IOException
      */
-    @SuppressWarnings("null")
     public ShellySettingsStatus getStatus() throws IOException {
         String json = request(SHELLY_URL_STATUS);
         ShellySettingsStatus status = gson.fromJson(json, ShellySettingsStatus.class);
@@ -280,7 +279,6 @@ public class ShellyHttpApi {
      * @return Map of key codes
      * @throws IOException
      */
-    @SuppressWarnings("null")
     public Map<String, String> getIRCodeList() throws IOException {
         String result = request(SHELLY_URL_LIST_IR);
 
@@ -485,13 +483,15 @@ public class ShellyHttpApi {
             result = innerRequest(uri);
         } catch (IOException e) {
             String type = getExceptionType(e);
-            if (getString(e).contains("Timeout") || getString(type.toLowerCase()).contains("timeout")
-                    || getString(e).contains("Connection reset") || getString(e).contains("InterruptedException")) {
+            String message = getString(e);
+            if (message.contains("Timeout") || getString(type.toLowerCase()).contains("timeout")
+                    || message.contains("Connection reset") || type.contains("InterruptedException")) {
                 logger.debug("{}: Shelly API timeout ({}), retry", thingName, type);
                 timeoutErrors++;
                 retry = true;
             } else {
-                throw new IOException(thingName + ": Shelly API call failed (" + type + "), uri=" + uri);
+                throw new IOException(
+                        thingName + ": Shelly API call failed: " + message + " (" + type + "), uri=" + uri);
             }
         }
         if (retry && (profile != null) && !profile.hasBattery) {
@@ -501,13 +501,10 @@ public class ShellyHttpApi {
                 timeoutsRecovered++;
                 logger.debug("Shelly API timeout recovered");
             } catch (IOException e) {
-                String type = getString(getExceptionType(e));
-                if (getString(e).contains("Timeout") || getString(type).toLowerCase().contains("timeout")
-                        || getString(e).contains("Connection reset")) {
-                    throw new IOException(thingName + ": Shelly API timeout (" + type + "), uri=" + uri);
-                } else {
-                    throw new IOException(thingName + ": Shelly API call failed: " + type + ", uri=" + uri);
-                }
+                String type = getExceptionType(e);
+                String message = getString(e);
+                throw new IOException(
+                        thingName + ": Shelly API call failed: " + message + " (" + type + "), uri=" + uri);
             }
         }
         return result;
@@ -548,7 +545,6 @@ public class ShellyHttpApi {
                 + buildCallbackUrl(localIp, localPort, deviceName, index, deviceType, urlParm);
     }
 
-    @SuppressWarnings("unused")
     private static String buildCallbackUrl(String localIp, String localPort, String deviceName, Integer index,
             String type, String parameter) throws IOException {
         String url = "http://" + localIp + ":" + localPort + SHELLY_CALLBACK_URI + "/" + deviceName + "/" + type + "/"
@@ -564,12 +560,13 @@ public class ShellyHttpApi {
         return timeoutsRecovered;
     }
 
+    @SuppressWarnings("null")
     private String getExceptionType(@Nullable IOException e) {
-        if ((e == null) || (e.getCause() == null) || e.getCause().toString().isEmpty()) {
+        if ((e == null) || (e.getClass() == null) || e.getClass().toString().isEmpty()) {
             return "";
         }
 
-        String msg = StringUtils.substringAfterLast(e.getCause().toString(), ".");
+        String msg = StringUtils.substringAfterLast(e.getClass().toString(), ".");
         if (msg != null) {
             return msg;
         }

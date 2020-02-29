@@ -327,7 +327,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
                         updated |= updateChannel(groupName, CHANNEL_OUTPUT, getOnOff(relay.ison));
                         updated |= updateChannel(groupName, CHANNEL_TIMER_ACTIVE, getOnOff(relay.hasTimer));
-                        logger.debug("Check external temp sensor");
                         if (rstatus.extTemperature != null) {
                             // Shelly 1/1PM support up to 3 external sensors
                             // for whatever reason those are not represented as an array, but 3 elements

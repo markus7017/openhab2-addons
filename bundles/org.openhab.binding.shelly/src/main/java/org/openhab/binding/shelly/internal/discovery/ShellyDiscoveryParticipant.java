@@ -14,6 +14,7 @@ package org.openhab.binding.shelly.internal.discovery;
 
 import static org.eclipse.smarthome.core.thing.Thing.PROPERTY_MODEL_ID;
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
+import static org.openhab.binding.shelly.internal.ShellyUtils.getString;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -94,12 +95,12 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     @Override
     public DiscoveryResult createResult(@Nullable ServiceInfo service) {
         Validate.notNull(bindingConfig);
-        if ((service == null) || !service.getName().startsWith("shelly")) {
+        String name = service.getName().toLowerCase(); // Duao: Name starts with" Shelly" rather than "shelly"
+        if ((service == null) || !name.startsWith("shelly")) {
             return null;
         }
 
         String address = "";
-        String name = "";
         String mode = "";
         String model = "unknown";
         String thingType = "";
@@ -143,14 +144,14 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                 // get thing type from device name
                 thingUID = ShellyThingCreator.getThingUID(name, mode, false);
             } catch (IOException e) {
-                if (e.getMessage().contains(APIERR_HTTP_401_UNAUTHORIZED)) {
+                if (getString(e).contains(APIERR_HTTP_401_UNAUTHORIZED)) {
                     logger.warn("Device {} ({}) reported 'Access defined' (userid/password mismatch).", name, address);
 
                     // create shellyunknown thing - will be changed during thing initialization with valid credentials
                     thingUID = ShellyThingCreator.getThingUID(name, mode, true);
                 } else {
                     logger.warn("Device discovery failed for device {}, IP {}: {} ({})\n{}", name, address,
-                            e.getMessage(), e.getClass(), e.getStackTrace());
+                            getString(e), e.getClass(), e.getStackTrace());
                 }
             }
 

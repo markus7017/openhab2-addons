@@ -243,7 +243,7 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_BUTTON_TRIGGER = "button";
 
     public static final String SERVICE_TYPE = "_http._tcp.local.";
-    public static final String SHELLY_API_MIN_FWVERSION = "1.5.2";// v1.5.2
+    public static final String SHELLY_API_MIN_FWVERSION = "v1.5.2";// v1.5.2
     public static final int SHELLY_API_TIMEOUT_MS = 5000;
 
     // Alarm types/messages

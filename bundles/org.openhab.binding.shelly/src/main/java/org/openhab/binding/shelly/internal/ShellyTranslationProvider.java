@@ -45,7 +45,7 @@ public class ShellyTranslationProvider {
     }
 
     public @Nullable String getDefaultText(String key) {
-        return i18nProvider.getText(bundle, key, key, Locale.ENGLISH);
+        return i18nProvider != null ? i18nProvider.getText(bundle, key, key, Locale.ENGLISH) : key;
     }
 
 }
