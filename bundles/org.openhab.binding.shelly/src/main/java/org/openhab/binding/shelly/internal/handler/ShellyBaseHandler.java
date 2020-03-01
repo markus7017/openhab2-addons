@@ -192,7 +192,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         }
 
         // Initialize API access, exceptions will be catched by initialize()
-        api = new ShellyHttpApi(config);
+        api = new ShellyHttpApi(thingName, config);
         ShellyDeviceProfile tmpPrf = api.getDeviceProfile(thingType);
         thingName = (!thingName.isEmpty() ? thingName : tmpPrf.hostname).toLowerCase();
         Validate.isTrue(!thingName.isEmpty(), "initializeThing(): thingName must not be empty!");

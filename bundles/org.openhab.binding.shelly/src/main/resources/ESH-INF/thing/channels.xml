@@ -141,6 +141,20 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
+	<channel-type id="meterCurrent">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>Current</label>
+		<description>Current in A </description>
+		<state readOnly="true" pattern="%f %unit%">
+		</state>
+	</channel-type>
+	<channel-type id="meterPowerFactort">
+		<item-type>Number</item-type>
+		<label>Power Factor</label>
+		<description></description>
+		<state readOnly="true" pattern="%f %unit%">
+		</state>
+	</channel-type>
 	<channel-type id="timestamp">
 		<item-type>DateTime</item-type>
 		<label>Last Update</label>
@@ -218,6 +232,7 @@
 		<item-type>Dimmer</item-type>
 		<label>Brightness</label>
 		<description>Brightness: 0..100%</description>
+		<category>DimmableLight</category>
 	</channel-type>
 	<channel-type id="colorEffectBulb">
 		<item-type>Number</item-type>

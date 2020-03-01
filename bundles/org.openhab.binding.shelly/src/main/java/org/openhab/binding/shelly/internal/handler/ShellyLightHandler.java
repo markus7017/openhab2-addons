@@ -141,6 +141,8 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 if (command instanceof OnOffType) { // Switch
                     logger.debug("Switch light {}", command.toString());
                     api.setRelayTurn(lightId, (OnOffType) command == OnOffType.ON ? SHELLY_API_ON : SHELLY_API_OFF);
+                    col.power = (OnOffType) command;
+                    update = false;
                     requestUpdates(1, false);
                     break;
                 }
@@ -197,6 +199,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 }
                 validateRange(CHANNEL_COLOR_TEMP, temp, col.minTemp, col.maxTemp);
                 col.setTemp(temp);
+                update = false;
                 break;
 
             case CHANNEL_COLOR_EFFECT:

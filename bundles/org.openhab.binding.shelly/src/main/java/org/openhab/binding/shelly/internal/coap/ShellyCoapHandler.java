@@ -428,20 +428,20 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                         s.value == 1 ? OnOffType.ON : OnOffType.OFF);
                                 break;
 
-                            case "Energy counter 0 [W-min]":
+                            case "energy counter 0 [w-min]":
                                 updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN1,
                                         toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
                                 break;
-                            case "Energy counter 1 [W-min]":
+                            case "energy counter 1 [w-min]":
                                 updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN2,
                                         toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
                                 break;
-                            case "Energy counter 2 [W-min]":
+                            case "energy counter 2 [w-min]":
                                 updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN3,
                                         toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
                                 break;
 
-                            case "Energy counter total [W-min]":
+                            case "energy counter total [w-min]":
                                 updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH,
                                         toQuantityType(s.value / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                                 break;
@@ -505,19 +505,10 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                 updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_GAIN,
                                         ShellyColorUtils.toPercent((int) s.value, SHELLY_MIN_GAIN, SHELLY_MAX_GAIN));
                                 break;
-                            case "temp":
-                                if (profile.isBulb) {
-                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
-                                            ShellyColorUtils.toPercent((int) s.value, MIN_COLOR_TEMP_BULB,
-                                                    MAX_COLOR_TEMP_BULB));
-                                }
-                                break;
-                            case "ColorTemperature":
-                                if (profile.isDuo) {
-                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
-                                            ShellyColorUtils.toPercent((int) s.value, MIN_COLOR_TEMP_DUO,
-                                                    MAX_COLOR_TEMP_DUO));
-                                }
+                            case "temp": // Shelly Bulb
+                            case "colortemperature": // Shelly Duo
+                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
+                                        ShellyColorUtils.toPercent((int) s.value, profile.minTemp, profile.maxTemp));
                                 break;
 
                             default:
@@ -596,6 +587,12 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         // Shelly Bulb: Colors are coded with Type="Red" etc. rather than Type="S" and color as Descr
         if (sen.desc == null) {
             sen.desc = "";
+        }
+
+        switch (sen.type.toLowerCase()) {
+            case "p": // Shelly Duo: Watt value -> W
+                sen.type = "W";
+                break;
         }
 
         switch (sen.desc.toLowerCase()) {

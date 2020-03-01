@@ -86,10 +86,8 @@ public class ShellyComponents {
                                 updated |= th.updateChannel(groupName, CHANNEL_METER_LASTMIN3,
                                         toQuantityType(getDouble(meter.counters[2]), DIGITS_WATT, SmartHomeUnits.WATT));
                             }
-                            if (updated) {
-                                th.updateChannel(groupName, CHANNEL_LAST_UPDATE,
-                                        getTimestamp(getString(profile.settings.timezone), getLong(meter.timestamp)));
-                            }
+                            th.updateChannel(groupName, CHANNEL_LAST_UPDATE,
+                                    getTimestamp(getString(profile.settings.timezone), getLong(meter.timestamp)));
                             m++;
                         }
                     }
@@ -110,6 +108,14 @@ public class ShellyComponents {
                                     toQuantityType(getDouble(emeter.reactive), DIGITS_WATT, SmartHomeUnits.WATT));
                             updated |= th.updateChannel(groupName, CHANNEL_EMETER_VOLTAGE,
                                     toQuantityType(getDouble(emeter.voltage), DIGITS_VOLT, SmartHomeUnits.VOLT));
+
+                            if (emeter.current != null) {
+                                // Shelly EM3
+                                updated |= th.updateChannel(groupName, CHANNEL_EMETER_CURRENT,
+                                        toQuantityType(getDouble(emeter.current), DIGITS_VOLT, SmartHomeUnits.AMPERE));
+                                updated |= th.updateChannel(groupName, CHANNEL_EMETER_PFACTOR, getDecimal(emeter.pf));
+                            }
+
                             if (updated) {
                                 th.updateChannel(groupName, CHANNEL_LAST_UPDATE, getTimestamp());
                             }

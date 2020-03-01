@@ -50,13 +50,13 @@
 		<description>ShellyEM3 device with 3 power meters and a relay</description>
 		<channel-groups>
 			<channel-group id="relay" typeId="relayChannel" />
-			<channel-group id="meter1" typeId="emeter">
+			<channel-group id="meter1" typeId="emeter3">
 				<label>Power Meter 1</label>
 			</channel-group>
-			<channel-group id="meter2" typeId="emeter">
+			<channel-group id="meter2" typeId="emeter3">
 				<label>Power Meter 2</label>
 			</channel-group>
-			<channel-group id="meter3" typeId="emeter">
+			<channel-group id="meter3" typeId="emeter3">
 				<label>Power Meter 3</label>
 			</channel-group>
 			<channel-group id="device" typeId="deviceStatus" />
@@ -240,7 +240,7 @@
 
 	<channel-group-type id="dimmerChannel">
 		<label>Dimmer</label>
-		<description>A Shelly dimmer channel</description>
+		<description>A Shelly Dimmer channel</description>
 		<channels>
 			<channel id="brightness" typeId="dimmerBrightness" />
 			<channel id="input1" typeId="inputState1" />
@@ -285,6 +285,20 @@
 			<channel id="returnedKWH" typeId="meterReturned" />
 			<channel id="reactiveWatts" typeId="meterReactive" />
 			<channel id="voltage" typeId="meterVoltage" />
+			<channel id="lastUpdate" typeId="timestamp" />
+		</channels>
+	</channel-group-type>
+	<channel-group-type id="emeter3">
+		<label>Power Meter</label>
+		<description>Power consumption</description>
+		<channels>
+			<channel id="currentWatts" typeId="meterWatts" />
+			<channel id="totalKWH" typeId="meterTotal" />
+			<channel id="returnedKWH" typeId="meterReturned" />
+			<channel id="reactiveWatts" typeId="meterReactive" />
+			<channel id="voltage" typeId="meterVoltage" />
+			<channel id="current" typeId="meterCurrent" />
+			<channel id="powerFactor" typeId="meterPowerFactor" />
 			<channel id="lastUpdate" typeId="timestamp" />
 		</channels>
 	</channel-group-type>

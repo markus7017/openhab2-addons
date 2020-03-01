@@ -127,7 +127,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
             config.deviceIp = address;
             config.userId = bindingConfig.defaultUserId;
             config.password = bindingConfig.defaultPassword;
-            ShellyHttpApi api = new ShellyHttpApi(config);
+            ShellyHttpApi api = new ShellyHttpApi(name, config);
 
             try {
                 profile = api.getDeviceProfile(thingType);

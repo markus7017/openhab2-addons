@@ -78,7 +78,7 @@ public class ShellyThingCreator {
         if (name.startsWith(THING_TYPE_SHELLYDIMMER_STR)) {
             return THING_TYPE_SHELLYDIMMER_STR;
         }
-        if (name.startsWith(DEV_TYPE_SHELLYDUO_STR)) {
+        if (name.startsWith(THING_TYPE_SHELLYDUO_STR)) {
             return THING_TYPE_SHELLYDUO_STR;
         }
         if (name.startsWith(THING_TYPE_SHELLYBULB_STR)) {

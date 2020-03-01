@@ -49,8 +49,7 @@ public class ShellyBindingConstants {
     public static final String THING_TYPE_SHELLYPLUGS_STR = "shellyplugs";
     public static final String THING_TYPE_SHELLYDIMMER_STR = "shellydimmer";
     public static final String THING_TYPE_SHELLYBULB_STR = "shellybulb";
-    public static final String DEV_TYPE_SHELLYDUO_STR = "shellybulbduo";
-    public static final String THING_TYPE_SHELLYDUO_STR = "shellyduo";
+    public static final String THING_TYPE_SHELLYDUO_STR = "shellybulbduo";
     public static final String THING_TYPE_SHELLYRGBW2_PREFIX = "shellyrgbw2";
     public static final String THING_TYPE_SHELLYRGBW2_COLOR_STR = "shellyrgbw2-color";
     public static final String THING_TYPE_SHELLYRGBW2_WHITE_STR = "shellyrgbw2-white";
@@ -179,7 +178,7 @@ public class ShellyBindingConstants {
     // Power meter
     public static final String CHANNEL_GROUP_METER = "meter";
     public static final String CHANNEL_METER_CURRENTWATTS = "currentWatts";
-    public static final String CHANNEL_METER_LASTMIN = "lastPower1";
+    public static final String CHANNEL_METER_LASTMIN = "lastPower";
     public static final String CHANNEL_METER_LASTMIN1 = CHANNEL_METER_LASTMIN + "1";
     public static final String CHANNEL_METER_LASTMIN2 = CHANNEL_METER_LASTMIN + "2";
     public static final String CHANNEL_METER_LASTMIN3 = CHANNEL_METER_LASTMIN + "3";
@@ -187,6 +186,8 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_EMETER_TOTALRET = "returnedKWH";
     public static final String CHANNEL_EMETER_REACTWATTS = "reactiveWatts";
     public static final String CHANNEL_EMETER_VOLTAGE = "voltage";
+    public static final String CHANNEL_EMETER_CURRENT = "current";
+    public static final String CHANNEL_EMETER_PFACTOR = "powerFactor";
 
     public static final String CHANNEL_GROUP_LED_CONTROL = "led";
     public static final String CHANNEL_LED_STATUS_DISABLE = "statusLed";

@@ -7,8 +7,6 @@
 	<thing-type id="shellybulb">
 		<label>Shelly Bulb (SHBULB)</label>
 		<description>Shelly Bulb</description>
-		<category>Lightbulb</category>
-
 		<channel-groups>
 			<channel-group id="control" typeId="bulbControl" />
 			<channel-group id="color" typeId="colorSettingsBulb" />
@@ -19,15 +17,13 @@
 		<config-description-ref uri="thing-type:shelly:light" />
 	</thing-type>
 
-	<thing-type id="shellyduo">
+	<thing-type id="shellybulbduo">
 		<label>Shelly Duo (SHBDUO-1)</label>
 		<description>Shelly Duo</description>
-		<category>Lightbulb</category>
-
 		<channel-groups>
 			<channel-group id="control" typeId="duoControl" />
 			<channel-group id="white" typeId="whiteSettings" />
-			<channel-group id="meter" typeId="basicMeter" />
+			<channel-group id="meter" typeId="meter" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
@@ -51,8 +47,6 @@
 	<thing-type id="shellyrgbw2-white">
 		<label>Shelly RGBW2 White Mode (SHRGBW2)</label>
 		<description>Shelly RGBW2 Controller - White Mode</description>
-		<category>Lightbulb</category>
-
 		<channel-groups>
 			<channel-group id="channel1" typeId="rgbw2Channel">
 				<label>Channel 1</label>
@@ -99,7 +93,6 @@
 		<label>Light Control</label>
 		<description>Control your light</description>
 		<channels>
-			<channel id="power" typeId="system.power" />
 			<channel id="autoOn" typeId="timerAutoOn" />
 			<channel id="autoOff" typeId="timerAutoOff" />
 			<channel id="timerActive" typeId="timerActive" />
@@ -157,7 +150,6 @@
 		<label>Control</label>
 		<description>Switch channel and adjust settings</description>
 		<channels>
-			<channel id="power" typeId="system.power" />
 			<channel id="input" typeId="inputState" />
 			<channel id="button" typeId="system.button" />
 			<channel id="autoOn" typeId="timerAutoOn" />
