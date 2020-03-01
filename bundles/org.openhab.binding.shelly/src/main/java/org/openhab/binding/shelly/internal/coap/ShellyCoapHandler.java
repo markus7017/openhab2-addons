@@ -397,7 +397,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                         updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX,
                                 toQuantityType(s.value, DIGITS_LUX, SmartHomeUnits.LUX));
                         break;
-                    case "w" /* Watt */:
+                    case "p" /* Power/Watt */:
                         String mGroup = profile.numMeters == 1 ? CHANNEL_GROUP_METER : CHANNEL_GROUP_METER + rIndex;
                         updateChannel(updates, mGroup, CHANNEL_METER_CURRENTWATTS,
                                 toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
@@ -590,8 +590,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         }
 
         switch (sen.type.toLowerCase()) {
-            case "p": // Shelly Duo: Watt value -> W
-                sen.type = "W";
+            case "w": // old devices/firmware releases use "W", new ones "P"
+                sen.type = "P";
                 break;
         }
 
@@ -608,7 +608,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
         if (sen.desc.isEmpty()) {
             switch (sen.type.toLowerCase()) {
-                case "w":
+                case "p":
                     sen.desc = "Power";
                     break;
                 case "switch":

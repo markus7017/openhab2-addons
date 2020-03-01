@@ -148,7 +148,7 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
-	<channel-type id="meterPowerFactort">
+	<channel-type id="meterPowerFactor">
 		<item-type>Number</item-type>
 		<label>Power Factor</label>
 		<description></description>
