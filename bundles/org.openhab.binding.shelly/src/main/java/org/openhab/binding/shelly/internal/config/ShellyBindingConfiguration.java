@@ -53,8 +53,8 @@ public class ShellyBindingConfiguration {
                     defaultPassword = v != null ? v : "";
                     break;
                 case CONFIG_AutoCoIoT:
-                    v = (String) e.getValue();
-                    autoCoIoT = v.equalsIgnoreCase("true");
+                    Boolean b = (Boolean) e.getValue();
+                    autoCoIoT = b != null ? b : false;
                     break;
             }
 

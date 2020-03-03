@@ -609,7 +609,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                             prf.fwId, SHELLY_API_MIN_FWVERSION));
                 }
             }
-            if (bindingConfig.autoCoIoT && getString(prf.fwVersion).contains(SHELLY_API_MIN_FWCOIOT)) {
+            if (bindingConfig.autoCoIoT && version.compare(prf.fwVersion, SHELLY_API_MIN_FWCOIOT) >= 0) {
                 logger.info("{}", messages.get("versioncheck.autocoiot", thingName, SHELLY_API_MIN_FWCOIOT));
                 autoCoIoT = true;
             }
