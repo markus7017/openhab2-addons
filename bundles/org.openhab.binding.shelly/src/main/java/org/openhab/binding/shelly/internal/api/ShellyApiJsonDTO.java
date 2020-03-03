@@ -726,8 +726,8 @@ public class ShellyApiJsonDTO {
         public Boolean motion; // Shelly Sense: true=motion detected
         public Boolean charger; // Shelly Sense: true=charger connected
 
-        // @SerializedName("act_reasons")
-        // public String[] actReasons; // HT/Smoke/Flood: list of reasons which woke up the device
+        @SerializedName("act_reasons")
+        public String[] actReasons; // HT/Smoke/Flood: list of reasons which woke up the device
     }
 
     public static class ShellySettingsSmoke {

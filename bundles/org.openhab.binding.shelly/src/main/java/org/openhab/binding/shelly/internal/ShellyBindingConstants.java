@@ -157,9 +157,10 @@ public class ShellyBindingConstants {
 
     // External sensors for Shelly1/1PM
     public static final String CHANNEL_GROUP_ETEMP_SENSORS = "sensors";
-    public static final String CHANNEL_ETEMP_SENSOR1 = "temperature1";
-    public static final String CHANNEL_ETEMP_SENSOR2 = "temperature2";
-    public static final String CHANNEL_ETEMP_SENSOR3 = "temperature3";
+    public static final String CHANNEL_ETEMP_SENSOR = "temperature";
+    public static final String CHANNEL_ETEMP_SENSOR1 = CHANNEL_ETEMP_SENSOR + "1";
+    public static final String CHANNEL_ETEMP_SENSOR2 = CHANNEL_ETEMP_SENSOR + "2";
+    public static final String CHANNEL_ETEMP_SENSOR3 = CHANNEL_ETEMP_SENSOR + "3";
 
     // Roller
     public static final String CHANNEL_GROUP_ROL_CONTROL = "roller";
@@ -244,7 +245,8 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_BUTTON_TRIGGER = "button";
 
     public static final String SERVICE_TYPE = "_http._tcp.local.";
-    public static final String SHELLY_API_MIN_FWVERSION = "v1.5.2";// v1.5.2
+    public static final String SHELLY_API_MIN_FWVERSION = "v1.5.7";// v1.5.2
+    public static final String SHELLY_API_MIN_FWCOIOT = "v1.6";// v1.5.2
     public static final int SHELLY_API_TIMEOUT_MS = 5000;
 
     // Alarm types/messages
@@ -256,19 +258,8 @@ public class ShellyBindingConstants {
     public static final String ALARM_TYPE_LOADERR = "LOAD_ERROR";
     public static final String ALARM_TYPE_LOW_BATTERY = "LOW_BATTERY";
 
-    // Coap
-    public static final int COIOT_PORT = 5683;
-    public static final String COAP_MULTICAST_ADDRESS = "224.0.1.187";
-
-    public static final String COLOIT_URI_BASE = "/cit/";
-    public static final String COLOIT_URI_DEVDESC = COLOIT_URI_BASE + "d";
-    public static final String COLOIT_URI_DEVSTATUS = COLOIT_URI_BASE + "s";
-
-    public static final int COIOT_OPTION_GLOBAL_DEVID = 3332;
-    public static final int COIOT_OPTION_STATUS_VALIDITY = 3412;
-    public static final int COIOT_OPTION_STATUS_SERIAL = 3420;
-
-    public static final byte[] EMPTY_BYTE = new byte[0];
+    // Event types
+    public static final String EVENT_TYPE_LONGPUSH = "LONGPUSH";
 
     public static final String SHELLY_NULL_URL = "null";
     public static final String SHELLY_URL_DEVINFO = "/shelly";

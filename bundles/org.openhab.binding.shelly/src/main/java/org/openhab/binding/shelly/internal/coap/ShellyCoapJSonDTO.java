@@ -28,6 +28,17 @@ import com.google.gson.stream.JsonWriter;
  * @author Markus Michels - Initial contribution
  */
 public class ShellyCoapJSonDTO {
+    // Coap
+    public static final int COIOT_PORT = 5683;
+    public static final String COAP_MULTICAST_ADDRESS = "224.0.1.187";
+
+    public static final String COLOIT_URI_BASE = "/cit/";
+    public static final String COLOIT_URI_DEVDESC = COLOIT_URI_BASE + "d";
+    public static final String COLOIT_URI_DEVSTATUS = COLOIT_URI_BASE + "s";
+
+    public static final int COIOT_OPTION_GLOBAL_DEVID = 3332;
+    public static final int COIOT_OPTION_STATUS_VALIDITY = 3412;
+    public static final int COIOT_OPTION_STATUS_SERIAL = 3420;
 
     public static final String COIOT_TAG_BLK = "blk";
     public static final String COIOT_TAG_SEN = "sen";

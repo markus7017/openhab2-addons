@@ -37,6 +37,7 @@ import org.openhab.binding.shelly.internal.handler.ShellyDeviceListener;
 import org.openhab.binding.shelly.internal.handler.ShellyLightHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyProtectedHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyRelayHandler;
+import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;

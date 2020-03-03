@@ -56,7 +56,7 @@
 		</parameter>
 	</config-description>
 
-	<config-description uri="thing-type:shelly:light">
+	<config-description uri="thing-type:shelly:dimmer">
 		<parameter-group name="advancedOptions">
 			<label>Advanced Options</label>
 		</parameter-group>
@@ -103,6 +103,51 @@
 			<description>If enabled, the CoAP protocol is used to receive status updates.</description>
 			<advanced>true</advanced>
 			<default>false</default>
+		</parameter>
+		<parameter name="updateInterval" type="integer" required="true">
+			<label>Update Interval</label>
+			<description>Interval in seconds to query an update from the device.</description>
+			<default>60</default>
+			<unitLabel>sec</unitLabel>
+			<advanced>true</advanced>
+		</parameter>
+	</config-description>
+
+	<config-description uri="thing-type:shelly:light">
+		<parameter-group name="advancedOptions">
+			<label>Advanced Options</label>
+		</parameter-group>
+
+		<parameter name="userId" type="text" required="false">
+			<label>User</label>
+			<description>User ID for HTTP API access.</description>
+		</parameter>
+		<parameter name="password" type="text" required="false">
+			<label>Password</label>
+			<description>Password for HTTP API access.</description>
+			<context>password</context>
+		</parameter>
+		<parameter name="deviceIp" type="text" required="true">
+			<label>Device IP Address</label>
+			<description>IP-Address of the Shelly device.</description>
+			<context>network-address</context>
+		</parameter>
+		<parameter name="brightnessAutoOn" type="boolean" required="false">
+			<label>Brightness Auto-ON</label>
+			<description>true: Turn device ON if brightness > 0 is set; false: don't touch power status when brightness is set.</description>
+			<default>true</default>
+		</parameter>
+		<parameter name="eventsSwitch" type="boolean" required="false">
+			<label>Enable Switch Events (Out on/off)</label>
+			<description>True if the binding should register to get the Relay Switch Events.</description>
+			<advanced>true</advanced>
+			<default>false</default>
+		</parameter>
+		<parameter name="eventsCoIoT" type="boolean" required="false">
+			<label>Enable CoIoT Events</label>
+			<description>If enabled, the CoAP protocol is used to receive status updates.</description>
+			<advanced>true</advanced>
+			<default>true</default>
 		</parameter>
 		<parameter name="updateInterval" type="integer" required="true">
 			<label>Update Interval</label>

@@ -95,7 +95,7 @@
 	<channel-type id="meterReactive">
 		<item-type>Number:Power</item-type>
 		<label>Reactive Watt</label>
-		<description>Reactive power consumption in Watt</description>
+		<description>Instantaneous reactive power in Watts (W)</description>
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>

@@ -13,8 +13,8 @@
 package org.openhab.binding.shelly.internal.handler;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.ShellyUtils.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.io.IOException;
 
@@ -236,7 +236,7 @@ public class ShellyComponents {
                     updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW,
                             getDouble(sdata.bat.value) < th.config.lowBattery ? OnOffType.ON : OnOffType.OFF);
                     if (getDouble(sdata.bat.value) < th.config.lowBattery) {
-                        th.postAlarm(ALARM_TYPE_LOW_BATTERY, false);
+                        th.postEvent(ALARM_TYPE_LOW_BATTERY, false);
                     }
                 }
                 if (profile.isSense) {

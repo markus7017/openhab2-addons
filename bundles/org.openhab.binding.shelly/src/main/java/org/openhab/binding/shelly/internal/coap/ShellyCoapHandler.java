@@ -13,9 +13,9 @@
 package org.openhab.binding.shelly.internal.coap;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.ShellyUtils.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.*;
+import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -78,9 +78,12 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private @Nullable Request reqStatus;
 
     private int lastSerial = -1;
+    private Double lastBrightness = -1.0;
     private String lastPayload = "";
     private Map<String, CoIotDescrBlk> blockMap = new HashMap<String, CoIotDescrBlk>();
     private SortedMap<String, CoIotDescrSen> sensorMap = new TreeMap<String, CoIotDescrSen>();
+
+    private static final byte[] EMPTY_BYTE = new byte[0];
 
     public ShellyCoapHandler(ShellyThingConfiguration config, ShellyBaseHandler thingHandler,
             @Nullable ShellyCoapServer coapServer) {
@@ -310,7 +313,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      */
     @SuppressWarnings({ "null", "unused" })
     private void handleStatusUpdate(String devId, String payload, int serial) throws IOException {
-        // payload = StringUtils.substringBefore(payload, "]]}") + "]]}";
         logger.debug("{}: CoIoT Sensor data {}", thingName, payload);
         if (blockMap.size() == 0) {
             // send discovery packet
@@ -332,7 +334,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         // Parse Json,
         CoIotGenericSensorList list = gson.fromJson(payload, CoIotGenericSensorList.class);
         Validate.notNull(list, "sensor list must not be empty!");
-        Map<String, State> updates = new HashMap<String, State>();
+        Map<String, State> updates = new TreeMap<String, State>();
 
         if (list.generic == null) {
             logger.debug("{}: Sensor list is empty! Payload: {}", devId, payload);
@@ -348,7 +350,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         }
 
         logger.debug("{}: {} status updates received", thingName, new Integer(list.generic.size()).toString());
-        for (int i = 0; i < list.generic.size(); i++) {
+        lastBrightness = -1.0;
+        // for (int i = 0; i < list.generic.size(); i++) {
+        for (int i = list.generic.size() - 1; i >= 0; i--) {
             CoIotSensor s = list.generic.get(i);
             CoIotDescrSen sen = sensorMap.get(s.index);
             if (sen != null) {
@@ -405,15 +409,26 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             updateChannel(updates, mGroup, CHANNEL_LAST_UPDATE, getTimestamp());
                         }
                         break;
-                    case "o": // Overtemp
+                    case "overtemp": // Overtemp
                         // will be handled by status update
                         break;
 
                     case "tc": /* Temp Celsius */
                     case "tf": /* Temp Fahrenheit */
-                        /*
-                         * It seems that tC and tF are the device temperature - currently no channel
-                         */
+                        if (sen.desc.equalsIgnoreCase("External temperature C")) {
+                            /*
+                             * 1/1PM: Update for Temp Sensor 1..3
+                             */
+                            Integer idx = getSensorNumber("External temperature C", sen.id);
+                            if (idx != null) {
+                                updateChannel(updates, CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR + idx,
+                                        toQuantityType(s.value, SIUnits.CELSIUS));
+                            }
+                        } else {
+                            /*
+                             * Device temperature - currently no channel
+                             */
+                        }
                         break;
 
                     case "s" /* CatchAll */:
@@ -424,8 +439,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             case "switch":
                             case "output":
                             case "vswitch": // ???
-                                updateChannel(updates, rGroup, CHANNEL_OUTPUT,
-                                        s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+                                updatePower(profile, updates, rIndex, sen, s);
                                 break;
 
                             case "energy counter 0 [w-min]":
@@ -455,7 +469,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                         toQuantityType(pos, SmartHomeUnits.PERCENT));
                                 break;
                             case "input":
-                                Integer idx = getInputId(sen.id);
+                                Integer idx = getSensorNumber("Input", sen.id);
                                 String iGroup = rGroup;
                                 String iChannel = CHANNEL_INPUT;
                                 if (idx != null) {
@@ -469,6 +483,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                     }
                                 }
                                 updateChannel(updates, iGroup, iChannel, s.value == 0 ? OnOffType.OFF : OnOffType.ON);
+                                if (s.value == 2) {
+                                    thingHandler.postEvent(EVENT_TYPE_LONGPUSH, true);
+                                }
                                 break;
 
                             case "flood":
@@ -476,8 +493,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                         s.value == 1 ? OnOffType.ON : OnOffType.OFF);
                                 break;
                             case "brightness": // Dimmer
-                                updateChannel(updates, rGroup, CHANNEL_BRIGHTNESS,
-                                        toQuantityType(s.value, SmartHomeUnits.PERCENT));
+                                updatePower(profile, updates, rIndex, sen, s);
                                 break;
                             case "charger": // Sense
                                 updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER,
@@ -507,7 +523,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                 break;
                             case "temp": // Shelly Bulb
                             case "colortemperature": // Shelly Duo
-                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_TEMP,
+                                updateChannel(updates,
+                                        profile.inColor ? CHANNEL_GROUP_COLOR_CONTROL : CHANNEL_GROUP_WHITE_CONTROL,
+                                        CHANNEL_COLOR_TEMP,
                                         ShellyColorUtils.toPercent((int) s.value, profile.minTemp, profile.maxTemp));
                                 break;
 
@@ -552,6 +570,56 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         // Remeber serial, new packets with same serial will be ignored
         lastSerial = serial;
         lastPayload = payload;
+    }
+
+    private void updatePower(ShellyDeviceProfile profile, Map<String, State> updates, Integer id, CoIotDescrSen sen,
+            CoIotSensor s) {
+        String group = "";
+        String channel = "";
+        if (profile.isLight) {
+            if (profile.isBulb) {
+                group = CHANNEL_GROUP_LIGHT_CONTROL;
+                channel = CHANNEL_LIGHT_POWER;
+            } else if (profile.isDuo) {
+                group = CHANNEL_GROUP_WHITE_CONTROL;
+                channel = CHANNEL_BRIGHTNESS;
+            } else if (profile.isDimmer) {
+                group = CHANNEL_GROUP_RELAY_CONTROL;
+                channel = CHANNEL_BRIGHTNESS;
+            } else {
+                // RGBW2
+                group = CHANNEL_GROUP_LIGHT_CHANNEL + id;
+                channel = CHANNEL_BRIGHTNESS;
+            }
+
+            if (sen.desc.equalsIgnoreCase("brightness")) {
+                /*
+                 * OnOffType ison = (OnOffType) updates.get(group + "#" + channel + "$Switch");
+                 * if (ison == null) {
+                 * ison = (OnOffType) thingHandler.getChannelValue(group, channel + "$Switch");
+                 * }
+                 * updateChannel(updates, group, channel + "$Value", toQuantityType(
+                 * ison == null || ison == OnOffType.ON ? s.value : 0, DIGITS_NONE, SmartHomeUnits.PERCENT));
+                 *
+                 */
+                lastBrightness = s.value;
+            } else {
+                OnOffType state = s.value == 1 ? OnOffType.ON : OnOffType.OFF;
+                updateChannel(updates, group, channel + "$Switch", state);
+                if (lastBrightness < 0.0) {
+                    Double v = (Double) thingHandler.getChannelValue(group, channel + "$Value");
+                }
+                if (lastBrightness >= 0.0) {
+                    updateChannel(updates, group, channel + "$Value", toQuantityType(
+                            state == OnOffType.ON ? lastBrightness : 0, DIGITS_NONE, SmartHomeUnits.PERCENT));
+                    lastBrightness = -1.0;
+                }
+            }
+        } else {
+            group = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL : CHANNEL_GROUP_RELAY_CONTROL + id;
+            channel = CHANNEL_OUTPUT;
+            updateChannel(updates, group, channel, s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+        }
     }
 
     private boolean updateChannel(Map<String, State> updates, String group, String channel, State value) {
@@ -735,14 +803,13 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      * @param sensorId The id from the sensor update
      * @return Index of found entry (+1 will be the suffix for the channel name) or null if sensorId is not found
      */
-    @SuppressWarnings("null")
     @Nullable
-    private Integer getInputId(String sensorId) {
+    private Integer getSensorNumber(String sensorName, String sensorId) {
         Integer idx = 0;
         for (Map.Entry<String, CoIotDescrSen> se : sensorMap.entrySet()) {
             @Nullable
             CoIotDescrSen sen = se.getValue();
-            if (sen.desc.equalsIgnoreCase("Input")) {
+            if (sen.desc.equalsIgnoreCase(sensorName)) {
                 idx++; // iterate from input1..2..n
             }
             if (sen.id.equalsIgnoreCase(sensorId)) {
@@ -750,7 +817,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 if ((blk != null) && StringUtils.substring(blk.desc, 5).equalsIgnoreCase("Relay")) {
                     idx = Integer.parseInt(StringUtils.substringAfter(blk.desc, "Relay"));
                 }
-                logger.trace("{}:    map sensor id {} to input{} channel", thingName, sensorId, idx);
+                logger.trace("{}:    map sensor {}{} to index {}", thingName, sensorName, sensorId, idx);
                 return idx;
             }
         }

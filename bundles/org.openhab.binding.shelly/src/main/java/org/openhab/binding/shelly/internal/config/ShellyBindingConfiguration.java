@@ -33,9 +33,11 @@ public class ShellyBindingConfiguration {
     // Binding Configuration Properties
     public static final String CONFIG_DEF_HTTP_USER = "defaultUserId";
     public static final String CONFIG_DEF_HTTP_PWD = "defaultPassword";
+    public static final String CONFIG_AutoCoIoT = "autoCoIoT";
 
     public String defaultUserId = ""; // default for http basic user id
     public String defaultPassword = ""; // default for http basic auth password
+    public Boolean autoCoIoT = false;
 
     public void updateFromProperties(Map<String, @Nullable Object> properties) {
         Validate.notNull(properties);
@@ -49,6 +51,10 @@ public class ShellyBindingConfiguration {
                 case CONFIG_DEF_HTTP_PWD:
                     v = (String) e.getValue();
                     defaultPassword = v != null ? v : "";
+                    break;
+                case CONFIG_AutoCoIoT:
+                    v = (String) e.getValue();
+                    autoCoIoT = v.equalsIgnoreCase("true");
                     break;
             }
 

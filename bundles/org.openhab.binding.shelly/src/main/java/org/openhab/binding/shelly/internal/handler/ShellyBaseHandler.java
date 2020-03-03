@@ -14,9 +14,9 @@ package org.openhab.binding.shelly.internal.handler;
 
 import static org.eclipse.smarthome.core.thing.Thing.*;
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.ShellyUtils.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.discovery.ShellyThingCreator.getThingTypeUID;
+import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -42,8 +42,6 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.shelly.internal.ShellyBindingConstants;
-import org.openhab.binding.shelly.internal.ShellyTranslationProvider;
-import org.openhab.binding.shelly.internal.ShellyVersion;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyInputState;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
@@ -52,6 +50,8 @@ import org.openhab.binding.shelly.internal.coap.ShellyCoapHandler;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
+import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
+import org.openhab.binding.shelly.internal.util.ShellyVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +73,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     private @Nullable ShellyCoapHandler coap;
     protected @Nullable ShellyDeviceProfile profile;
     private final @Nullable ShellyCoapServer coapServer;
+    private boolean autoCoIoT = false;
     protected boolean lockUpdates = false;
 
     private long lastUptime = 0;
@@ -241,7 +242,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             return false;
         }
 
-        if (config.eventsCoIoT && (coap == null)) {
+        if ((coap == null) && (config.eventsCoIoT || autoCoIoT)) {
             Validate.notNull(coapServer, "coapServer must not be null!");
             coap = new ShellyCoapHandler(config, this, coapServer);
         }
@@ -250,7 +251,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         }
 
         fillDeviceStatus(status, false);
-        postAlarm(ALARM_TYPE_NONE, false);
+        postEvent(ALARM_TYPE_NONE, false);
 
         logger.debug("{}: Thing successfully initialized.", thingName);
         updateStatus(ThingStatus.ONLINE); // if API call was successful the thing must be online
@@ -435,7 +436,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         }
 
         if (!alarm.isEmpty()) {
-            postAlarm(alarm, force);
+            postEvent(alarm, force);
         }
 
         if (!propertyUpdates.isEmpty()) {
@@ -448,7 +449,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      *
      * @param alarm Alarm Message
      */
-    public void postAlarm(String alarm, boolean force) {
+    public void postEvent(String alarm, boolean force) {
         String channelId = mkChannelId(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ALARM);
         Object value = getChannelValue(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ALARM);
         String lastAlarm = value != null ? value.toString() : null;
@@ -608,6 +609,10 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                             prf.fwId, SHELLY_API_MIN_FWVERSION));
                 }
             }
+            if (bindingConfig.autoCoIoT && getString(prf.fwVersion).contains(SHELLY_API_MIN_FWCOIOT)) {
+                logger.info("{}", messages.get("versioncheck.autocoiot", thingName, SHELLY_API_MIN_FWCOIOT));
+                autoCoIoT = true;
+            }
         } catch (IllegalArgumentException | NullPointerException e) {
             logger.debug("{}", messages.get("versioncheck.failed", thingName, prf.fwVersion));
         }
@@ -751,12 +756,14 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 // For channels that support multiple types (like brightness) a suffix is added
                 // this gets removed to get the channelId for updateState
                 updateState(channelId.contains("$") ? StringUtils.substringBefore(channelId, "$") : channelId, value);
-                if (current == null) {
-                    channelData.put(channelId, value);
-                } else {
-                    channelData.replace(channelId, value);
+                synchronized (channelData) {
+                    if (current == null) {
+                        channelData.put(channelId, value);
+                    } else {
+                        channelData.replace(channelId, value);
+                    }
                 }
-                logger.trace("{}: Channel {} updated with {} (type {}).", thingName, channelId, value,
+                logger.debug("{}: Channel {} updated with {} (type {}).", thingName, channelId, value,
                         value.getClass());
                 return true;
             }
@@ -767,8 +774,21 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         return false;
     }
 
+    public void publishState(String channelId, State value) {
+        updateState(channelId.contains("$") ? StringUtils.substringBefore(channelId, "$") : channelId, value);
+    }
+
     public boolean updateChannel(String group, String channel, State value) {
         return updateChannel(mkChannelId(group, channel), value, false);
+    }
+
+    public void resetChannel(String channelId) {
+        Validate.notNull(channelData);
+        Validate.notNull(channelId);
+        synchronized (channelData) {
+            channelData.remove(channelId);
+        }
+
     }
 
     /**

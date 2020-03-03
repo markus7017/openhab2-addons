@@ -13,8 +13,8 @@
 package org.openhab.binding.shelly.internal.handler;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.ShellyUtils.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,7 +32,6 @@ import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.shelly.internal.ShellyTranslationProvider;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyShortLightStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusLight;
@@ -40,6 +39,7 @@ import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusLigh
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
+import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -199,7 +199,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 }
                 validateRange(CHANNEL_COLOR_TEMP, temp, col.minTemp, col.maxTemp);
                 col.setTemp(temp);
-                update = false;
+                col.brightness = -1;
                 break;
 
             case CHANNEL_COLOR_EFFECT:
@@ -361,7 +361,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
             updated |= updateChannel(controlGroup, CHANNEL_TIMER_AUTOOFF, getDecimal(light.autoOff));
             updated |= updateInputs(controlGroup, genericStatus, lightId);
             if (getBool(light.overpower)) {
-                postAlarm(ALARM_TYPE_OVERPOWER, false);
+                postEvent(ALARM_TYPE_OVERPOWER, false);
             }
 
             if (profile.inColor || profile.isBulb) {
@@ -459,7 +459,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 "{}: New color settings for channel {}: RGB {}/{}/{}, white={}, gain={}, brightness={}, color-temp={}",
                 thingName, channelId, newCol.red, newCol.green, newCol.blue, newCol.white, newCol.gain,
                 newCol.brightness, newCol.temp);
-        if (autoOn) {
+        if (autoOn && (newCol.brightness >= 0)) {
             parms.put(SHELLY_LIGHT_TURN, profile.inColor || newCol.brightness > 0 ? SHELLY_API_ON : SHELLY_API_OFF);
         }
         if (profile.inColor) {
@@ -481,7 +481,8 @@ public class ShellyLightHandler extends ShellyBaseHandler {
             logger.debug("Setting gain to {}", newCol.gain);
             parms.put(SHELLY_COLOR_GAIN, newCol.gain.toString());
         }
-        if ((profile.isBulb || profile.isDuo || !profile.inColor) && !oldCol.brightness.equals(newCol.brightness)) {
+        if ((newCol.brightness >= 0) && (profile.isBulb || profile.isDuo || !profile.inColor)
+                && !oldCol.brightness.equals(newCol.brightness)) {
             logger.debug("Setting brightness to {}", newCol.brightness);
             parms.put(SHELLY_COLOR_BRIGHTNESS, newCol.brightness.toString());
         }

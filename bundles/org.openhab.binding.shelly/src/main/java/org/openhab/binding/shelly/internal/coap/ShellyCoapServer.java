@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.shelly.internal.coap;
 
-import static org.openhab.binding.shelly.internal.ShellyBindingConstants.COIOT_PORT;
+import static org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.COIOT_PORT;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

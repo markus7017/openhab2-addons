@@ -200,7 +200,7 @@
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
-		<config-description-ref uri="thing-type:shelly:light" />
+		<config-description-ref uri="thing-type:shelly:dimmer" />
 	</thing-type>
 
 

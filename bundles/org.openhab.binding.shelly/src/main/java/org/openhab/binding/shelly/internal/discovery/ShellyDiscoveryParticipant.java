@@ -14,7 +14,7 @@ package org.openhab.binding.shelly.internal.discovery;
 
 import static org.eclipse.smarthome.core.thing.Thing.PROPERTY_MODEL_ID;
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
-import static org.openhab.binding.shelly.internal.ShellyUtils.getString;
+import static org.openhab.binding.shelly.internal.util.ShellyUtils.getString;
 
 import java.io.IOException;
 import java.util.HashMap;
