@@ -134,7 +134,7 @@ public class ShellyHttpApi {
     public void setRelayTurn(Integer relayIndex, String turnMode) throws IOException {
         Validate.notNull(profile);
         if (profile.isLight) {
-            if (profile.isBulb) {
+            if (profile.isBulb || profile.isDimmer) {
                 request((profile.inColor ? SHELLY_MODE_COLOR : SHELLY_MODE_WHITE) + "/" + relayIndex.toString() + "?"
                         + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
             } else {

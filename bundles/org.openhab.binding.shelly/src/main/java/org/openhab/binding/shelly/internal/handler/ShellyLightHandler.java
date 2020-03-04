@@ -29,6 +29,7 @@ import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
 import org.eclipse.smarthome.core.library.types.StringType;
+import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.types.Command;
@@ -137,17 +138,23 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 col.setGain(setColor(lightId, SHELLY_COLOR_GAIN, command, SHELLY_MIN_GAIN, SHELLY_MAX_GAIN));
                 break;
             case CHANNEL_BRIGHTNESS: // only in white mode
+                if (profile.isLight && profile.inColor) {
+                    logger.debug("{}: Not in white mode, brightness not available", thingName);
+                    break;
+                }
+
                 Integer value = -1;
                 if (command instanceof OnOffType) { // Switch
                     logger.debug("Switch light {}", command.toString());
+                    ShellyShortLightStatus light = api.getLightStatus(lightId);
+                    col.brightness = light.brightness;
                     api.setRelayTurn(lightId, (OnOffType) command == OnOffType.ON ? SHELLY_API_ON : SHELLY_API_OFF);
                     col.power = (OnOffType) command;
+                    updateChannel(CHANNEL_COLOR_WHITE, CHANNEL_BRIGHTNESS + "$Switch", col.power);
+                    updateChannel(CHANNEL_COLOR_WHITE, CHANNEL_BRIGHTNESS + "$Value",
+                            toQuantityType(new Double(getInteger(col.power == OnOffType.ON ? col.brightness : 0)),
+                                    DIGITS_NONE, SmartHomeUnits.PERCENT));
                     update = false;
-                    requestUpdates(1, false);
-                    break;
-                }
-                if (profile.isLight && profile.inColor) {
-                    logger.debug("{}: Not in white mode, brightness not available", thingName);
                     break;
                 }
 
@@ -386,11 +393,21 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 logger.trace("update {}.color picker", colorGroup);
                 updated |= updateChannel(colorGroup, CHANNEL_COLOR_PICKER, col.toHSB());
             }
+
             if (!profile.inColor || profile.isBulb) {
                 String whiteGroup = buildWhiteGroupName(profile, channelId);
                 logger.trace("update white settings for {}.{}", whiteGroup, channelId);
                 col.setBrightness(getInteger(light.brightness));
-                updated |= updateChannel(whiteGroup, CHANNEL_BRIGHTNESS, col.percentBrightness);
+                if (light.ison) {
+                    updated |= updateChannel(whiteGroup, CHANNEL_BRIGHTNESS + "$Switch", OnOffType.ON);
+                    updated |= updateChannel(whiteGroup, CHANNEL_BRIGHTNESS + "$Value", toQuantityType(
+                            new Double(getInteger(light.brightness)), DIGITS_NONE, SmartHomeUnits.PERCENT));
+                } else {
+                    updated |= updateChannel(whiteGroup, CHANNEL_BRIGHTNESS + "$Switch", OnOffType.OFF);
+                    updated |= updateChannel(whiteGroup, CHANNEL_BRIGHTNESS + "$Value",
+                            toQuantityType(new Double(0), DIGITS_NONE, SmartHomeUnits.PERCENT));
+                }
+
                 if (profile.isBulb || profile.isDuo) {
                     col.setTemp(getInteger(light.temp));
                     updated |= updateChannel(whiteGroup, CHANNEL_COLOR_TEMP, col.percentTemp);

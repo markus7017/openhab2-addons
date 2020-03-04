@@ -120,7 +120,7 @@ public class ShellyEventServlet extends HttpServlet {
             }
             handlerFactory.onEvent(deviceName, index, type, parms);
 
-        } catch (NullPointerException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             logger.debug(
                     "ERROR: Exception processing callback: {} ({}), path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}\n{}",
                     e.getMessage(), e.getClass(), path, data, deviceName, index, type,

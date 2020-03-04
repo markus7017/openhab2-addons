@@ -95,7 +95,7 @@ public class ShellyDeviceProfile {
 
         profile.settingsJson = json;
         profile.settings = gson.fromJson(json, ShellySettingsGlobal.class);
-        Validate.notNull(profile.settings, "converted device settings must not be null!");
+        Validate.notNull(profile.settings, "Converted device settings must not be null!\nsettings=" + json);
 
         // General settings
         profile.deviceType = ShellyUtils.getString(profile.settings.device.type);

@@ -51,6 +51,7 @@ import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotSensorTyp
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyColorUtils;
+import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +66,7 @@ import com.google.gson.GsonBuilder;
 @NonNullByDefault
 public class ShellyCoapHandler implements ShellyCoapListener {
     private final Logger logger = LoggerFactory.getLogger(ShellyCoapHandler.class);
+    private final @Nullable ShellyTranslationProvider messages;
 
     private final ShellyBaseHandler thingHandler;
     private final ShellyThingConfiguration config;
@@ -86,8 +88,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private static final byte[] EMPTY_BYTE = new byte[0];
 
     public ShellyCoapHandler(ShellyThingConfiguration config, ShellyBaseHandler thingHandler,
-            @Nullable ShellyCoapServer coapServer) {
+            @Nullable ShellyCoapServer coapServer, @Nullable ShellyTranslationProvider messages) {
         Validate.notNull(coapServer);
+        this.messages = messages;
         this.thingHandler = thingHandler;
         this.coapServer = coapServer;
         this.config = config;
@@ -117,8 +120,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 coapServer.start();
             }
         } catch (IOException e) {
-            logger.warn("{}: Unable to start CoIoT: {}", thingName, e.getMessage());
-        } catch (NullPointerException e) {
+            logger.warn("{}: {}", thingName, messages.get("coap.init.failed", e.getMessage()));
+        } catch (IllegalArgumentException | NullPointerException e) {
             logger.debug("{}: Coap Exception: {} ({})\n{}", thingName, e.getMessage(), e.getClass(), e.getStackTrace());
         }
     }
@@ -409,9 +412,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             updateChannel(updates, mGroup, CHANNEL_LAST_UPDATE, getTimestamp());
                         }
                         break;
-                    case "overtemp": // Overtemp
-                        // will be handled by status update
-                        break;
 
                     case "tc": /* Temp Celsius */
                     case "tf": /* Temp Fahrenheit */
@@ -440,6 +440,12 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             case "output":
                             case "vswitch": // ???
                                 updatePower(profile, updates, rIndex, sen, s);
+                                break;
+
+                            case "overtemp":
+                                if (s.value == 1) {
+                                    thingHandler.postEvent(ALARM_TYPE_OVERTEMP, true);
+                                }
                                 break;
 
                             case "energy counter 0 [w-min]":
@@ -685,7 +691,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                     sen.desc = "Switch";
                     break;
                 case "overtemp":
-                    sen.type = "O";
+                    sen.type = "S";
                     sen.desc = "Overtemp";
                     break;
                 case "input":

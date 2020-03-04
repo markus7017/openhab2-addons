@@ -143,7 +143,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
 
                 // get thing type from device name
                 thingUID = ShellyThingCreator.getThingUID(name, mode, false);
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException | NullPointerException e) {
                 if (getString(e).contains(APIERR_HTTP_401_UNAUTHORIZED)) {
                     logger.warn("Device {} ({}) reported 'Access defined' (userid/password mismatch).", name, address);
 

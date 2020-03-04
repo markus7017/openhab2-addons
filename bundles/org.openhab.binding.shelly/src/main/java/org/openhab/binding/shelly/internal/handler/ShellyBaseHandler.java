@@ -135,7 +135,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                         config.password.isEmpty() ? "<none>" : "***", config.updateInterval);
                 updateStatus(ThingStatus.UNKNOWN);
                 start = initializeThing();
-            } catch (NullPointerException | IOException e) {
+            } catch (IOException | IllegalArgumentException | NullPointerException e) {
                 if (authorizationFailed(getString(e))) {
                     start = false;
                 }
@@ -192,6 +192,13 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             return false;
         }
 
+        if (autoCoIoT) {
+            logger.debug("{}: Auto-CoIoT is enabled, disabling http events", thingName);
+            config.eventsButton = false;
+            config.eventsSwitch = false;
+            config.eventsSensorReport = false;
+        }
+
         // Initialize API access, exceptions will be catched by initialize()
         api = new ShellyHttpApi(thingName, config);
         ShellyDeviceProfile tmpPrf = api.getDeviceProfile(thingType);
@@ -244,7 +251,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
         if ((coap == null) && (config.eventsCoIoT || autoCoIoT)) {
             Validate.notNull(coapServer, "coapServer must not be null!");
-            coap = new ShellyCoapHandler(config, this, coapServer);
+            coap = new ShellyCoapHandler(config, this, coapServer, messages);
         }
         if (coap != null) {
             coap.start();
@@ -459,7 +466,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             if (alarm.equals(ALARM_TYPE_NONE)) {
                 channelData.put(channelId, alarm); // init channel
             } else {
-                logger.warn("{}", messages.get("alarm.raised ", thingName, alarm));
+                logger.warn("{}", messages.get("alarm.raised", thingName, alarm));
                 triggerChannel(channelId, alarm);
                 channelData.replace(channelId, alarm);
                 lastAlarmTs = now();
