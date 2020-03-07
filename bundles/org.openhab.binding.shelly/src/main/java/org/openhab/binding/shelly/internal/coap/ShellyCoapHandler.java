@@ -457,8 +457,10 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                     break;
 
                                 case "energy counter total [w-min]":
-                                    updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH, toQuantityType(
-                                            s.value / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                case "energy counter total [w-h]": // EM3 reports W/h
+                                    updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH,
+                                            toQuantityType(!profile.isEM3 ? s.value / 60 / 1000 : s.value / 1000,
+                                                    DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                                     break;
 
                                 case "position":
@@ -624,8 +626,10 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 lastBrightness = -1.0;
             }
         } else {
-            group = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL : CHANNEL_GROUP_RELAY_CONTROL + id;
-            channel = CHANNEL_OUTPUT;
+            group = !profile.isSensor
+                    ? profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL : CHANNEL_GROUP_RELAY_CONTROL + id
+                    : CHANNEL_GROUP_SENSOR;
+            channel = !profile.isSensor ? CHANNEL_OUTPUT : CHANNEL_SENSOR_STATE;
             updateChannel(updates, group, channel, s.value == 1 ? OnOffType.ON : OnOffType.OFF);
         }
     }

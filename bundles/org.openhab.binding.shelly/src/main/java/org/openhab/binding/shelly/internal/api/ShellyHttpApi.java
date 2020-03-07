@@ -85,29 +85,34 @@ public class ShellyHttpApi {
     @SuppressWarnings("null")
     @Nullable
     public ShellyDeviceProfile getDeviceProfile(String thingType) throws IOException {
-        String json = request(SHELLY_URL_SETTINGS);
-        if (json.contains("\"type\":\"SHDM-1\"")) {
-            logger.trace("{}: Detected a Shelly Dimmer: fix Json (replace lights[] tag with dimmers[]", thingName);
-            json = fixDimmerJson(json);
-        }
+        try {
+            String json = request(SHELLY_URL_SETTINGS);
+            if (json.contains("\"type\":\"SHDM-1\"")) {
+                logger.trace("{}: Detected a Shelly Dimmer: fix Json (replace lights[] tag with dimmers[]", thingName);
+                json = fixDimmerJson(json);
+            }
 
-        // Map settings to device profile for Light and Sense
-        profile = ShellyDeviceProfile.initialize(thingType, json);
-        Validate.notNull(profile);
+            // Map settings to device profile for Light and Sense
+            profile = ShellyDeviceProfile.initialize(thingType, json);
+            Validate.notNull(profile);
 
-        // 2nd level initialization
-        profile.thingName = profile.hostname;
-        if (profile.isLight && (profile.numMeters == 0)) {
-            logger.debug("{}: Get number of meters from light status", thingName);
-            ShellyStatusLight status = getLightStatus();
-            profile.numMeters = status.meters != null ? status.meters.size() : 0;
-        }
-        if (profile.isSense) {
-            profile.irCodes = getIRCodeList();
-            logger.debug("{}: Sense stored key list loaded, {} entries.", thingName, profile.irCodes.size());
-        }
+            // 2nd level initialization
+            profile.thingName = profile.hostname;
+            if (profile.isLight && (profile.numMeters == 0)) {
+                logger.debug("{}: Get number of meters from light status", thingName);
+                ShellyStatusLight status = getLightStatus();
+                profile.numMeters = status.meters != null ? status.meters.size() : 0;
+            }
+            if (profile.isSense) {
+                profile.irCodes = getIRCodeList();
+                logger.debug("{}: Sense stored key list loaded, {} entries.", thingName, profile.irCodes.size());
+            }
 
-        return profile;
+            return profile;
+        } catch (IOException e) {
+            throw new IOException(
+                    "EXCEPTION: Unable to get settings from device with IP " + config.deviceIp + ": " + getString(e));
+        }
     }
 
     /**
@@ -489,32 +494,38 @@ public class ShellyHttpApi {
     @SuppressWarnings("null")
     private String request(String uri) throws IOException {
         String result = "";
+        String message = "";
+        String type = "";
         boolean retry = false;
         try {
             result = innerRequest(uri);
         } catch (IOException e) {
-            String type = getExceptionType(e);
-            String message = getString(e);
-            if (message.contains("Timeout") || getString(type.toLowerCase()).contains("timeout")
-                    || message.contains("Connection reset") || type.contains("InterruptedException")) {
-                logger.debug("{}: Shelly API timeout ({}), retry", thingName, type);
+            type = getExceptionType(e);
+            message = getString(e);
+            if (((profile != null) && !profile.hasBattery)
+                    && (message.contains("Timeout") || getString(type.toLowerCase()).contains("timeout")
+                            || message.contains("Connection reset") || type.contains("InterruptedException"))) {
                 timeoutErrors++;
+                logger.debug("{}: Shelly API timeout # {} ({}), retry", thingName, timeoutErrors, type);
                 retry = true;
-            } else {
-                throw new IOException(thingName + ": Shelly API error: " + message + " (" + type + "), uri=" + uri);
             }
         }
-        if (retry && (profile != null) && !profile.hasBattery) {
+        if (retry) {
             try {
                 // retry to recover
                 result = innerRequest(uri);
                 timeoutsRecovered++;
                 logger.debug("{}: Shelly API timeout recovered", thingName);
             } catch (IOException e) {
-                String type = getExceptionType(e);
-                String message = getString(e);
-                throw new IOException(thingName + ": Shelly API error: " + message + " (" + type + "), uri=" + uri);
+                type = getExceptionType(e);
+                message = getString(e);
             }
+        }
+        if (result.isEmpty() && !message.isEmpty()) {
+            message = "Empty response, Timeout?";
+        }
+        if (!message.isEmpty()) {
+            throw new IOException("Shelly API error: " + message + " (" + type + "), uri=" + uri);
         }
         return result;
     }

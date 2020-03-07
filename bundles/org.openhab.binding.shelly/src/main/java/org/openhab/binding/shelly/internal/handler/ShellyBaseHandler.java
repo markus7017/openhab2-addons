@@ -738,7 +738,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             updated |= updateChannel(groupName, CHANNEL_INPUT,
                     getInteger(status.input) == 0 ? OnOffType.OFF : OnOffType.ON);
         } else if (status.inputs != null) {
-            if ((profile != null) && profile.isDimmer || profile.isRoller) {
+            if ((profile != null) && (profile.isDimmer || profile.isRoller)) {
                 ShellyInputState state1 = status.inputs.get(0);
                 ShellyInputState state2 = status.inputs.get(1);
                 logger.trace("{}: Updating {}#input1 with {}, input2 with {}", thingName, groupName,

@@ -75,8 +75,11 @@ public class ShellyComponents {
                                     toQuantityType(getDouble(meter.power), DIGITS_WATT, SmartHomeUnits.WATT));
                             // convert Watt/Min to kw/h
                             if (meter.total != null) {
-                                updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH, toQuantityType(
-                                        getDouble(meter.total) / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH,
+                                        toQuantityType(
+                                                !profile.isEM3 ? getDouble(meter.total) / 60 / 1000
+                                                        : getDouble(meter.total) / 1000,
+                                                DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                             }
                             if (meter.counters != null) {
                                 updated |= th.updateChannel(groupName, CHANNEL_METER_LASTMIN1,

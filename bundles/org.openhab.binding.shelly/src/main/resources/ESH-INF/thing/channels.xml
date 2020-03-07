@@ -329,7 +329,7 @@
 		</state>
 	</channel-type>
 	<channel-type id="sensorIllumination">
-		<item-type>Switch</item-type>
+		<item-type>String</item-type>
 		<label>Illumination</label>
 		<description>Current illumination: dark/twilight/bright</description>
 		<state readOnly="true">
