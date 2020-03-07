@@ -38,9 +38,11 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.QuantityType;
 import org.eclipse.smarthome.core.library.unit.SIUnits;
 import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.types.State;
+import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsRelay;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrBlk;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrSen;
@@ -354,205 +356,214 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
         logger.debug("{}: {} status updates received", thingName, new Integer(list.generic.size()).toString());
         lastBrightness = -1.0;
-        // for (int i = 0; i < list.generic.size(); i++) {
-        for (int i = list.generic.size() - 1; i >= 0; i--) {
-            CoIotSensor s = list.generic.get(i);
-            CoIotDescrSen sen = sensorMap.get(s.index);
-            if (sen != null) {
-                // find matching sensor definition from device description, use the Link ID as
-                // index
-                Validate.notNull(sen.links != null, "Coap: sen.L must not be null!");
-                sen = fixDescription(sen);
-                CoIotDescrBlk element = blockMap.get(sen.links);
-                logger.debug("{}:  Sensor value[{}]: Index={}, Value={} ({}, Type={}, Range={}, Link={}: {})",
-                        thingName, i, s.index, s.value, sen.desc, sen.type, sen.range, sen.links,
-                        element != null ? element.desc : "n/a");
+        for (int i = 0; i < list.generic.size(); i++) {
+            try {
+                CoIotSensor s = list.generic.get(i);
+                CoIotDescrSen sen = sensorMap.get(s.index);
+                if (sen != null) {
+                    // find matching sensor definition from device description, use the Link ID as
+                    // index
+                    Validate.notNull(sen.links != null, "Coap: sen.L must not be null!");
+                    sen = fixDescription(sen);
+                    CoIotDescrBlk element = blockMap.get(sen.links);
+                    logger.debug("{}:  Sensor value[{}]: Index={}, Value={} ({}, Type={}, Range={}, Link={}: {})",
+                            thingName, i, s.index, s.value, sen.desc, sen.type, sen.range, sen.links,
+                            element != null ? element.desc : "n/a");
 
-                // Process status information and convert into channel updates
-                String type = (element != null ? element.desc : "").toLowerCase();
-                Integer rIndex = Integer.parseInt(sen.links) + 1;
-                String rGroup = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
-                        : CHANNEL_GROUP_RELAY_CONTROL + rIndex;
+                    // Process status information and convert into channel updates
+                    String type = (element != null ? element.desc : "").toLowerCase();
+                    Integer rIndex = Integer.parseInt(sen.links) + 1;
+                    String rGroup = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
+                            : CHANNEL_GROUP_RELAY_CONTROL + rIndex;
 
-                switch (sen.type.toLowerCase()) /* CoIoT_STypes.valueOf(sen.T) */ {
-                    case "b" /* BatteryLevel */:
-                        updateChannel(updates, CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
-                                toQuantityType(s.value, DIGITS_PERCENT, SmartHomeUnits.PERCENT));
-                        break;
-                    case "t" /* Temperature */:
-                        if (!sen.desc.equalsIgnoreCase("External_temperature")) {
-                            updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
-                                    toQuantityType(s.value, DIGITS_TEMP, SIUnits.CELSIUS));
-                        } else {
-                            logger.debug("{}: Update external sensor from Coap update", thingName);
-                            Integer idx = getExtTempId(sen.id);
-                            if (idx > 0) {
-                                updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP + idx,
-                                        toQuantityType(s.value, DIGITS_TEMP, SIUnits.CELSIUS));
-                            }
-                        }
-                        break;
-                    case "h" /* Humidity */:
-                        updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM,
-                                toQuantityType(s.value, DIGITS_PERCENT, SmartHomeUnits.PERCENT));
-                        break;
-                    case "m" /* Motion */:
-                        updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_MOTION,
-                                s.value == 1 ? OnOffType.ON : OnOffType.OFF);
-                        break;
-                    case "l" /* Luminosity */:
-                        updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX,
-                                toQuantityType(s.value, DIGITS_LUX, SmartHomeUnits.LUX));
-                        break;
-                    case "p" /* Power/Watt */:
-                        String mGroup = profile.numMeters == 1 ? CHANNEL_GROUP_METER : CHANNEL_GROUP_METER + rIndex;
-                        updateChannel(updates, mGroup, CHANNEL_METER_CURRENTWATTS,
-                                toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
-                        if (profile.isEMeter) {
-                            updateChannel(updates, mGroup, CHANNEL_LAST_UPDATE, getTimestamp());
-                        }
-                        break;
-
-                    case "tc": /* Temp Celsius */
-                    case "tf": /* Temp Fahrenheit */
-                        if (sen.desc.equalsIgnoreCase("External temperature C")) {
-                            /*
-                             * 1/1PM: Update for Temp Sensor 1..3
-                             */
-                            Integer idx = getSensorNumber("External temperature C", sen.id);
-                            if (idx != null) {
-                                updateChannel(updates, CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR + idx,
-                                        toQuantityType(s.value, SIUnits.CELSIUS));
-                            }
-                        } else {
-                            /*
-                             * Device temperature - currently no channel
-                             */
-                        }
-                        break;
-
-                    case "s" /* CatchAll */:
-                        String senValue = sen.desc.toLowerCase();
-                        switch (senValue) {
-                            case "relay0": // Shelly1
-                            case "state":
-                            case "switch":
-                            case "output":
-                            case "vswitch": // ???
-                                updatePower(profile, updates, rIndex, sen, s);
-                                break;
-
-                            case "overtemp":
-                                if (s.value == 1) {
-                                    thingHandler.postEvent(ALARM_TYPE_OVERTEMP, true);
-                                }
-                                break;
-
-                            case "energy counter 0 [w-min]":
-                                updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN1,
-                                        toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
-                                break;
-                            case "energy counter 1 [w-min]":
-                                updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN2,
-                                        toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
-                                break;
-                            case "energy counter 2 [w-min]":
-                                updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN3,
-                                        toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
-                                break;
-
-                            case "energy counter total [w-min]":
-                                updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH,
-                                        toQuantityType(s.value / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
-                                break;
-
-                            case "position":
-                                // work around: Roller reports 101% instead max 100
-                                double pos = Math.max(SHELLY_MIN_ROLLER_POS, Math.min(s.value, SHELLY_MAX_ROLLER_POS));
-                                updateChannel(updates, CHANNEL_GROUP_ROL_CONTROL, CHANNEL_ROL_CONTROL_CONTROL,
-                                        toQuantityType(SHELLY_MAX_ROLLER_POS - pos, SmartHomeUnits.PERCENT));
-                                updateChannel(updates, CHANNEL_GROUP_ROL_CONTROL, CHANNEL_ROL_CONTROL_POS,
-                                        toQuantityType(pos, SmartHomeUnits.PERCENT));
-                                break;
-                            case "input":
-                                Integer idx = getSensorNumber("Input", sen.id);
-                                String iGroup = rGroup;
-                                String iChannel = CHANNEL_INPUT;
-                                if (idx != null) {
-                                    if (profile.isDimmer || profile.isRoller) {
-                                        // Dimmer and Roller things have 2 inputs
-                                        iChannel = CHANNEL_INPUT + idx.toString();
-                                    } else {
-                                        // Device has 1 input per relay: 0=off, 1+2 depend on switch mode
-                                        iGroup = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
-                                                : CHANNEL_GROUP_RELAY_CONTROL + idx;
+                    switch (sen.type.toLowerCase()) /* CoIoT_STypes.valueOf(sen.T) */ {
+                        case "b" /* BatteryLevel */:
+                            updateChannel(updates, CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
+                                    toQuantityType(s.value, DIGITS_PERCENT, SmartHomeUnits.PERCENT));
+                            break;
+                        case "t" /* Temperature */:
+                            Double value = getDouble(s.value);
+                            switch (sen.desc.toLowerCase()) {
+                                case "external_temperature": // Shelly 1/1PM externaö temp sensors
+                                    logger.debug("{}: Update external sensor from Coap update", thingName);
+                                    Integer idx = getExtTempId(sen.id);
+                                    if (idx > 0) {
+                                        updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP + idx,
+                                                toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS));
                                     }
-                                }
-                                updateChannel(updates, iGroup, iChannel, s.value == 0 ? OnOffType.OFF : OnOffType.ON);
-                                if (s.value == 2) {
-                                    thingHandler.postEvent(EVENT_TYPE_LONGPUSH, true);
-                                }
-                                break;
+                                    break;
 
-                            case "flood":
-                                updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD,
-                                        s.value == 1 ? OnOffType.ON : OnOffType.OFF);
-                                break;
-                            case "brightness": // Dimmer
-                                updatePower(profile, updates, rIndex, sen, s);
-                                break;
-                            case "charger": // Sense
-                                updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER,
-                                        s.value == 1 ? OnOffType.ON : OnOffType.OFF);
-                                break;
+                                case "temperature f":
+                                    value = (getDouble(s.value) - 32) * (0.5556);
+                                case "temperature c":
+                                    /*
+                                     * Device temperature - currently no channel
+                                     */
 
-                            // RGBW2/Bulb
-                            case "red":
-                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_RED,
-                                        ShellyColorUtils.toPercent((int) s.value));
-                                break;
-                            case "green":
-                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_GREEN,
-                                        ShellyColorUtils.toPercent((int) s.value));
-                                break;
-                            case "blue":
-                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_BLUE,
-                                        ShellyColorUtils.toPercent((int) s.value));
-                                break;
-                            case "white":
-                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_WHITE,
-                                        ShellyColorUtils.toPercent((int) s.value));
-                                break;
-                            case "gain":
-                                updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_GAIN,
-                                        ShellyColorUtils.toPercent((int) s.value, SHELLY_MIN_GAIN, SHELLY_MAX_GAIN));
-                                break;
-                            case "temp": // Shelly Bulb
-                            case "colortemperature": // Shelly Duo
-                                updateChannel(updates,
-                                        profile.inColor ? CHANNEL_GROUP_COLOR_CONTROL : CHANNEL_GROUP_WHITE_CONTROL,
-                                        CHANNEL_COLOR_TEMP,
-                                        ShellyColorUtils.toPercent((int) s.value, profile.minTemp, profile.maxTemp));
-                                break;
+                                    break;
+                                default:
+                                    // Regular sensor temp (H&T)
+                                    updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
+                                            toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS));
 
-                            default:
-                                logger.debug("{}: Update for unknown sensor type {}/{} received", thingName, sen.type,
-                                        sen.desc);
-                        }
-                        break;
+                            }
+                            break;
+                        case "h" /* Humidity */:
+                            updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM,
+                                    toQuantityType(s.value, DIGITS_PERCENT, SmartHomeUnits.PERCENT));
+                            break;
+                        case "m" /* Motion */:
+                            updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_MOTION,
+                                    s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+                            break;
+                        case "l" /* Luminosity */:
+                            updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX,
+                                    toQuantityType(s.value, DIGITS_LUX, SmartHomeUnits.LUX));
+                            break;
+                        case "p" /* Power/Watt */:
+                            String mGroup = profile.numMeters == 1 ? CHANNEL_GROUP_METER : CHANNEL_GROUP_METER + rIndex;
+                            updateChannel(updates, mGroup, CHANNEL_METER_CURRENTWATTS,
+                                    toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
+                            if (profile.isEMeter) {
+                                updateChannel(updates, mGroup, CHANNEL_LAST_UPDATE, getTimestamp());
+                            }
+                            break;
 
-                    default:
-                        logger.debug("{}: Sensor data for type {} not processed, value={}", thingName, sen.type,
-                                s.value);
-                        break;
+                        case "s" /* CatchAll */:
+                            String senValue = sen.desc.toLowerCase();
+                            switch (senValue) {
+                                case "state":
+                                case "output":
+                                    updatePower(profile, updates, rIndex, sen, s);
+                                    break;
+
+                                case "overtemp":
+                                    if (s.value == 1) {
+                                        thingHandler.postEvent(ALARM_TYPE_OVERTEMP, true);
+                                    }
+                                    break;
+
+                                case "energy counter 0 [w-min]":
+                                    updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN1,
+                                            toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
+                                    break;
+                                case "energy counter 1 [w-min]":
+                                    updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN2,
+                                            toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
+                                    break;
+                                case "energy counter 2 [w-min]":
+                                    updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN3,
+                                            toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
+                                    break;
+
+                                case "energy counter total [w-min]":
+                                    updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH, toQuantityType(
+                                            s.value / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                    break;
+
+                                case "position":
+                                    // work around: Roller reports 101% instead max 100
+                                    double pos = Math.max(SHELLY_MIN_ROLLER_POS,
+                                            Math.min(s.value, SHELLY_MAX_ROLLER_POS));
+                                    updateChannel(updates, CHANNEL_GROUP_ROL_CONTROL, CHANNEL_ROL_CONTROL_CONTROL,
+                                            toQuantityType(SHELLY_MAX_ROLLER_POS - pos, SmartHomeUnits.PERCENT));
+                                    updateChannel(updates, CHANNEL_GROUP_ROL_CONTROL, CHANNEL_ROL_CONTROL_POS,
+                                            toQuantityType(pos, SmartHomeUnits.PERCENT));
+                                    break;
+                                case "input":
+                                    Integer idx = getSensorNumber("Input", sen.id);
+                                    int r = idx.intValue() - 1;
+                                    String iGroup = rGroup;
+                                    String iChannel = CHANNEL_INPUT;
+                                    if (idx != null) {
+                                        if (profile.isDimmer || profile.isRoller) {
+                                            // Dimmer and Roller things have 2 inputs
+                                            iChannel = CHANNEL_INPUT + idx.toString();
+                                        } else {
+                                            // Device has 1 input per relay: 0=off, 1+2 depend on switch mode
+                                            iGroup = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
+                                                    : CHANNEL_GROUP_RELAY_CONTROL + idx;
+                                        }
+
+                                        if ((r >= 0) && (r <= profile.settings.relays.size())) {
+                                            ShellySettingsRelay relay = profile.settings.relays.get(idx.intValue() - 1);
+                                            if ((relay != null) && (s.value != 0)
+                                                    && (relay.btnType.equalsIgnoreCase(SHELLY_BTNT_MOMENTARY)
+                                                            || relay.btnType.equalsIgnoreCase(SHELLY_BTNT_DETACHED))) {
+                                                thingHandler.postEvent(
+                                                        s.value == 1 ? EVENT_TYPE_SHORTPUSH : EVENT_TYPE_LONGPUSH,
+                                                        true);
+                                            }
+                                        }
+                                    }
+                                    updateChannel(updates, iGroup, iChannel,
+                                            s.value == 0 ? OnOffType.OFF : OnOffType.ON);
+                                    break;
+
+                                case "flood":
+                                    updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD,
+                                            s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+                                    break;
+                                case "brightness": // Dimmer
+                                    updatePower(profile, updates, rIndex, sen, s);
+                                    break;
+                                case "charger": // Sense
+                                    updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER,
+                                            s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+                                    break;
+
+                                // RGBW2/Bulb
+                                case "red":
+                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_RED,
+                                            ShellyColorUtils.toPercent((int) s.value));
+                                    break;
+                                case "green":
+                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_GREEN,
+                                            ShellyColorUtils.toPercent((int) s.value));
+                                    break;
+                                case "blue":
+                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_BLUE,
+                                            ShellyColorUtils.toPercent((int) s.value));
+                                    break;
+                                case "white":
+                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_WHITE,
+                                            ShellyColorUtils.toPercent((int) s.value));
+                                    break;
+                                case "gain":
+                                    updateChannel(updates, CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_COLOR_GAIN,
+                                            ShellyColorUtils.toPercent((int) s.value, SHELLY_MIN_GAIN,
+                                                    SHELLY_MAX_GAIN));
+                                    break;
+                                case "temp": // Shelly Bulb
+                                case "colortemperature": // Shelly Duo
+                                    updateChannel(updates,
+                                            profile.inColor ? CHANNEL_GROUP_COLOR_CONTROL : CHANNEL_GROUP_WHITE_CONTROL,
+                                            CHANNEL_COLOR_TEMP, ShellyColorUtils.toPercent((int) s.value,
+                                                    profile.minTemp, profile.maxTemp));
+                                    break;
+
+                                default:
+                                    logger.debug("{}: Update for unknown sensor type {}/{} received", thingName,
+                                            sen.type, sen.desc);
+                            }
+                            break;
+
+                        default:
+                            logger.debug("{}: Sensor data for type {} not processed, value={}", thingName, sen.type,
+                                    s.value);
+                    }
+                } else {
+                    logger.debug("{}: Update for unknown sensor[{}]: Dev={}, Index={}, Value={}", thingName, i, devId,
+                            s.index, s.value);
                 }
-            } else {
-                logger.debug("{}: Update for unknown sensor[{}]: Dev={}, Index={}, Value={}", thingName, i, devId,
-                        s.index, s.value);
+            } catch (NullPointerException | ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
+                logger.debug("{}: Unable to process data from sensor[{}]: Dev={}", thingName, i, devId);
             }
         }
 
-        if (updates.size() > 0) {
+        if (updates.size() > 0)
+
+        {
             logger.debug("{}: Process {} CoIoT channel updates", thingName, updates.size());
             int i = 0;
             for (Map.Entry<String, State> u : updates.entrySet()) {
@@ -582,8 +593,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             CoIotSensor s) {
         String group = "";
         String channel = "";
-        if (profile.isLight) {
-            if (profile.isBulb) {
+        if (profile.isLight || profile.isDimmer) {
+            if (profile.isBulb || profile.inColor) {
                 group = CHANNEL_GROUP_LIGHT_CONTROL;
                 channel = CHANNEL_LIGHT_POWER;
             } else if (profile.isDuo) {
@@ -599,27 +610,18 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             }
 
             if (sen.desc.equalsIgnoreCase("brightness")) {
-                /*
-                 * OnOffType ison = (OnOffType) updates.get(group + "#" + channel + "$Switch");
-                 * if (ison == null) {
-                 * ison = (OnOffType) thingHandler.getChannelValue(group, channel + "$Switch");
-                 * }
-                 * updateChannel(updates, group, channel + "$Value", toQuantityType(
-                 * ison == null || ison == OnOffType.ON ? s.value : 0, DIGITS_NONE, SmartHomeUnits.PERCENT));
-                 *
-                 */
                 lastBrightness = s.value;
             } else {
                 OnOffType state = s.value == 1 ? OnOffType.ON : OnOffType.OFF;
                 updateChannel(updates, group, channel + "$Switch", state);
                 if (lastBrightness < 0.0) {
-                    Double v = (Double) thingHandler.getChannelValue(group, channel + "$Value");
+                    // get current value from channel
+                    QuantityType<?> last = (QuantityType<?>) thingHandler.getChannelValue(group, channel + "$Value");
+                    lastBrightness = last != null ? last.doubleValue() : 50;
                 }
-                if (lastBrightness >= 0.0) {
-                    updateChannel(updates, group, channel + "$Value", toQuantityType(
-                            state == OnOffType.ON ? lastBrightness : 0, DIGITS_NONE, SmartHomeUnits.PERCENT));
-                    lastBrightness = -1.0;
-                }
+                updateChannel(updates, group, channel + "$Value", toQuantityType(
+                        state == OnOffType.ON ? lastBrightness : 0, DIGITS_NONE, SmartHomeUnits.PERCENT));
+                lastBrightness = -1.0;
             }
         } else {
             group = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL : CHANNEL_GROUP_RELAY_CONTROL + id;
@@ -666,6 +668,19 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         switch (sen.type.toLowerCase()) {
             case "w": // old devices/firmware releases use "W", new ones "P"
                 sen.type = "P";
+                sen.desc = "Power";
+                break;
+            case "tc":
+                sen.type = "T";
+                sen.desc = "Temperature C";
+                break;
+            case "tf":
+                sen.type = "T";
+                sen.desc = "Temperature F";
+                break;
+            case "overtemp":
+                sen.type = "S";
+                sen.desc = "Overtemp";
                 break;
         }
 
@@ -678,6 +693,16 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 sen.type = "B";
                 sen.desc = "Battery";
                 break;
+            case "overtemp":
+                sen.type = "S";
+                sen.desc = "Overtemp";
+                break;
+            case "relay0":
+            case "switch":
+            case "vswitch":
+                sen.type = "S";
+                sen.desc = "State";
+                break;
         }
 
         if (sen.desc.isEmpty()) {
@@ -685,14 +710,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 case "p":
                     sen.desc = "Power";
                     break;
-                case "switch":
-                case "relay0":
-                    sen.type = "S";
-                    sen.desc = "Switch";
-                    break;
-                case "overtemp":
-                    sen.type = "S";
-                    sen.desc = "Overtemp";
+                case "T":
+                    sen.desc = "Temperature";
                     break;
                 case "input":
                     sen.type = "S";
@@ -705,10 +724,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 case "brightness":
                     sen.type = "S";
                     sen.desc = "Brightness";
-                    break;
-                case "tc":
-                case "tf":
-                    sen.desc = "Temperature";
                     break;
 
                 case "red":

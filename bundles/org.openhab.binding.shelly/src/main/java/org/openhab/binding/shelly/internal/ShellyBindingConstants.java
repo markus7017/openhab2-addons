@@ -259,6 +259,7 @@ public class ShellyBindingConstants {
     public static final String ALARM_TYPE_LOW_BATTERY = "LOW_BATTERY";
 
     // Event types
+    public static final String EVENT_TYPE_SHORTPUSH = "SHOTRTPUSH";
     public static final String EVENT_TYPE_LONGPUSH = "LONGPUSH";
 
     public static final String SHELLY_NULL_URL = "null";

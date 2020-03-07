@@ -131,32 +131,35 @@ public class ShellyHttpApi {
     }
 
     @SuppressWarnings("null")
-    public void setRelayTurn(Integer relayIndex, String turnMode) throws IOException {
+    public void setRelayTurn(Integer id, String turnMode) throws IOException {
         Validate.notNull(profile);
-        if (profile.isLight) {
-            if (profile.isBulb || profile.isDimmer) {
-                request((profile.inColor ? SHELLY_MODE_COLOR : SHELLY_MODE_WHITE) + "/" + relayIndex.toString() + "?"
-                        + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
-            } else {
-                request(SHELLY_URL_CONTROL_LIGHT + "/" + relayIndex.toString() + "?" + SHELLY_LIGHT_TURN + "="
-                        + turnMode.toLowerCase());
-            }
-        } else
-
-        {
-            request((!profile.isDimmer ? SHELLY_URL_CONTROL_RELEAY : SHELLY_URL_CONTROL_LIGHT) + "/"
-                    + relayIndex.toString() + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
-        }
+        request(getControlUrlPrefix(id) + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
     }
 
-    public void setBrightness(Integer relayIndex, Integer brightness, boolean autoOn) throws IOException {
-        if (autoOn) {
-            request(SHELLY_URL_CONTROL_LIGHT + "/" + relayIndex.toString() + "?" + SHELLY_LIGHT_TURN + "="
-                    + SHELLY_API_ON + "&brightness=" + brightness.toString());
+    public void setBrightness(Integer id, Integer brightness, boolean autoOn) throws IOException {
+        String turn = autoOn ? SHELLY_LIGHT_TURN + "=" + SHELLY_API_ON + "&" : "";
+        request(getControlUrlPrefix(id) + "?" + turn + "brightness=" + brightness.toString());
+    }
+
+    @SuppressWarnings("null")
+    public String getControlUrlPrefix(Integer id) {
+        Validate.notNull(profile);
+        String uri = "";
+        if (profile.isLight || profile.isDimmer) {
+            if (profile.isDuo || profile.isDimmer) {
+                // Duo + Dimmer
+                uri = SHELLY_URL_CONTROL_LIGHT;
+            } else {
+                // Bulb + RGBW2
+                uri = "/" + (profile.inColor ? SHELLY_MODE_COLOR : SHELLY_MODE_WHITE);
+            }
         } else {
-            request(SHELLY_URL_CONTROL_LIGHT + "/" + relayIndex.toString() + "?" + "&brightness="
-                    + brightness.toString());
+            // Roller, Relay
+            uri = SHELLY_URL_CONTROL_RELEAY;
         }
+        uri = uri + "/" + id.toString();
+        logger.trace("{}: Control URL prefix = {}", thingName, uri);
+        return uri;
     }
 
     @Nullable
@@ -258,15 +261,13 @@ public class ShellyHttpApi {
         // Bulb, RGW2: /<color mode>/<light id>?parm?value
         // Dimmer: /light/<light id>?parm=value
         Validate.notNull(profile);
-        request((profile.isBulb ? "/" + profile.mode : SHELLY_URL_CONTROL_LIGHT) + "/" + lightIndex.toString() + "?"
-                + parm + "=" + value);
+        request(getControlUrlPrefix(lightIndex) + "?" + parm + "=" + value);
     }
 
     public void setLightParms(Integer lightIndex, Map<String, String> parameters) throws IOException {
         Validate.notNull(profile);
         @SuppressWarnings("null")
-        String url = (profile.isBulb ? "/" + profile.mode : SHELLY_URL_CONTROL_LIGHT) + "/" + lightIndex.toString()
-                + "?";
+        String url = getControlUrlPrefix(lightIndex) + "?";
         int i = 0;
         for (String key : parameters.keySet()) {
             if (i > 0) {

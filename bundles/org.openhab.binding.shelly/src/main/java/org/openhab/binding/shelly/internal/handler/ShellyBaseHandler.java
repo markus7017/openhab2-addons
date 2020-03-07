@@ -43,6 +43,7 @@ import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
 import org.openhab.binding.shelly.internal.ShellyBindingConstants;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyInputState;
+import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsRelay;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.api.ShellyHttpApi;
@@ -66,9 +67,9 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     protected final Logger logger = LoggerFactory.getLogger(ShellyBaseHandler.class);
 
     public String thingName = "";
-    private final @Nullable ShellyTranslationProvider messages;
     protected ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
     protected ShellyThingConfiguration config = new ShellyThingConfiguration();
+    private final @Nullable ShellyTranslationProvider messages;
     protected @Nullable ShellyHttpApi api;
     private @Nullable ShellyCoapHandler coap;
     protected @Nullable ShellyDeviceProfile profile;
@@ -107,7 +108,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param localIP local IP address from networkAddressService
      * @param httpPort from httpService
      */
-    public ShellyBaseHandler(Thing thing, @Nullable ShellyTranslationProvider translationProvider,
+    public ShellyBaseHandler(Thing thing, @Nullable final ShellyTranslationProvider translationProvider,
             ShellyBindingConfiguration bindingConfig, @Nullable ShellyCoapServer coapServer, String localIP,
             int httpPort) {
         super(thing);
@@ -215,7 +216,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 tmpPrf.fwDate, tmpPrf.fwId);
         logger.debug("{}: Shelly settings info: {}", thingName, tmpPrf.settingsJson);
         logger.debug(
-                "{}: Device has relays: {} (numRelays={}, is roller: {} (numRoller={}), is Plug S: {}, is Dimmer: {}, isDuao: {},"
+                "{}: Device has relays: {} (numRelays={}, is roller: {} (numRoller={}), is Plug S: {}, is Dimmer: {}, isDuo: {},"
                         + "has LEDs: {}, is Light: {}, has Meter: {} (numMeter={}, EMeter: {}), is Sensor: {}, is Sense: {}, has Battery: {} {}, "
                         + "event urls: btn:{},out:{},push{},roller:{},sensor:{}",
                 tmpPrf.hostname, tmpPrf.hasRelays, tmpPrf.numRelays, tmpPrf.isRoller, tmpPrf.numRollers, tmpPrf.isPlugS,
@@ -466,7 +467,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             if (alarm.equals(ALARM_TYPE_NONE)) {
                 channelData.put(channelId, alarm); // init channel
             } else {
-                logger.warn("{}", messages.get("alarm.raised", thingName, alarm));
+                logger.warn("{}", messages.get("event.triggered", thingName, alarm));
                 triggerChannel(channelId, alarm);
                 channelData.replace(channelId, alarm);
                 lastAlarmTs = now();
@@ -489,15 +490,24 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             logger.debug("{}: Event received: class={}, index={}, parameters={}", deviceName, type, deviceIndex,
                     parameters.toString());
             boolean hasBattery = profile != null && profile.hasBattery ? true : false;
+            Integer rindex = !deviceIndex.isEmpty() ? Integer.parseInt(deviceIndex) + 1 : -1;
             if (profile == null) {
                 logger.debug("{}: Device is not yet initialized, event triggers initialization", deviceName);
                 requestUpdates(1, true);
             } else {
                 String group = "";
-                Integer rindex = !deviceIndex.isEmpty() ? Integer.parseInt(deviceIndex) + 1 : -1;
+                boolean isButton = false;
                 if (type.equals(ShellyBindingConstants.EVENT_TYPE_RELAY)) {
                     group = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
                             : CHANNEL_GROUP_RELAY_CONTROL + rindex.toString();
+                    int i = Integer.parseInt(deviceIndex);
+                    if ((i >= 0) && (i <= profile.settings.relays.size())) {
+                        ShellySettingsRelay relay = profile.settings.relays.get(i);
+                        if ((relay != null) && (relay.btnType.equalsIgnoreCase(SHELLY_BTNT_MOMENTARY)
+                                || relay.btnType.equalsIgnoreCase(SHELLY_BTNT_DETACHED))) {
+                            isButton = true;
+                        }
+                    }
                 }
                 if (type.equals(ShellyBindingConstants.EVENT_TYPE_ROLLER)) {
                     group = profile.numRollers <= 1 ? CHANNEL_GROUP_ROL_CONTROL
@@ -523,12 +533,15 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                         : parameters.get("type");
                 switch (event) {
                     case SHELLY_EVENT_SHORTPUSH:
-                        channel = CHANNEL_BUTTON_TRIGGER;
-                        payload = CommonTriggerEvents.SHORT_PRESSED;
-                        break;
                     case SHELLY_EVENT_LONGPUSH:
-                        channel = CHANNEL_BUTTON_TRIGGER;
-                        payload = CommonTriggerEvents.LONG_PRESSED;
+                        if (isButton) {
+                            channel = CHANNEL_BUTTON_TRIGGER;
+                            payload = event.equals(SHELLY_EVENT_SHORTPUSH) ? CommonTriggerEvents.SHORT_PRESSED
+                                    : CommonTriggerEvents.LONG_PRESSED;
+                        } else {
+                            logger.debug("{}: Relay button is not in memontary or detached mode, ignore SHORT/LONGPUSH",
+                                    thingName);
+                        }
                         break;
 
                     case SHELLY_EVENT_ROLLER_OPEN:

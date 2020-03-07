@@ -56,9 +56,7 @@ import io.reactivex.annotations.NonNull;
 @Component(service = { ThingHandlerFactory.class, ShellyHandlerFactory.class }, configurationPid = "binding.shelly")
 public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(ShellyHandlerFactory.class);
-    private @Nullable LocaleProvider localeProvider;
-    private @Nullable TranslationProvider i18nProvider;
-    private @Nullable ShellyTranslationProvider translationProvider;
+    private final ShellyTranslationProvider messages;
     private final ShellyCoapServer coapServer;
     private final Set<ShellyDeviceListener> deviceListeners = new CopyOnWriteArraySet<>();
 
@@ -76,10 +74,12 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
      */
     @Activate
     public ShellyHandlerFactory(@Reference NetworkAddressService networkAddressService,
+            @Reference LocaleProvider localeProvider, @Reference TranslationProvider i18nProvider,
             ComponentContext componentContext, Map<String, @Nullable Object> configProperties) {
         logger.debug("Activate Shelly HandlerFactory");
         super.activate(componentContext);
 
+        this.messages = new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider, localeProvider);
         this.coapServer = new ShellyCoapServer();
         Validate.notNull(coapServer, "coapServer creation failed!");
 
@@ -106,23 +106,18 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
         String thingType = thingTypeUID.getId();
         ShellyBaseHandler handler = null;
-        if (translationProvider == null) {
-            translationProvider = new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider,
-                    localeProvider);
-        }
 
         if (thingType.equals(THING_TYPE_SHELLYPROTECTED_STR)) {
             logger.debug("Create new thing of type {} using ShellyRelayHandler", thingTypeUID.getId());
-            handler = new ShellyProtectedHandler(thing, translationProvider, bindingConfig, coapServer, localIP,
-                    httpPort);
+            handler = new ShellyProtectedHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort);
         } else if (thingType.equals(THING_TYPE_SHELLYBULB.getId()) || thingType.equals(THING_TYPE_SHELLYDUO.getId())
                 || thingType.equals(THING_TYPE_SHELLYRGBW2_COLOR.getId())
                 || thingType.equals(THING_TYPE_SHELLYRGBW2_WHITE.getId())) {
             logger.debug("Create new thing of type {} using ShellyLightHandler", thingTypeUID.getId());
-            handler = new ShellyLightHandler(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort);
+            handler = new ShellyLightHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort);
         } else if (SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID)) {
             logger.debug("Create new thing of type {} using ShellyRelayHandler", thingTypeUID.getId());
-            handler = new ShellyRelayHandler(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort);
+            handler = new ShellyRelayHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort);
         }
 
         if (handler != null) {
@@ -174,23 +169,4 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     public ShellyBindingConfiguration getBindingConfig() {
         return bindingConfig;
     }
-
-    @Reference
-    protected void setLocaleProvider(final LocaleProvider localeProvider) {
-        this.localeProvider = localeProvider;
-    }
-
-    protected void unsetLocaleProvider(final LocaleProvider localeProvider) {
-        this.localeProvider = null;
-    }
-
-    @Reference
-    protected void setTranslationProvider(TranslationProvider i18nProvider) {
-        this.i18nProvider = i18nProvider;
-    }
-
-    protected void unsetTranslationProvider(TranslationProvider i18nProvider) {
-        this.translationProvider = null;
-    }
-
 }
