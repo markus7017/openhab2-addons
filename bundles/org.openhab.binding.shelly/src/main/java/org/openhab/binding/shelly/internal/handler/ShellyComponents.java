@@ -40,6 +40,27 @@ import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
  */
 @NonNullByDefault
 public class ShellyComponents {
+
+    /**
+     *
+     * Update device status
+     *
+     * @param th Thing Handler instance
+     * @param profile ShellyDeviceProfile
+     */
+    public static boolean updateDeviceStatus(ShellyBaseHandler th, ShellySettingsStatus status) {
+        Integer rssi = getInteger(status.wifiSta.rssi);
+        th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_UPTIME,
+                toQuantityType(new Double(getLong(status.uptime)), DIGITS_TEMP, SIUnits.CELSIUS));
+        th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_RSSI, mapSignalStrength(rssi));
+        if (status.tmp != null) {
+            th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
+                    toQuantityType(getDouble(status.tmp.tC), DIGITS_TEMP, SIUnits.CELSIUS));
+        }
+
+        return false; // device status never triggers update
+    }
+
     /**
      * Update Meter channel
      *
@@ -53,7 +74,7 @@ public class ShellyComponents {
         ShellyDeviceProfile profile = th.getProfile();
 
         boolean updated = false;
-        if (profile.hasMeter && ((status.meters != null) || (status.emeters != null))) {
+        if ((profile.numMeters > 0) && ((status.meters != null) || (status.emeters != null))) {
             if (!profile.isRoller) {
                 th.logger.trace("{}: Updating {} {}meter(s)", th.thingName, profile.numMeters.toString(),
                         !profile.isEMeter ? "standard " : "e-");
@@ -225,9 +246,7 @@ public class ShellyComponents {
                             sdata.sensor.state.equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN) ? OpenClosedType.OPEN
                                     : OpenClosedType.CLOSED);
                 }
-
                 if (sdata.flood != null) {
-                    th.logger.trace("{}: Updating flood", th.thingName);
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD, getOnOff(sdata.flood));
                 }
                 if ((sdata.bat != null) && (sdata.bat.value != null)) { // no update for Sense
@@ -242,9 +261,12 @@ public class ShellyComponents {
                         th.postEvent(ALARM_TYPE_LOW_BATTERY, false);
                     }
                 }
-                if (profile.isSense) {
+                if (sdata.motion != null) {
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_MOTION, getOnOff(sdata.motion));
+                }
+                if (sdata.charger != null) {
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER, getOnOff(sdata.charger));
+
                 }
 
                 if (updated) {

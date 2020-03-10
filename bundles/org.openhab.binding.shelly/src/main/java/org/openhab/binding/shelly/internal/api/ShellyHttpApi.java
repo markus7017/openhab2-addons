@@ -94,7 +94,7 @@ public class ShellyHttpApi {
 
             // Map settings to device profile for Light and Sense
             profile = ShellyDeviceProfile.initialize(thingType, json);
-            Validate.notNull(profile);
+            Validate.notNull(profile, "Unable to parse device settings: " + json);
 
             // 2nd level initialization
             profile.thingName = profile.hostname;
@@ -109,9 +109,8 @@ public class ShellyHttpApi {
             }
 
             return profile;
-        } catch (IOException e) {
-            throw new IOException(
-                    "EXCEPTION: Unable to get settings from device with IP " + config.deviceIp + ": " + getString(e));
+        } catch (IOException | NullPointerException e) {
+            throw new IOException("Unable to get settings: " + getString(e));
         }
     }
 
@@ -197,10 +196,17 @@ public class ShellyHttpApi {
         Validate.notNull(profile);
         ShellyStatusSensor status = gson.fromJson(request(SHELLY_URL_STATUS), ShellyStatusSensor.class);
         if (profile.isSense) {
-            // complete reported data
-            status.tmp.tC = status.tmp.units.equals(SHELLY_TEMP_CELSIUS) ? status.tmp.value : 0;
-            status.tmp.tF = status.tmp.units.equals(SHELLY_TEMP_FAHRENHEIT) ? status.tmp.value : 0;
+            // complete reported data, map C to F or vice versa: C=(F - 32) * 0.5556;
+            status.tmp.tC = status.tmp.units.equals(SHELLY_TEMP_CELSIUS) ? status.tmp.value
+                    : status.tmp.value / 0.5556 + 32;
+            status.tmp.tF = status.tmp.units.equals(SHELLY_TEMP_FAHRENHEIT) ? status.tmp.value
+                    : (status.tmp.value + 32) * 0.5556;
         }
+        if ((status.charger == null) && (status.externalPower != null)) {
+            // SHelly H&T uses external_power, Sense uses charger
+            status.charger = status.externalPower != 0;
+        }
+
         return status;
     }
 
@@ -294,31 +300,7 @@ public class ShellyHttpApi {
      */
     public Map<String, String> getIRCodeList() throws IOException {
         String result = request(SHELLY_URL_LIST_IR);
-
-        /*
-         * A string like this is returned with all key codes defined in the device (customizable with the App):
-         * String result =
-         * "[[\"1_231_pwr\",\"tv(231) - Power\"],[\"1_231_chdwn\",\"tv(231) - Channel Down\"],[\"1_231_chup\",
-         * \"tv(231) - Channel Up\"], [\"1_231_voldwn\",\"tv(231) - Volume Down\"],[\"1_231_volup\",\"tv(231) - Volume Up\"],[\"1_231_mute\"
-         * ,
-         * \"tv(231) - Mute\"],[\"1_231_menu\",\"tv(231) - Menu\"],[\"1_231_inp\",\"tv(231) - Input\"],[\"1_231_info\",\"tv(231) -  Info\"
-         * ],
-         * [\"1_231_left\",\"tv(231) - Left\"],[\"1_231_up\",\"tv(231) - Up\"],[\"1_231_right\",\"tv(231) - Right\"],[\"1_231_ok\"
-         * ,\
-         * "tv(231) - OK\"],[\"1_231_down\",\"tv(231) - Down\"],[\"1_231_back\",\"tv(231) - Back\"],[\"6_546_pwr\",\"receiver(546) - Power\"
-         * ],
-         * [\"6_546_voldwn\",\"receiver(546) - Volume Down\"],[\"6_546_volup\",\"receiver(546) - Volume Up\"],[\"6_546_mute\"
-         * ,
-         * \"receiver(546) - Mute\"],[\"6_546_menu\",\"receiver(546) - Menu\"],[\"6_546_info\",\"receiver(546) - Info\"],[\"6_546_left\"
-         * ,
-         * \"receiver(546) - Left\"],[\"6_546_up\",\"receiver(546) - Up\"],[\"6_546_right\",\"receiver(546) - Right\"],[\"6_546_ok\"
-         * ,
-         * \"receiver(546) - OK\"],[\"6_546_down\",\"receiver(546) - Down\"],[\"6_546_back\",\"receiver(546) - Back\"]]"
-         * ;
-         */
-
-        // take pragmatic approach to make the returned JSon into named arrays, otherwise we need to implement a
-        // dedicated GSonParser
+        // take pragmatic approach to make the returned JSon into named arrays for Gson parsing
         String keyList = StringUtils.substringAfter(result, "[");
         keyList = StringUtils.substringBeforeLast(keyList, "]");
         keyList = keyList.replaceAll(java.util.regex.Pattern.quote("\",\""), "\", \"name\": \"");
@@ -493,22 +475,28 @@ public class ShellyHttpApi {
      */
     @SuppressWarnings("null")
     private String request(String uri) throws IOException {
-        String result = "";
+        String result = "EMPTY";
         String message = "";
         String type = "";
         boolean retry = false;
         try {
             result = innerRequest(uri);
+            if (result.isEmpty()) {
+                logger.debug("{}: Empty http result, retry!", thingName);
+                retry = true;
+            }
         } catch (IOException e) {
             type = getExceptionType(e);
             message = getString(e);
-            if (((profile != null) && !profile.hasBattery)
-                    && (message.contains("Timeout") || getString(type.toLowerCase()).contains("timeout")
-                            || message.contains("Connection reset") || type.contains("InterruptedException"))) {
+            if (getString(type.toLowerCase()).contains("timeout") || message.contains("Connection reset")
+                    || type.contains("InterruptedException")) {
                 timeoutErrors++;
                 logger.debug("{}: Shelly API timeout # {} ({}), retry", thingName, timeoutErrors, type);
                 retry = true;
             }
+        }
+        if (((profile != null) && profile.hasBattery || result.contains(APIERR_HTTP_401_UNAUTHORIZED))) {
+            retry = false;
         }
         if (retry) {
             try {
@@ -518,10 +506,10 @@ public class ShellyHttpApi {
                 logger.debug("{}: Shelly API timeout recovered", thingName);
             } catch (IOException e) {
                 type = getExceptionType(e);
-                message = getString(e);
+                message = "Shelly API timeout: " + getString(e);
             }
         }
-        if (result.isEmpty() && !message.isEmpty()) {
+        if (message.isEmpty() && (result.equals("EMPTY") || result.isEmpty())) {
             message = "Empty response, Timeout?";
         }
         if (!message.isEmpty()) {
@@ -543,6 +531,7 @@ public class ShellyHttpApi {
         }
 
         httpResponse = HttpUtil.executeUrl(HttpMethod.GET, url, headers, null, "", SHELLY_API_TIMEOUT_MS);
+        logger.trace("{}: HTTP response: {}", thingName, httpResponse);
         Validate.notNull(httpResponse, "httpResponse must not be null");
         // all api responses are returning the result in Json format. If we are getting
         // something else it must
@@ -555,7 +544,6 @@ public class ShellyHttpApi {
             throw new IOException("Unexpected response: " + httpResponse);
         }
 
-        logger.trace("{}: HTTP response: {}", thingName, httpResponse);
         return httpResponse;
     }
 

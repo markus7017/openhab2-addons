@@ -345,12 +345,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         boolean updated = false;
         for (ShellyStatusLightChannel light : status.lights) {
             Integer channelId = lightId + 1;
-            logger.trace("Updating lightId {}/{}", lightId, channelId.toString());
             String controlGroup = buildControlGroupName(profile, channelId);
-
-            logger.trace("Updating light channels {}.{} (mode={})", profile.hostname, controlGroup,
-                    getString(profile.settings.mode));
-
             // The bulb has a combined channel set for color or white mode
             // The RGBW2 uses 2 different thing types: color=1 channel, white=4 channel
             if (profile.isBulb) {
@@ -396,7 +391,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
 
             if (!profile.inColor || profile.isBulb) {
                 String whiteGroup = buildWhiteGroupName(profile, channelId);
-                logger.trace("update white settings for {}.{}", whiteGroup, channelId);
                 col.setBrightness(getInteger(light.brightness));
                 if (light.ison) {
                     updated |= updateChannel(whiteGroup, CHANNEL_BRIGHTNESS + "$Switch", OnOffType.ON);

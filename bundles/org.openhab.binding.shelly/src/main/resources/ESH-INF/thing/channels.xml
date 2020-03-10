@@ -403,4 +403,16 @@
 			</options>
 		</event>
 	</channel-type>
+	<channel-type id="deviceTemp">
+		<item-type>Number:Temperature</item-type>
+		<label>Internal Temperature</label>
+		<description>Internal device temperature, helps to detect overheating due to installation issues</description>
+		<category>Temperature</category>
+		<tags>
+			<tag>CurrentTemperature</tag>
+		</tags>
+		<state readOnly="true" pattern="%f %unit%">
+		</state>
+	</channel-type>
+
 </thing:thing-descriptions>

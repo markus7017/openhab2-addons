@@ -74,6 +74,7 @@
 		<channels>
 			<channel id="temperature" typeId="sensorTemp" />
 			<channel id="humidity" typeId="sensorHumidity" />
+			<channel id="charger" typeId="sensorCharger" />
 			<channel id="lastUpdate" typeId="timestamp" />
 		</channels>
 	</channel-group-type>

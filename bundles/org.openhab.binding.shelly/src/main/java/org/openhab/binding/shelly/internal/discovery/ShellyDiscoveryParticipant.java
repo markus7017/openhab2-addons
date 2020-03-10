@@ -34,6 +34,7 @@ import org.eclipse.smarthome.core.i18n.LocaleProvider;
 import org.eclipse.smarthome.core.i18n.TranslationProvider;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
+import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsDevice;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.api.ShellyHttpApi;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
@@ -101,6 +102,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
         bindingConfig.updateFromProperties(componentContext.getProperties());
     }
 
+    @SuppressWarnings("null")
     @Nullable
     @Override
     public DiscoveryResult createResult(final ServiceInfo service) {
@@ -137,8 +139,9 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
             ShellyHttpApi api = new ShellyHttpApi(name, config);
 
             try {
+                ShellySettingsDevice devInfo = api.getDevInfo();
+
                 profile = api.getDeviceProfile(thingType);
-                Validate.notNull(profile);
                 logger.debug("Shelly settings : {}", profile.settingsJson);
                 Validate.notNull(profile, "Unable to get device profile: ");
                 Validate.notNull(profile.settings);
@@ -159,7 +162,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                     // create shellyunknown thing - will be changed during thing initialization with valid credentials
                     thingUID = ShellyThingCreator.getThingUID(name, mode, true);
                 } else {
-                    logger.info("{}", messages.get("discovery.failed", name, address, getString(e)));
+                    logger.info("{}: {}", name, messages.get("discovery.failed", address, getString(e)));
                     logger.debug("{}: Exception {}\n{}", name, e.getClass(), e.getStackTrace());
                 }
             }

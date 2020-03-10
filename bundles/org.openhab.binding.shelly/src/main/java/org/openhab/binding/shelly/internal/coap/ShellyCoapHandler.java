@@ -384,6 +384,14 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                         case "t" /* Temperature */:
                             Double value = getDouble(s.value);
                             switch (sen.desc.toLowerCase()) {
+                                case "temperature":
+                                    if (profile.settings.temperatureUnits.equalsIgnoreCase("F")) {
+                                        value = (getDouble(s.value) - 32) * (0.5556);
+                                    }
+                                    updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
+                                            toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS));
+                                    break;
+
                                 case "external_temperature": // Shelly 1/1PM externaö temp sensors
                                     logger.debug("{}: Update external sensor from Coap update", thingName);
                                     Integer idx = getExtTempId(sen.id);
@@ -392,20 +400,17 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                                 toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS));
                                     }
                                     break;
-
                                 case "temperature f":
                                     value = (getDouble(s.value) - 32) * (0.5556);
                                 case "temperature c":
-                                    /*
-                                     * Device temperature - currently no channel
-                                     */
-
+                                    // Device temperature
+                                    updateChannel(updates, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ITEMP,
+                                            toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS));
                                     break;
                                 default:
                                     // Regular sensor temp (H&T)
                                     updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
                                             toQuantityType(value, DIGITS_TEMP, SIUnits.CELSIUS));
-
                             }
                             break;
                         case "h" /* Humidity */:
@@ -444,23 +449,38 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                     break;
 
                                 case "energy counter 0 [w-min]":
+                                case "e cnt 0 [w-min]": // 4 Pro
                                     updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN1,
                                             toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
                                     break;
                                 case "energy counter 1 [w-min]":
+                                case "e cnt 1 [w-min]": // 4 Pro
                                     updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN2,
                                             toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
                                     break;
                                 case "energy counter 2 [w-min]":
+                                case "e cnt 2 [w-min]": // 4 Pro
                                     updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN3,
                                             toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
                                     break;
 
-                                case "energy counter total [w-min]":
                                 case "energy counter total [w-h]": // EM3 reports W/h
-                                    updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH,
-                                            toQuantityType(!profile.isEM3 ? s.value / 60 / 1000 : s.value / 1000,
-                                                    DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                    s.value = s.value * 60;
+                                case "energy counter total [w-min]":
+                                case "e cnt total [w-min]": // 4 Pro
+                                    updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH, toQuantityType(
+                                            s.value / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                    break;
+                                case "voltage":
+                                    updateChannel(updates, rGroup, CHANNEL_EMETER_VOLTAGE,
+                                            toQuantityType(getDouble(s.value), DIGITS_VOLT, SmartHomeUnits.VOLT));
+                                    break;
+                                case "current":
+                                    updateChannel(updates, rGroup, CHANNEL_EMETER_CURRENT,
+                                            toQuantityType(getDouble(s.value), DIGITS_VOLT, SmartHomeUnits.AMPERE));
+                                    break;
+                                case "pf":
+                                    updateChannel(updates, rGroup, CHANNEL_EMETER_PFACTOR, getDecimal(s.value));
                                     break;
 
                                 case "position":
@@ -487,7 +507,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                                     : CHANNEL_GROUP_RELAY_CONTROL + idx;
                                         }
 
-                                        if ((r >= 0) && (r <= profile.settings.relays.size())) {
+                                        if ((profile.settings.relays != null) && (r >= 0)
+                                                && (r < profile.settings.relays.size())) {
                                             ShellySettingsRelay relay = profile.settings.relays.get(idx.intValue() - 1);
                                             if ((relay != null) && (s.value != 0)
                                                     && (relay.btnType.equalsIgnoreCase(SHELLY_BTNT_MOMENTARY)
@@ -543,13 +564,11 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                             CHANNEL_COLOR_TEMP, ShellyColorUtils.toPercent((int) s.value,
                                                     profile.minTemp, profile.maxTemp));
                                     break;
-
                                 default:
                                     logger.debug("{}: Update for unknown sensor type {}/{} received", thingName,
                                             sen.type, sen.desc);
                             }
                             break;
-
                         default:
                             logger.debug("{}: Sensor data for type {} not processed, value={}", thingName, sen.type,
                                     s.value);
@@ -559,7 +578,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             s.index, s.value);
                 }
             } catch (NullPointerException | ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
-                logger.debug("{}: Unable to process data from sensor[{}]: Dev={}", thingName, i, devId);
+                logger.debug("{}: Unable to process data from sensor[{}]: Dev={}\n{}", thingName, i, devId,
+                        e.getStackTrace());
             }
         }
 
@@ -685,6 +705,12 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             case "overtemp":
                 sen.type = "S";
                 sen.desc = "Overtemp";
+                break;
+            case "relay0":
+            case "switch":
+            case "vswitch":
+                sen.type = "S";
+                sen.desc = "State";
                 break;
         }
 

@@ -389,17 +389,20 @@ public class ShellyApiJsonDTO {
         public ShellySettingsWiFiNetwork wifiSta1;
         // public ShellySettingsMqtt mqtt; // not used for now
         // public ShellySettingsSntp sntp; // not used for now
-        public ShellySettingsCoiot coiot; // Firmware 1.6+
+        // public ShellySettingsCoiot coiot; // Firmware 1.6+
         public ShellySettingsLogin login;
         @SerializedName("pin_code")
         public String pinCode;
         @SerializedName("coiot_execute_enable")
         public Boolean coiotExecuteEnable;
         public String name;
+        public Boolean discoverable; // FW 1.6+
         public String fw;
         @SerializedName("build_info")
         ShellySettingsBuildInfo buildInfo;
         ShellyStatusCloud cloud;
+        // @SerializedName("sleep_mode")
+        // ShellySensorSleepMode sleepMode; // FW 1.6
 
         public String timezone;
         public Double lat;
@@ -423,6 +426,9 @@ public class ShellyApiJsonDTO {
         public ArrayList<ShellySettingsDimmer> dimmers;
         public ArrayList<ShellySettingsEMeter> emeters;
         public ArrayList<ShellyInputState> inputs; // Firmware 1.5.6+
+
+        @SerializedName("temperature_units")
+        public String temperatureUnits; // Either'C'or'F'
 
         @SerializedName("led_status_disable")
         public Boolean ledStatusDisable; // PlugS only Disable LED indication for network
@@ -473,7 +479,7 @@ public class ShellyApiJsonDTO {
         @SerializedName("has_update")
         public Boolean hasUpdate;
         public String mac;
-        public String discoverable; // FW 1.6+
+        public Boolean discoverable; // FW 1.6+
         public ArrayList<ShellySettingsRelay> relays;
         public ArrayList<ShellySettingsRoller> rollers;
         public Integer input; // RGBW2 has no JSON array
@@ -633,12 +639,12 @@ public class ShellyApiJsonDTO {
     public final static String SHELLY_API_DWSTATE_OPEN = "open";
     public final static String SHELLY_API_DWSTATE_CLOSE = "close";
 
-    public static class ShellySettingsSensor {
-        public class ShellySettingsSensorSleepMode {
-            public Integer period;
-            public String unit;
-        }
+    public class ShellySensorSleepMode {
+        public Integer period;
+        public String unit;
+    }
 
+    public static class ShellySettingsSensor {
         @SerializedName("temperature_units")
         public String temperatureUnits; // Either'C'or'F'
         @SerializedName("temperature_threshold")
@@ -647,16 +653,15 @@ public class ShellyApiJsonDTO {
         public Integer humidityThreshold; // RH delta in % which triggers an update
         @SerializedName("sleep_mode_period")
         public Integer sleepModePeriod; // Periodic update period in hours, between 1 and 24
+        // @SerializedName("sleep_mode")
+        // ShellySensorSleepMode sleepMode;
         @SerializedName("report_url")
         public String reportUrl; // URL gets posted on updates with sensor data
 
-        // Shelly Door/Window
         @SerializedName("led_status_disable")
         public Boolean ledStatusDisabled;
         public Integer dark_threshold;
         public Integer twilight_threshold;
-        @SerializedName("sleep_mode")
-        ShellySettingsSensorSleepMode sleepMode;
         @SerializedName("dark_url")
         public String darkUrl; // URL gets posted on updates with sensor data
         @SerializedName("twilight_url")
@@ -725,6 +730,8 @@ public class ShellyApiJsonDTO {
 
         public Boolean motion; // Shelly Sense: true=motion detected
         public Boolean charger; // Shelly Sense: true=charger connected
+        @SerializedName("external_power")
+        public Integer externalPower; // H&T FW 1.6, seems to be the same like charger for the Sense
 
         @SerializedName("act_reasons")
         public String[] actReasons; // HT/Smoke/Flood: list of reasons which woke up the device

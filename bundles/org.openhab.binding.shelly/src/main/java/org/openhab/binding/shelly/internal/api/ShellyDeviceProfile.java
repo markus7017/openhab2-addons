@@ -46,6 +46,7 @@ public class ShellyDeviceProfile {
 
     public String hostname = "";
     public String mode = "";
+    public Boolean discoverable = true;
 
     public String hwRev = "";
     public String hwBatchId = "";
@@ -56,26 +57,25 @@ public class ShellyDeviceProfile {
 
     public Boolean hasRelays = false; // true if it has at least 1 power meter
     public Integer numRelays = 0; // number of relays/outputs
-    public Integer numRollers = 9; // number of Rollers, usually 1
+    public Integer numRollers = 0; // number of Rollers, usually 1
     public Boolean isRoller = false; // true for Shelly2 in roller mode
     public Boolean isDimmer = false; // true for a Shelly Dimmer (SHDM-1)
+    public Boolean isPlugS = false; // true if it is a Shelly Plug S
 
-    public Boolean hasMeter = false; // true if it has at least 1 power meter
     public Integer numMeters = 0;
     public Boolean isEMeter = false; // true for ShellyEM/EM3
+    public Boolean isEM3 = false; // true only if EM3
 
-    public Boolean hasBattery = false; // true if battery device
-    public Boolean hasLed = false; // true if battery device
-    public Boolean isPlugS = false; // true if it is a Shelly Plug S
     public Boolean isLight = false; // true if it is a Shelly Bulb/RGBW2
     public Boolean isBulb = false; // true only if it is a Bulb
     public Boolean isDuo = false; // true only if it is a Duo
     public Boolean isRGBW2 = false; // true only if it a a RGBW2
-    public Boolean isSense = false; // true if thing is a Shelly Sense
     public Boolean inColor = false; // true if bulb/rgbw2 is in color mode
+    public Boolean hasLed = false; // true if battery device
+
     public Boolean isSensor = false; // true for HT & Smoke
-    public Boolean isSmoke = false; // true for Smoke
-    public Boolean isEM3 = false; // true only if EM3
+    public Boolean hasBattery = false; // true if battery device
+    public Boolean isSense = false; // true if thing is a Shelly Sense
 
     public Integer minTemp = 0; // Bulb/Duo: Min Light Temp
     public Integer maxTemp = 0; // Bulb/Duo: Max Light Temp
@@ -112,37 +112,10 @@ public class ShellyDeviceProfile {
         profile.fwDate = getString(StringUtils.substringBefore(profile.settings.fw, "/"));
         profile.fwVersion = getString(StringUtils.substringBetween(profile.settings.fw, "/", "@"));
         profile.fwId = getString(StringUtils.substringAfter(profile.settings.fw, "@"));
+        profile.discoverable = (profile.settings.discoverable == null) || profile.settings.discoverable;
 
         profile.isRoller = profile.mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
         profile.isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
-        profile.hasLed = profile.isPlugS;
-        profile.isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
-        profile.isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR);
-        profile.isDimmer = profile.deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
-        profile.isRGBW2 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
-        profile.isLight = profile.isBulb || profile.isDuo || profile.isRGBW2;
-        profile.inColor = profile.isLight && profile.mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
-        if (profile.isBulb) {
-            profile.minTemp = MIN_COLOR_TEMP_BULB;
-            profile.maxTemp = MAX_COLOR_TEMP_BULB;
-        }
-        if (profile.isDuo) {
-            profile.minTemp = MIN_COLOR_TEMP_DUO;
-            profile.maxTemp = MAX_COLOR_TEMP_DUO;
-        }
-
-        profile.isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
-        profile.isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
-        profile.isSensor = profile.isSense || profile.isSmoke || thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYDOORWIN_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
-        profile.hasBattery = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYDOORWIN_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
 
         profile.numRelays = !profile.isLight ? getInteger(profile.settings.device.numOutputs) : 0;
         if ((profile.numRelays > 0) && (profile.settings.relays == null)) {
@@ -151,15 +124,34 @@ public class ShellyDeviceProfile {
         profile.hasRelays = (profile.numRelays > 0) || profile.isDimmer;
         profile.numRollers = getInteger(profile.settings.device.numRollers);
 
-        profile.isEMeter = profile.settings.emeters != null;
         profile.numMeters = !profile.isEMeter ? getInteger(profile.settings.device.numMeters)
                 : getInteger(profile.settings.device.numEMeters);
         if ((profile.numMeters == 0) && profile.isLight) {
             // RGBW2 doesn't report, but has one
             profile.numMeters = profile.inColor ? 1 : getInteger(profile.settings.device.numOutputs);
         }
-        profile.hasMeter = (profile.numMeters > 0);
+        profile.isEMeter = profile.settings.emeters != null;
         profile.isEM3 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYEM3_STR);
+        profile.isDimmer = profile.deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
+
+        profile.isLight = profile.isBulb || profile.isDuo || profile.isRGBW2;
+        profile.isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
+        profile.isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYVINTAGE_STR);
+        profile.isRGBW2 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
+        profile.hasLed = profile.isPlugS;
+        profile.inColor = profile.isLight && profile.mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
+        profile.minTemp = profile.isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO;
+        profile.maxTemp = profile.isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO;
+
+        boolean isHT = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
+        boolean isFlood = thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR);
+        boolean isDW = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
+        boolean isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
+        profile.isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
+        profile.isSensor = isHT || isFlood || isDW || isSmoke || profile.isSense;
+        profile.hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
 
         profile.supportsButtonUrls = profile.settingsJson.contains(SHELLY_API_EVENTURL_BTN_ON)
                 || profile.settingsJson.contains(SHELLY_API_EVENTURL_BTN1_ON)
