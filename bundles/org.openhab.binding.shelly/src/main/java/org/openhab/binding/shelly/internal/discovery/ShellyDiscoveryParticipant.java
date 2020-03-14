@@ -16,7 +16,6 @@ import static org.eclipse.smarthome.core.thing.Thing.PROPERTY_MODEL_ID;
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.getString;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +26,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.config.discovery.DiscoveryResult;
 import org.eclipse.smarthome.config.discovery.DiscoveryResultBuilder;
 import org.eclipse.smarthome.config.discovery.mdns.MDNSDiscoveryParticipant;
@@ -34,12 +34,14 @@ import org.eclipse.smarthome.core.i18n.LocaleProvider;
 import org.eclipse.smarthome.core.i18n.TranslationProvider;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
+import org.eclipse.smarthome.io.net.http.HttpClientFactory;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsDevice;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.api.ShellyHttpApi;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
+import org.openhab.binding.shelly.internal.util.ShellyException;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -62,6 +64,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     private @Nullable LocaleProvider localeProvider;
     private @Nullable TranslationProvider i18nProvider;
     private @Nullable ShellyTranslationProvider messages;
+    private @Nullable HttpClient httpClient;
 
     @Override
     public Set<ThingTypeUID> getSupportedThingTypeUIDs() {
@@ -136,7 +139,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
             config.deviceIp = address;
             config.userId = bindingConfig.defaultUserId;
             config.password = bindingConfig.defaultPassword;
-            ShellyHttpApi api = new ShellyHttpApi(name, config);
+            ShellyHttpApi api = new ShellyHttpApi(name, config, httpClient);
 
             try {
                 ShellySettingsDevice devInfo = api.getDevInfo();
@@ -155,7 +158,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
 
                 // get thing type from device name
                 thingUID = ShellyThingCreator.getThingUID(name, mode, false);
-            } catch (IOException e) {
+            } catch (ShellyException e) {
                 if (getString(e).contains(APIERR_HTTP_401_UNAUTHORIZED)) {
                     logger.info("{}: {}", name, messages.get("discovery.protecte", address));
 
@@ -214,4 +217,14 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     protected void unsetTranslationProvider(TranslationProvider i18nProvider) {
         this.i18nProvider = null;
     }
+
+    @Reference
+    protected void setHttpClientFactory(HttpClientFactory httpClientFactory) {
+        this.httpClient = httpClientFactory.getCommonHttpClient();
+    }
+
+    protected void unsetHttpClientFactory(HttpClientFactory httpClientFactory) {
+        this.httpClient = null;
+    }
+
 }

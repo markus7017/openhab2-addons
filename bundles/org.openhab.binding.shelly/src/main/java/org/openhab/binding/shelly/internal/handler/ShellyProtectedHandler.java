@@ -14,6 +14,7 @@ package org.openhab.binding.shelly.internal.handler;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
@@ -41,8 +42,8 @@ public class ShellyProtectedHandler extends ShellyBaseHandler {
      */
     public ShellyProtectedHandler(Thing thing, @Nullable ShellyTranslationProvider translationProvider,
             ShellyBindingConfiguration bindingConfig, @Nullable ShellyCoapServer coapServer, String localIP,
-            int httpPort) {
-        super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort);
+            int httpPort, @Nullable HttpClient httpClient) {
+        super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort, httpClient);
     }
 
     @Override

@@ -18,7 +18,6 @@ import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.discovery.ShellyThingCreator.getThingTypeUID;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
@@ -28,6 +27,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.CommonTriggerEvents;
@@ -50,6 +50,7 @@ import org.openhab.binding.shelly.internal.coap.ShellyCoapHandler;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
+import org.openhab.binding.shelly.internal.util.ShellyException;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 import org.openhab.binding.shelly.internal.util.ShellyVersion;
 import org.slf4j.Logger;
@@ -68,7 +69,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     public String thingName = "";
     protected ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
     protected ShellyThingConfiguration config = new ShellyThingConfiguration();
-    private final @Nullable ShellyTranslationProvider messages;
+    private @Nullable ShellyTranslationProvider messages = new ShellyTranslationProvider();
+    private final @Nullable HttpClient httpClient;
     protected @Nullable ShellyHttpApi api;
     private @Nullable ShellyCoapHandler coap;
     protected @Nullable ShellyDeviceProfile profile;
@@ -109,11 +111,12 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      */
     public ShellyBaseHandler(Thing thing, @Nullable final ShellyTranslationProvider translationProvider,
             ShellyBindingConfiguration bindingConfig, @Nullable ShellyCoapServer coapServer, String localIP,
-            int httpPort) {
+            int httpPort, @Nullable HttpClient httpClient) {
         super(thing);
 
         this.messages = translationProvider;
         this.bindingConfig = bindingConfig;
+        this.httpClient = httpClient;
         this.coapServer = coapServer;
         this.localIP = localIP;
         this.httpPort = httpPort;
@@ -135,7 +138,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                         config.password.isEmpty() ? "<none>" : "***", config.updateInterval);
                 updateStatus(ThingStatus.UNKNOWN);
                 start = initializeThing();
-            } catch (IOException | IllegalArgumentException | NullPointerException e) {
+            } catch (ShellyException | IllegalArgumentException | NullPointerException e) {
                 if (authorizationFailed(getString(e))) {
                     start = false;
                 }
@@ -171,10 +174,10 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * thing config and set the correct credentials. The thing type will be changed to the requested one if the
      * credentials are correct and the API access is initialized successful.
      *
-     * @throws IOException e.g. http returned non-ok response, check e.getMessage() for details.
+     * @throws ShellyException e.g. http returned non-ok response, check e.getMessage() for details.
      */
     @SuppressWarnings("null")
-    private boolean initializeThing() throws IOException {
+    private boolean initializeThing() throws ShellyException {
         // Get the thing global settings and initialize device capabilities
         channelData = new HashMap<>(); // clear any cached channels
         refreshSettings = false;
@@ -202,7 +205,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         }
 
         // Initialize API access, exceptions will be catched by initialize()
-        api = new ShellyHttpApi(thingName, config);
+        api = new ShellyHttpApi(thingName, config, httpClient);
         ShellySettingsDevice devInfo = api.getDevInfo();
         if (devInfo.auth && config.userId.isEmpty()) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
@@ -312,7 +315,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             if (update) {
                 requestUpdates(1, false);
             }
-        } catch (NullPointerException | IOException e) {
+        } catch (ShellyException | NullPointerException e) {
             if (authorizationFailed(getString(e))) {
                 return;
             }
@@ -375,7 +378,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                     fillDeviceStatus(status, updated);
                 }
             }
-        } catch (IOException e) {
+        } catch (ShellyException e) {
             // http call failed: go offline except for battery devices, which might be in
             // sleep mode. Once the next update is successful the device goes back online
             String status = "";
@@ -927,11 +930,11 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param ForceRefresh true=force refresh before returning, false=return without
      *            refresh
      * @return ShellyDeviceProfile instance
-     * @throws IOException
+     * @throws ShellyException
      */
     @SuppressWarnings("null")
     @Nullable
-    public ShellyDeviceProfile getProfile(boolean forceRefresh) throws IOException {
+    public ShellyDeviceProfile getProfile(boolean forceRefresh) throws ShellyException {
         try {
             refreshSettings |= forceRefresh;
             if (refreshSettings) {
@@ -1002,18 +1005,18 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     /**
      * Device specific command handlers are overriding this method to do additional stuff
      *
-     * @throws IOException Communication problem on the API call
+     * @throws ShellyException Communication problem on the API call
      */
-    public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws IOException {
+    public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws ShellyException {
         return false;
     }
 
     /**
      * Device specific handlers are overriding this method to do additional stuff
      *
-     * @throws IOException Communication problem on the API call
+     * @throws ShellyException Communication problem on the API call
      */
-    public boolean updateDeviceStatus(ShellySettingsStatus status) throws IOException {
+    public boolean updateDeviceStatus(ShellySettingsStatus status) throws ShellyException {
         return false;
     }
 }

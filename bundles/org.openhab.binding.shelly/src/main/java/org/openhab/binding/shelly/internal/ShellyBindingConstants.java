@@ -202,14 +202,17 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_LED_POWER_DISABLE = "powerLed";
 
     public static final String CHANNEL_GROUP_SENSOR = "sensors";
+    public static final String CHANNEL_SENSOR_WAKEUP = "wakeupReason";
     public static final String CHANNEL_SENSOR_TEMP = "temperature";
     public static final String CHANNEL_SENSOR_HUM = "humidity";
     public static final String CHANNEL_SENSOR_LUX = "lux";
     public static final String CHANNEL_SENSOR_ILLUM = "illumination";
+    public static final String CHANNEL_SENSOR_VIBRATION = "vibration";
     public static final String CHANNEL_SENSOR_FLOOD = "flood";
     public static final String CHANNEL_SENSOR_STATE = "state";
     public static final String CHANNEL_SENSOR_MOTION = "motion";
     public static final String CHANNEL_SENSOR_CHARGER = "charger";
+    public static final String CHANNEL_SENSOR_ERROR = "lastError";
 
     public static final String CHANNEL_GROUP_SENSE_CONTROL = "control";
     public static final String CHANNEL_SENSE_KEY = "key";
@@ -312,6 +315,7 @@ public class ShellyBindingConstants {
     public static final String HTTP_HEADER_AUTH = "Authorization";
     public static final String HTTP_AUTH_TYPE_BASIC = "Basic";
     public static final String CONTENT_TYPE_XML = "text/xml; charset=UTF-8";
+    public static final String CONTENT_TYPE_JSON = "application/json";
 
     public static final String APIERR_HTTP_401_UNAUTHORIZED = "401 Unauthorized";
     public static final String APIERR_TIMEOUT = "Timeout";

@@ -265,7 +265,7 @@
 	</channel-type>
 
 	<channel-type id="sensorState">
-		<item-type>Contact</item-type>
+		<item-type>Switch</item-type>
 		<label>Contact</label>
 		<description>State of the contact: open/close</description>
 		<category>Contact</category>
@@ -276,6 +276,14 @@
 			</options>
 		</state>
 	</channel-type>
+	<channel-type id="sensorWakeup">
+		<item-type>Text</item-type>
+		<label>Wakeup reason</label>
+		<description>Reasons which woke up the device: battery, button, periodic, poweron, sensor, alarm</description>
+		<state readOnly="true">
+		</state>
+	</channel-type>
+
 	<channel-type id="sensorTemp">
 		<item-type>Number:Temperature</item-type>
 		<label>Temperature</label>
@@ -338,6 +346,20 @@
 				<option value="twilight">Twilight</option>
 				<option value="bright">Bright</option>
 			</options>
+		</state>
+	</channel-type>
+	<channel-type id="sensorVibration">
+		<item-type>Switch</item-type>
+		<label>Vibration</label>
+		<description>ON: Vibration detected</description>
+		<state readOnly="true">
+		</state>
+	</channel-type>
+	<channel-type id="sensorError">
+		<item-type>Text</item-type>
+		<label>Last Error</label>
+		<description>Only valid in case of errord</description>
+		<state readOnly="true">
 		</state>
 	</channel-type>
 	<channel-type id="sensorCharger">

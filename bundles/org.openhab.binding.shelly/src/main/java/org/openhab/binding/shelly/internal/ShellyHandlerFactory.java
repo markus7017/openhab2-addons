@@ -21,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.i18n.LocaleProvider;
 import org.eclipse.smarthome.core.i18n.TranslationProvider;
 import org.eclipse.smarthome.core.net.HttpServiceUtil;
@@ -30,6 +31,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
+import org.eclipse.smarthome.io.net.http.HttpClientFactory;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
@@ -56,6 +58,7 @@ import io.reactivex.annotations.NonNull;
 @Component(service = { ThingHandlerFactory.class, ShellyHandlerFactory.class }, configurationPid = "binding.shelly")
 public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(ShellyHandlerFactory.class);
+    private @Nullable HttpClient httpClient;
     private final ShellyTranslationProvider messages;
     private final ShellyCoapServer coapServer;
     private final Set<ShellyDeviceListener> deviceListeners = new CopyOnWriteArraySet<>();
@@ -76,14 +79,17 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     public ShellyHandlerFactory(@Reference NetworkAddressService networkAddressService,
             @Reference LocaleProvider localeProvider, @Reference TranslationProvider i18nProvider,
             ComponentContext componentContext, Map<String, @Nullable Object> configProperties) {
+        Validate.notNull(httpClient, "httpClient not initialized");
+        Validate.notNull(configProperties, "configProperties must not be null!");
+
         logger.debug("Activate Shelly HandlerFactory");
         super.activate(componentContext);
 
         this.messages = new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider, localeProvider);
+        Validate.notNull(messages, "Unable to created translation provide!");
         this.coapServer = new ShellyCoapServer();
-        Validate.notNull(coapServer, "coapServer creation failed!");
+        Validate.notNull(coapServer, "Unable to created coapServer!");
 
-        Validate.notNull(configProperties);
         bindingConfig.updateFromProperties(configProperties);
         httpPort = HttpServiceUtil.getHttpServicePort(componentContext.getBundleContext());
         if (httpPort == -1) {
@@ -109,15 +115,16 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
 
         if (thingType.equals(THING_TYPE_SHELLYPROTECTED_STR)) {
             logger.debug("Create new thing of type {} using ShellyRelayHandler", thingTypeUID.getId());
-            handler = new ShellyProtectedHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort);
+            handler = new ShellyProtectedHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort,
+                    httpClient);
         } else if (thingType.equals(THING_TYPE_SHELLYBULB.getId()) || thingType.equals(THING_TYPE_SHELLYDUO.getId())
                 || thingType.equals(THING_TYPE_SHELLYRGBW2_COLOR.getId())
                 || thingType.equals(THING_TYPE_SHELLYRGBW2_WHITE.getId())) {
             logger.debug("Create new thing of type {} using ShellyLightHandler", thingTypeUID.getId());
-            handler = new ShellyLightHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort);
+            handler = new ShellyLightHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort, httpClient);
         } else if (SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID)) {
             logger.debug("Create new thing of type {} using ShellyRelayHandler", thingTypeUID.getId());
-            handler = new ShellyRelayHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort);
+            handler = new ShellyRelayHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort, httpClient);
         }
 
         if (handler != null) {
@@ -163,6 +170,15 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
                 // continue with next listener
             }
         }
+    }
+
+    @Reference
+    protected void setHttpClientFactory(HttpClientFactory httpClientFactory) {
+        this.httpClient = httpClientFactory.getCommonHttpClient();
+    }
+
+    protected void unsetHttpClientFactory(HttpClientFactory httpClientFactory) {
+        this.httpClient = null;
     }
 
     @Nullable

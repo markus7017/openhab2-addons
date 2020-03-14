@@ -30,6 +30,7 @@ import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsMe
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusSensor;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
+import org.openhab.binding.shelly.internal.util.ShellyException;
 
 /***
  * The{@link ShellyComponents} implements updates for supplemental components
@@ -204,7 +205,7 @@ public class ShellyComponents {
      * @throws IOException
      */
     @SuppressWarnings("null")
-    public static boolean updateSensors(ShellyBaseHandler th, ShellySettingsStatus status) throws IOException {
+    public static boolean updateSensors(ShellyBaseHandler th, ShellySettingsStatus status) throws ShellyException {
         Validate.notNull(th);
         ShellyDeviceProfile profile = th.getProfile();
 
@@ -213,6 +214,20 @@ public class ShellyComponents {
             th.logger.debug("{}: Updating sensor", th.thingName);
             ShellyStatusSensor sdata = th.api.getSensorStatus();
             if (sdata != null) {
+                if (sdata.actReasons != null) {
+                    boolean changed = th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_WAKEUP,
+                            getStringType(sdata.actReasons[0]));
+                    updated |= changed;
+
+                }
+                if ((sdata.sensor != null) && sdata.sensor.isValid) {
+                    // Shelly DW: “sensor”:{“state”:“open”, “is_valid”:true},
+                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
+                            sdata.sensor.state.equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN) ? OpenClosedType.OPEN
+                                    : OpenClosedType.CLOSED);
+                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR,
+                            getStringType(sdata.sensorError));
+                }
                 if (getBool(sdata.tmp.isValid)) {
                     th.logger.trace("{}: Updating temperature", th.thingName);
                     DecimalType temp = getString(sdata.tmp.units).toUpperCase().equals(SHELLY_TEMP_CELSIUS)
@@ -240,11 +255,9 @@ public class ShellyComponents {
                                 getStringType(sdata.lux.illumination));
                     }
                 }
-                if ((sdata.sensor != null) && sdata.sensor.isValid) {
-                    // Shelly DW: “sensor”:{“state”:“open”, “is_valid”:true},
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
-                            sdata.sensor.state.equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN) ? OpenClosedType.OPEN
-                                    : OpenClosedType.CLOSED);
+                if (sdata.accel != null) {
+                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_VIBRATION,
+                            getBool(sdata.accel.vibration) ? OnOffType.ON : OnOffType.OFF);
                 }
                 if (sdata.flood != null) {
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD, getOnOff(sdata.flood));

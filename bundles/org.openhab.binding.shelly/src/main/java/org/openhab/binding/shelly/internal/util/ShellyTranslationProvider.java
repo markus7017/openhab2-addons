@@ -14,6 +14,7 @@ package org.openhab.binding.shelly.internal.util;
 
 import java.util.Locale;
 
+import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.i18n.LocaleProvider;
@@ -28,9 +29,12 @@ import org.osgi.framework.Bundle;
 @NonNullByDefault
 public class ShellyTranslationProvider {
 
-    private final Bundle bundle;
-    private final @Nullable TranslationProvider i18nProvider;
-    private final @Nullable LocaleProvider localeProvider;
+    private @Nullable Bundle bundle;
+    private @Nullable TranslationProvider i18nProvider;
+    private @Nullable LocaleProvider localeProvider = null;
+
+    public ShellyTranslationProvider() {
+    }
 
     public ShellyTranslationProvider(Bundle bundle, @Nullable TranslationProvider i18nProvider,
             @Nullable LocaleProvider localeProvider) {
@@ -44,11 +48,13 @@ public class ShellyTranslationProvider {
     }
 
     public @Nullable String getText(String key, @Nullable Object... arguments) {
+        Validate.notNull(localeProvider, "ShellyTranslationProvider() not initialized");
         Locale locale = localeProvider != null ? localeProvider.getLocale() : Locale.ENGLISH;
         return i18nProvider != null ? i18nProvider.getText(bundle, key, getDefaultText(key), locale, arguments) : key;
     }
 
     public @Nullable String getDefaultText(String key) {
+        Validate.notNull(i18nProvider, "ShellyTranslationProvider() not initialized");
         try {
             return i18nProvider != null ? i18nProvider.getText(bundle, key, key, Locale.ENGLISH) : key;
         } catch (NullPointerException e) {

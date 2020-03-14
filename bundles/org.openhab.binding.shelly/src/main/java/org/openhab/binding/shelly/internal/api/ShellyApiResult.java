@@ -17,6 +17,12 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 
+/**
+ * The {@link ShellyApiResult} wraps up the API result and provides some more information like url, http code, received
+ * response etc.
+ *
+ * @author Markus Michels - Initial contribution
+ */
 @NonNullByDefault
 public class ShellyApiResult {
     public String url = "";

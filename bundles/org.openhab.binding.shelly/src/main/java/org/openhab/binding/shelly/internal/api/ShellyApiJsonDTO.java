@@ -78,6 +78,22 @@ public class ShellyApiJsonDTO {
     public static final String SHELLY_CLASS_ROLLER = "roller"; // Relay: roller mode
     public static final String SHELLY_CLASS_LIGHT = "light"; // Bulb: color mode
 
+    public static final String SHELLY_API_MODE = "mode";
+    public static final String SHELLY_MODE_RELAY = "relay"; // Relay: relay mode
+    public static final String SHELLY_MODE_ROLLER = "roller"; // Relay: roller mode
+    public static final String SHELLY_MODE_COLOR = "color"; // Bulb/RGBW2: color mode
+    public static final String SHELLY_MODE_WHITE = "white"; // Bulb/RGBW2: white mode
+
+    public static final String SHELLY_LED_STATUS_DISABLE = "led_status_disable";
+    public static final String SHELLY_LED_POWER_DISABLE = "led_power_disable";
+
+    // Door/Window
+    public final static String SHELLY_API_ILLUM_DARK = "dark";
+    public final static String SHELLY_API_ILLUM_TWILIGHT = "twilight";
+    public final static String SHELLY_API_ILLUM_BRIGHT = "bright";
+    public final static String SHELLY_API_DWSTATE_OPEN = "open";
+    public final static String SHELLY_API_DWSTATE_CLOSE = "close";
+
     public static class ShellySettingsDevice {
         public String type;
         public String mac;
@@ -440,16 +456,28 @@ public class ShellyApiJsonDTO {
         public String lightSensor; // Sense: sensor type
         @SerializedName("rain_sensor")
         public Boolean rainSensor; // Flood: true=in rain mode
+
+        // FW 1.5.7: Door Window
+        @SerializedName("dark_treshold")
+        public Integer darkTreshold; // Illumination definition for "dark" in lux
+        @SerializedName("dark_treshold")
+        public Integer twiLightTreshold; // Illumination definition for "twilight" in lux
+        @SerializedName("dark_url")
+        public String darkUrl; // URL to report to when luminance <= dark_threshold
+        @SerializedName("twilight_url")
+        public String twiLightUrl; // URL ro report to when luminance > dark_threshold AND luminance <=
+                                   // twilight_threshold
+        @SerializedName("titlt_enabled")
+        public Boolean tiltEnabled; // Whether tilt monitoring is activated
+        @SerializedName("titlt_calibrated")
+        public Boolean tiltCalibrated; // Whether calibration data is valid
+        @SerializedName("vibration_enabled")
+        public Boolean vibrationEnabled; // Whether vibration monitoring is activated
+        @SerializedName("reverse_open_close")
+        public Boolean reverseOpenClose; // Whether to reverse which position the sensor consideres "open"
+        @SerializedName("sleep_mode_period")
+        public Boolean sleepModePeriod; // Periodic update period in hours, 1..24
     }
-
-    public static final String SHELLY_API_MODE = "mode";
-    public static final String SHELLY_MODE_RELAY = "relay"; // Relay: relay mode
-    public static final String SHELLY_MODE_ROLLER = "roller"; // Relay: roller mode
-    public static final String SHELLY_MODE_COLOR = "color"; // Bulb/RGBW2: color mode
-    public static final String SHELLY_MODE_WHITE = "white"; // Bulb/RGBW2: white mode
-
-    public static final String SHELLY_LED_STATUS_DISABLE = "led_status_disable";
-    public static final String SHELLY_LED_POWER_DISABLE = "led_power_disable";
 
     public static class ShellySettingsAttributes {
         @SerializedName("device_type")
@@ -555,6 +583,8 @@ public class ShellyApiJsonDTO {
         public ArrayList<ShellySettingsMeter> meters; // current meter value
         @SerializedName("ext_temperature")
         public ShellyStatusSensor.ShellyExtTemperature extTemperature; // Shelly 1/1PM: sensor values
+        @SerializedName("ext_humidity")
+        public ShellyStatusSensor.ShellyExtHumidity extHumidity; // Shelly 1/1PM: sensor values
 
         @SerializedName("has_update")
         public Boolean hasUpdate; // If a newer firmware version is available
@@ -632,13 +662,6 @@ public class ShellyApiJsonDTO {
     public static final String SHELLY_API_STOPR_SAFETYSW = "safety_switch";
     public static final String SHELLY_API_STOPR_OBSTACLE = "obstacle";
 
-    // Door/Window sensor
-    public final static String SHELLY_API_ILLUM_DARK = "dark";
-    public final static String SHELLY_API_ILLUM_TWILIGHT = "twilight";
-    public final static String SHELLY_API_ILLUM_BRIGHT = "bright";
-    public final static String SHELLY_API_DWSTATE_OPEN = "open";
-    public final static String SHELLY_API_DWSTATE_CLOSE = "close";
-
     public class ShellySensorSleepMode {
         public Integer period;
         public String unit;
@@ -688,6 +711,13 @@ public class ShellyApiJsonDTO {
             public Double voltage; // battery voltage
         };
 
+        // Door/Window sensor
+        public static class ShellySensorState {
+            @SerializedName("is_valid")
+            public Boolean isValid; // whether the internal sensor is operating properly
+            public String state; // Shelly Door/Window
+        }
+
         public static class ShellySensorLux {
             @SerializedName("is_valid")
             public Boolean isValid; // whether the internal sensor is operating properly
@@ -696,10 +726,9 @@ public class ShellyApiJsonDTO {
             public String illumination;
         }
 
-        public static class ShellySensorState {
-            @SerializedName("is_valid")
-            public Boolean isValid; // whether the internal sensor is operating properly
-            public String state; // Shelly Door/Window
+        public static class ShellySensorAccel {
+            public Integer tilt; // Tilt in °
+            public Boolean vibration; // Whether vibration is detected
         }
 
         public static class ShellyExtTemperature {
@@ -718,9 +747,21 @@ public class ShellyApiJsonDTO {
             public ShellyShortTemp sensor3;
         }
 
+        public static class ShellyExtHumidity {
+            public static class ShellyShortHum {
+                public Double hum; // Humidity reading of sensor 0, percent
+            }
+
+            // Shelly 1/1PM have up to 3 sensors
+            // for whatever reasons it's not an array, but 3 independent elements
+            @SerializedName("0")
+            public ShellyShortHum sensor1;
+        }
+
         public ShellySensorTmp tmp;
         public ShellySensorHum hum;
         public ShellySensorLux lux;
+        public ShellySensorAccel accel;
         public ShellySensorBat bat;
         public ShellySensorState sensor;
 
@@ -735,6 +776,9 @@ public class ShellyApiJsonDTO {
 
         @SerializedName("act_reasons")
         public String[] actReasons; // HT/Smoke/Flood: list of reasons which woke up the device
+
+        @SerializedName("sensor_error")
+        public String sensorError; // 1.5.7: Only displayed in case of error
     }
 
     public static class ShellySettingsSmoke {
