@@ -14,7 +14,6 @@ package org.openhab.binding.shelly.internal.util;
 
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
@@ -38,6 +37,7 @@ import org.eclipse.smarthome.core.library.types.QuantityType;
 import org.eclipse.smarthome.core.library.types.StringType;
 import org.eclipse.smarthome.core.types.State;
 import org.eclipse.smarthome.core.types.UnDefType;
+import org.openhab.binding.shelly.internal.api.ShellyApiException;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 
 /**
@@ -105,7 +105,7 @@ public class ShellyUtils {
     @SuppressWarnings("null")
     public static State toQuantityType(@Nullable Double value, int digits, Unit<?> unit) {
         BigDecimal bd = new BigDecimal(value.doubleValue());
-        return value == null ? UnDefType.NULL : toQuantityType(bd.setScale(digits, BigDecimal.ROUND_HALF_DOWN), unit);
+        return value == null ? UnDefType.NULL : toQuantityType(bd.setScale(digits, BigDecimal.ROUND_HALF_UP), unit);
     }
 
     public static State toQuantityType(@Nullable Number value, Unit<?> unit) {
@@ -121,11 +121,11 @@ public class ShellyUtils {
                 "Value " + name + " is out of range (" + min.toString() + "-" + max.toString() + ")");
     }
 
-    public static String urlEncode(String input) throws IOException {
+    public static String urlEncode(String input) throws ShellyApiException {
         try {
             return URLEncoder.encode(input, StandardCharsets.UTF_8.toString());
         } catch (UnsupportedEncodingException e) {
-            throw new IOException(
+            throw new ShellyApiException(
                     "Unsupported encoding format: " + StandardCharsets.UTF_8.toString() + ", input=" + input);
         }
     }

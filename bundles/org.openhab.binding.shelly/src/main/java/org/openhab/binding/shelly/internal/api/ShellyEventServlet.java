@@ -16,9 +16,9 @@ import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -80,13 +80,15 @@ public class ShellyEventServlet extends HttpServlet {
     @Override
     protected void service(@Nullable HttpServletRequest request, @Nullable HttpServletResponse resp)
             throws ServletException, IOException {
-        String data = inputStreamToString(request);
-        String path = request.getRequestURI().toLowerCase();
+        String data = "";
+        String path = "";
         String deviceName = "";
         String index = "";
         String type = "";
 
         try {
+            path = request.getRequestURI().toLowerCase();
+            data = inputStreamToString(request);
             String ipAddress = request.getHeader("HTTP_X_FORWARDED_FOR");
             if (ipAddress == null) {
                 ipAddress = request.getRemoteAddr();
@@ -113,16 +115,19 @@ public class ShellyEventServlet extends HttpServlet {
                 type = StringUtils.substringAfterLast(path, "/").toLowerCase();
             }
             logger.trace("Process event of type type={} for device {}, index={}", type, deviceName, index);
-            Map<String, String> parms = new HashMap<String, String>();
+            Map<String, String> parms = new TreeMap<>();
             for (Map.Entry<String, String[]> p : parameters.entrySet()) {
                 parms.put(p.getKey(), p.getValue()[0]);
 
             }
-            handlerFactory.onEvent(deviceName, index, type, parms);
-
-        } catch (IllegalArgumentException | NullPointerException e) {
+            if (handlerFactory != null) {
+                handlerFactory.onEvent(deviceName, index, type, parms);
+            } else {
+                logger.debug("{}: Can't process event in Servlet handlerFactory is null!", deviceName);
+            }
+        } catch (NullPointerException e) {
             logger.debug(
-                    "ERROR: Exception processing callback: {} ({}), path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}\n{}",
+                    "Exception processing callback: {} ({}), path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}\n{}",
                     e.getMessage(), e.getClass(), path, data, deviceName, index, type,
                     request.getParameterMap().toString(), e.getStackTrace());
         } finally {
@@ -131,10 +136,9 @@ public class ShellyEventServlet extends HttpServlet {
         }
     }
 
-    @SuppressWarnings("resource")
+    @SuppressWarnings({ "resource", "null" })
     private String inputStreamToString(@Nullable HttpServletRequest request) throws IOException {
-        @SuppressWarnings("null")
-        Scanner scanner = new Scanner(request.getInputStream()).useDelimiter("\\A");
+        final Scanner scanner = new Scanner(request.getInputStream()).useDelimiter("\\A");
         return scanner.hasNext() ? scanner.next() : "";
     }
 

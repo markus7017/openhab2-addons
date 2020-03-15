@@ -101,6 +101,10 @@ public class ShellyChannelCache {
         return updateChannel(mkChannelId(group, channel), value, false);
     }
 
+    public boolean updateChannel(String channelId, State value) {
+        return updateChannel(channelId, value, false);
+    }
+
     /**
      * Get a value from the Channel Cache
      *
@@ -110,17 +114,22 @@ public class ShellyChannelCache {
      */
     @Nullable
     public Object getValue(String group, String channel) {
-        String key = mkChannelId(group, channel);
+        return getValue(mkChannelId(group, channel));
+    }
+
+    @Nullable
+    public Object getValue(String channelId) {
         synchronized (channelData) {
-            return channelData.get(key);
+            return channelData.get(channelId);
         }
     }
 
     public void resetChannel(String channelId) {
-        Validate.notNull(channelData);
         Validate.notNull(channelId);
         synchronized (channelData) {
-            channelData.remove(channelId);
+            if (channelData.containsKey(channelId)) {
+                channelData.remove(channelId);
+            }
         }
 
     }

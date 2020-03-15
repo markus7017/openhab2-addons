@@ -43,6 +43,17 @@ public class ShellyTranslationProvider {
         this.localeProvider = localeProvider;
     }
 
+    public ShellyTranslationProvider(final ShellyTranslationProvider other) {
+        initFrom(other);
+    }
+
+    public ShellyTranslationProvider initFrom(final ShellyTranslationProvider other) {
+        this.bundle = other.bundle;
+        this.i18nProvider = other.i18nProvider;
+        this.localeProvider = other.localeProvider;
+        return this;
+    }
+
     public @Nullable String get(String key, @Nullable Object... arguments) {
         return getText(key.contains("@text/") ? key : "message." + key, arguments);
     }

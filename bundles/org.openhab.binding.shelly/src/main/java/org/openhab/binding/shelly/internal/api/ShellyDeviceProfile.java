@@ -22,12 +22,12 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.shelly.internal.ShellyBindingConstants;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsGlobal;
 import org.openhab.binding.shelly.internal.util.ShellyUtils;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 /**
  * The {@link ShellyDeviceProfile} creates a device profile based on the settings returned from the API's /settings
@@ -38,11 +38,13 @@ import com.google.gson.Gson;
  */
 @NonNullByDefault
 public class ShellyDeviceProfile {
+    public Boolean initialized = false; // true when initialized
+
     public String thingName = "";
     public String deviceType = "";
 
     public String settingsJson = "";
-    public @Nullable ShellySettingsGlobal settings;
+    public ShellySettingsGlobal settings = new ShellySettingsGlobal();
 
     public String hostname = "";
     public String mode = "";
@@ -64,7 +66,6 @@ public class ShellyDeviceProfile {
 
     public Integer numMeters = 0;
     public Boolean isEMeter = false; // true for ShellyEM/EM3
-    public Boolean isEM3 = false; // true only if EM3
 
     public Boolean isLight = false; // true if it is a Shelly Bulb/RGBW2
     public Boolean isBulb = false; // true only if it is a Bulb
@@ -80,7 +81,7 @@ public class ShellyDeviceProfile {
     public Integer minTemp = 0; // Bulb/Duo: Min Light Temp
     public Integer maxTemp = 0; // Bulb/Duo: Max Light Temp
 
-    public Map<String, String> irCodes = new HashMap<String, String>(); // Sense: list of stored IR codes
+    public Map<String, String> irCodes = new HashMap<>(); // Sense: list of stored IR codes
 
     public Boolean supportsButtonUrls = false; // true if the btn_xxx urls are supported
     public Boolean supportsOutUrls = false; // true if the out_xxx urls are supported
@@ -89,78 +90,85 @@ public class ShellyDeviceProfile {
     public Boolean supportsSensorUrls = false; // true if sensor report_url is supported
 
     @SuppressWarnings("null")
-    public static ShellyDeviceProfile initialize(String thingType, String json) {
+    public ShellyDeviceProfile initialize(String thingType, String json) throws ShellyApiException {
         Gson gson = new Gson();
 
-        ShellyDeviceProfile profile = new ShellyDeviceProfile();
-        Validate.notNull(profile);
+        initialized = false;
 
-        profile.settingsJson = json;
-        profile.settings = gson.fromJson(json, ShellySettingsGlobal.class);
-        Validate.notNull(profile.settings, "Converted device settings must not be null!\nsettings=" + json);
+        try {
+            settingsJson = json;
+            settings = gson.fromJson(json, ShellySettingsGlobal.class);
+            Validate.notNull(settings, "Converted device settings must not be null!\nsettings=" + json);
+        } catch (IllegalArgumentException | JsonSyntaxException e) {
+            throw new ShellyApiException(
+                    thingName + ": Unable to transform settings JSON e.toString, json='" + json + "'");
+        }
 
         // General settings
-        profile.deviceType = ShellyUtils.getString(profile.settings.device.type);
-        profile.mac = getString(profile.settings.device.mac);
-        profile.hostname = profile.settings.device.hostname != null && !profile.settings.device.hostname.isEmpty()
-                ? profile.settings.device.hostname.toLowerCase()
-                : "shelly-" + profile.mac.toUpperCase().substring(6, 11);
-        profile.mode = getString(profile.settings.mode) != null ? getString(profile.settings.mode).toLowerCase() : "";
-        profile.hwRev = profile.settings.hwinfo != null ? getString(profile.settings.hwinfo.hwRevision) : "";
-        profile.hwBatchId = profile.settings.hwinfo != null ? getString(profile.settings.hwinfo.batchId.toString())
-                : "";
-        profile.fwDate = getString(StringUtils.substringBefore(profile.settings.fw, "/"));
-        profile.fwVersion = getString(StringUtils.substringBetween(profile.settings.fw, "/", "@"));
-        profile.fwId = getString(StringUtils.substringAfter(profile.settings.fw, "@"));
-        profile.discoverable = (profile.settings.discoverable == null) || profile.settings.discoverable;
+        deviceType = ShellyUtils.getString(settings.device.type);
+        mac = getString(settings.device.mac);
+        hostname = settings.device.hostname != null && !settings.device.hostname.isEmpty()
+                ? settings.device.hostname.toLowerCase()
+                : "shelly-" + mac.toUpperCase().substring(6, 11);
+        mode = getString(settings.mode) != null ? getString(settings.mode).toLowerCase() : "";
+        hwRev = settings.hwinfo != null ? getString(settings.hwinfo.hwRevision) : "";
+        hwBatchId = settings.hwinfo != null ? getString(settings.hwinfo.batchId.toString()) : "";
+        fwDate = getString(StringUtils.substringBefore(settings.fw, "/"));
+        fwVersion = getString(StringUtils.substringBetween(settings.fw, "/", "@"));
+        fwId = getString(StringUtils.substringAfter(settings.fw, "@"));
+        discoverable = (settings.discoverable == null) || settings.discoverable;
 
-        profile.isRoller = profile.mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
-        profile.isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
+        isRoller = mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
+        isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
 
-        profile.numRelays = !profile.isLight ? getInteger(profile.settings.device.numOutputs) : 0;
-        if ((profile.numRelays > 0) && (profile.settings.relays == null)) {
-            profile.numRelays = 0;
-        }
-        profile.hasRelays = (profile.numRelays > 0) || profile.isDimmer;
-        profile.numRollers = getInteger(profile.settings.device.numRollers);
-
-        profile.numMeters = !profile.isEMeter ? getInteger(profile.settings.device.numMeters)
-                : getInteger(profile.settings.device.numEMeters);
-        if ((profile.numMeters == 0) && profile.isLight) {
-            // RGBW2 doesn't report, but has one
-            profile.numMeters = profile.inColor ? 1 : getInteger(profile.settings.device.numOutputs);
-        }
-        profile.isEMeter = profile.settings.emeters != null;
-        profile.isEM3 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYEM3_STR);
-        profile.isDimmer = profile.deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
-
-        profile.isLight = profile.isBulb || profile.isDuo || profile.isRGBW2;
-        profile.isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
-        profile.isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR)
+        isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
+        isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR)
                 || thingType.equalsIgnoreCase(THING_TYPE_SHELLYVINTAGE_STR);
-        profile.isRGBW2 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
+        isRGBW2 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
                 || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
-        profile.hasLed = profile.isPlugS;
-        profile.inColor = profile.isLight && profile.mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
-        profile.minTemp = profile.isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO;
-        profile.maxTemp = profile.isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO;
+        hasLed = isPlugS;
+        isLight = isBulb || isDuo || isRGBW2;
+        inColor = isLight && mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
+        minTemp = isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO;
+        maxTemp = isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO;
+
+        numRelays = !isLight ? getInteger(settings.device.numOutputs) : 0;
+        if ((numRelays > 0) && (settings.relays == null)) {
+            numRelays = 0;
+        }
+        hasRelays = (numRelays > 0) || isDimmer;
+        numRollers = getInteger(settings.device.numRollers);
+
+        numMeters = !isEMeter ? getInteger(settings.device.numMeters) : getInteger(settings.device.numEMeters);
+        if ((numMeters == 0) && isLight) {
+            // RGBW2 doesn't report, but has one
+            numMeters = inColor ? 1 : getInteger(settings.device.numOutputs);
+        }
+        isEMeter = settings.emeters != null;
+        isDimmer = deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
 
         boolean isHT = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
         boolean isFlood = thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR);
         boolean isDW = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
         boolean isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
-        profile.isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
-        profile.isSensor = isHT || isFlood || isDW || isSmoke || profile.isSense;
-        profile.hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
+        isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
+        isSensor = isHT || isFlood || isDW || isSmoke || isSense;
+        hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
 
-        profile.supportsButtonUrls = profile.settingsJson.contains(SHELLY_API_EVENTURL_BTN_ON)
-                || profile.settingsJson.contains(SHELLY_API_EVENTURL_BTN1_ON)
-                || profile.settingsJson.contains(SHELLY_API_EVENTURL_BTN2_ON);
-        profile.supportsOutUrls = profile.settingsJson.contains(SHELLY_API_EVENTURL_OUT_ON);
-        profile.supportsPushUrls = profile.settingsJson.contains(SHELLY_API_EVENTURL_SHORT_PUSH);
-        profile.supportsRollerUrls = profile.settingsJson.contains(SHELLY_API_EVENTURL_ROLLER_OPEN);
-        profile.supportsSensorUrls = profile.settingsJson.contains(SHELLY_API_EVENTURL_REPORT);
+        supportsButtonUrls = settingsJson.contains(SHELLY_API_EVENTURL_BTN_ON)
+                || settingsJson.contains(SHELLY_API_EVENTURL_BTN1_ON)
+                || settingsJson.contains(SHELLY_API_EVENTURL_BTN2_ON);
+        supportsOutUrls = settingsJson.contains(SHELLY_API_EVENTURL_OUT_ON);
+        supportsPushUrls = settingsJson.contains(SHELLY_API_EVENTURL_SHORT_PUSH);
+        supportsRollerUrls = settingsJson.contains(SHELLY_API_EVENTURL_ROLLER_OPEN);
+        supportsSensorUrls = settingsJson.contains(SHELLY_API_EVENTURL_REPORT);
 
-        return profile;
+        initialized = true;
+
+        return this;
+    }
+
+    public Boolean isInitialized() {
+        return initialized;
     }
 }

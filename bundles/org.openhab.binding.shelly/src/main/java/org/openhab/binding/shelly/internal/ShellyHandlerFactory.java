@@ -58,8 +58,8 @@ import io.reactivex.annotations.NonNull;
 @Component(service = { ThingHandlerFactory.class, ShellyHandlerFactory.class }, configurationPid = "binding.shelly")
 public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(ShellyHandlerFactory.class);
-    private @Nullable HttpClient httpClient;
-    private final ShellyTranslationProvider messages;
+    private final HttpClient httpClient;
+    private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
     private final ShellyCoapServer coapServer;
     private final Set<ShellyDeviceListener> deviceListeners = new CopyOnWriteArraySet<>();
 
@@ -78,14 +78,15 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     @Activate
     public ShellyHandlerFactory(@Reference NetworkAddressService networkAddressService,
             @Reference LocaleProvider localeProvider, @Reference TranslationProvider i18nProvider,
-            ComponentContext componentContext, Map<String, @Nullable Object> configProperties) {
-        Validate.notNull(httpClient, "httpClient not initialized");
+            @Reference HttpClientFactory httpClientFactory, ComponentContext componentContext,
+            Map<String, @Nullable Object> configProperties) {
         Validate.notNull(configProperties, "configProperties must not be null!");
+        this.httpClient = httpClientFactory.getCommonHttpClient();
 
         logger.debug("Activate Shelly HandlerFactory");
         super.activate(componentContext);
 
-        this.messages = new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider, localeProvider);
+        this.messages.initFrom(new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider, localeProvider));
         Validate.notNull(messages, "Unable to created translation provide!");
         this.coapServer = new ShellyCoapServer();
         Validate.notNull(coapServer, "Unable to created coapServer!");
@@ -170,15 +171,6 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
                 // continue with next listener
             }
         }
-    }
-
-    @Reference
-    protected void setHttpClientFactory(HttpClientFactory httpClientFactory) {
-        this.httpClient = httpClientFactory.getCommonHttpClient();
-    }
-
-    protected void unsetHttpClientFactory(HttpClientFactory httpClientFactory) {
-        this.httpClient = null;
     }
 
     @Nullable

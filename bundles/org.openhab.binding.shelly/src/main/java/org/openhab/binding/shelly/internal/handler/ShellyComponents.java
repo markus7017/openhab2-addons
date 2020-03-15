@@ -25,12 +25,12 @@ import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.OpenClosedType;
 import org.eclipse.smarthome.core.library.unit.SIUnits;
 import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
+import org.openhab.binding.shelly.internal.api.ShellyApiException;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsEMeter;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsMeter;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusSensor;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
-import org.openhab.binding.shelly.internal.util.ShellyException;
 
 /***
  * The{@link ShellyComponents} implements updates for supplemental components
@@ -97,11 +97,8 @@ public class ShellyComponents {
                                     toQuantityType(getDouble(meter.power), DIGITS_WATT, SmartHomeUnits.WATT));
                             // convert Watt/Min to kw/h
                             if (meter.total != null) {
-                                updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH,
-                                        toQuantityType(
-                                                !profile.isEM3 ? getDouble(meter.total) / 60 / 1000
-                                                        : getDouble(meter.total) / 1000,
-                                                DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH, toQuantityType(
+                                        getDouble(meter.total) / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                             }
                             if (meter.counters != null) {
                                 updated |= th.updateChannel(groupName, CHANNEL_METER_LASTMIN1,
@@ -126,7 +123,7 @@ public class ShellyComponents {
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
                                     toQuantityType(getDouble(emeter.power), DIGITS_WATT, SmartHomeUnits.WATT));
                             updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH, toQuantityType(
-                                    getDouble(emeter.total) / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                    getDouble(emeter.total) / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                             updated |= th.updateChannel(groupName, CHANNEL_EMETER_TOTALRET, toQuantityType(
                                     getDouble(emeter.totalReturned) / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                             updated |= th.updateChannel(groupName, CHANNEL_EMETER_REACTWATTS,
@@ -205,7 +202,7 @@ public class ShellyComponents {
      * @throws IOException
      */
     @SuppressWarnings("null")
-    public static boolean updateSensors(ShellyBaseHandler th, ShellySettingsStatus status) throws ShellyException {
+    public static boolean updateSensors(ShellyBaseHandler th, ShellySettingsStatus status) throws ShellyApiException {
         Validate.notNull(th);
         ShellyDeviceProfile profile = th.getProfile();
 

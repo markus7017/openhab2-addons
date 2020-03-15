@@ -16,9 +16,9 @@ import static org.eclipse.smarthome.core.thing.Thing.PROPERTY_MODEL_ID;
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.getString;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.jmdns.ServiceInfo;
 
@@ -35,13 +35,14 @@ import org.eclipse.smarthome.core.i18n.TranslationProvider;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.eclipse.smarthome.io.net.http.HttpClientFactory;
+import org.openhab.binding.shelly.internal.api.ShellyApiException;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsDevice;
+import org.openhab.binding.shelly.internal.api.ShellyApiResult;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.api.ShellyHttpApi;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
-import org.openhab.binding.shelly.internal.util.ShellyException;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -63,7 +64,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     private final ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
     private @Nullable LocaleProvider localeProvider;
     private @Nullable TranslationProvider i18nProvider;
-    private @Nullable ShellyTranslationProvider messages;
+    private ShellyTranslationProvider messages = new ShellyTranslationProvider();
     private @Nullable HttpClient httpClient;
 
     @Override
@@ -87,8 +88,8 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     protected void activate(ComponentContext componentContext) {
         logger.debug("Shelly Discovery service activated");
         Validate.notNull(componentContext);
-        messages = new ShellyTranslationProvider(componentContext.getBundleContext().getBundle(), i18nProvider,
-                localeProvider);
+        messages.initFrom(new ShellyTranslationProvider(componentContext.getBundleContext().getBundle(), i18nProvider,
+                localeProvider));
         bindingConfig.updateFromProperties(componentContext.getProperties());
     }
 
@@ -105,7 +106,6 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
         bindingConfig.updateFromProperties(componentContext.getProperties());
     }
 
-    @SuppressWarnings("null")
     @Nullable
     @Override
     public DiscoveryResult createResult(final ServiceInfo service) {
@@ -122,7 +122,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
         String thingType = "";
         ThingUID thingUID = null;
         ShellyDeviceProfile profile = null;
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new TreeMap<>();
 
         try {
             name = service.getName().toLowerCase();
@@ -158,16 +158,20 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
 
                 // get thing type from device name
                 thingUID = ShellyThingCreator.getThingUID(name, mode, false);
-            } catch (ShellyException e) {
-                if (getString(e).contains(APIERR_HTTP_401_UNAUTHORIZED)) {
+            } catch (ShellyApiException e) {
+                ShellyApiResult result = e.getApiResult();
+                if (result.isHttpAccessUnauthorized()) {
                     logger.info("{}: {}", name, messages.get("discovery.protecte", address));
 
                     // create shellyunknown thing - will be changed during thing initialization with valid credentials
                     thingUID = ShellyThingCreator.getThingUID(name, mode, true);
                 } else {
-                    logger.info("{}: {}", name, messages.get("discovery.failed", address, getString(e)));
+                    logger.info("{}: {}", name, messages.get("discovery.failed", address, e.getMessage()));
                     logger.debug("{}: Exception {}\n{}", name, e.getClass(), e.getStackTrace());
                 }
+            } catch (IllegalArgumentException | NullPointerException e) {
+                logger.debug("{}: Unable to initialize: {} ({}), retrying later\n{}", name, getString(e), e.getClass(),
+                        e.getStackTrace());
             }
 
             if (thingUID != null) {

@@ -60,14 +60,9 @@ public class ShellyApiJsonDTO {
     public static final String SHELLY_IR_CODET_PRONTO = "pronto";
     public static final String SHELLY_IR_CODET_PRONTO_HEX = "pronto_hex";
 
-    public static final String HTTP_DELETE = "DELETE";
-    public static final String HTTP_HEADER_AUTH = "Authorization";
-    public static final String HTTP_AUTH_TYPE_BASIC = "Basic";
-    public static final String CONTENT_TYPE_XML = "text/xml; charset=UTF-8";
-
-    public static final String APIERR_HTTP_401_UNAUTHORIZED = "401 Unauthorized";
-    public static final String APIERR_TIMEOUT = "Timeout";
-    public static final String APIERR_NOT_CALIBRATED = "Not calibrated!";
+    public static final String SHELLY_APIERR_UNAUTHORIZED = "Unauthorized";
+    public static final String SHELLY_APIERR_TIMEOUT = "Timeout";
+    public static final String SHELLY_APIERR_NOT_CALIBRATED = "Not calibrated!";
 
     public static final String SHELLY_API_ON = "on";
     public static final String SHELLY_API_OFF = "off";
@@ -460,7 +455,7 @@ public class ShellyApiJsonDTO {
         // FW 1.5.7: Door Window
         @SerializedName("dark_treshold")
         public Integer darkTreshold; // Illumination definition for "dark" in lux
-        @SerializedName("dark_treshold")
+        @SerializedName("twilight_treshold")
         public Integer twiLightTreshold; // Illumination definition for "twilight" in lux
         @SerializedName("dark_url")
         public String darkUrl; // URL to report to when luminance <= dark_threshold

@@ -17,7 +17,7 @@ import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
-import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,35 +68,35 @@ import com.google.gson.GsonBuilder;
 @NonNullByDefault
 public class ShellyCoapHandler implements ShellyCoapListener {
     private final Logger logger = LoggerFactory.getLogger(ShellyCoapHandler.class);
-    private final @Nullable ShellyTranslationProvider messages;
+    private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
 
-    private final ShellyBaseHandler thingHandler;
+    private final ShellyBaseHandler th;
     private final ShellyThingConfiguration config;
     private final GsonBuilder gsonBuilder;
     private final Gson gson;
     private String thingName;
 
-    private @Nullable ShellyCoapServer coapServer;
-    private @Nullable CoapClient statusClient;
+    private final ShellyCoapServer coapServer;
+    private @Nullable CoapClient statusClient = new CoapClient();
     private @Nullable Request reqDescription;
     private @Nullable Request reqStatus;
 
     private int lastSerial = -1;
     private Double lastBrightness = -1.0;
     private String lastPayload = "";
-    private Map<String, CoIotDescrBlk> blockMap = new HashMap<String, CoIotDescrBlk>();
+    private Map<String, CoIotDescrBlk> blockMap = new HashMap<>();
     private SortedMap<String, CoIotDescrSen> sensorMap = new TreeMap<String, CoIotDescrSen>();
 
     private static final byte[] EMPTY_BYTE = new byte[0];
 
-    public ShellyCoapHandler(ShellyThingConfiguration config, ShellyBaseHandler thingHandler,
-            @Nullable ShellyCoapServer coapServer, @Nullable ShellyTranslationProvider messages) {
+    public ShellyCoapHandler(ShellyThingConfiguration config, ShellyBaseHandler th,
+            @Nullable ShellyCoapServer coapServer, ShellyTranslationProvider messages) {
         Validate.notNull(coapServer);
-        this.messages = messages;
-        this.thingHandler = thingHandler;
+        this.messages.initFrom(messages);
+        this.th = th;
         this.coapServer = coapServer;
         this.config = config;
-        this.thingName = thingHandler.thingName;
+        this.thingName = th.thingName;
 
         gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(CoIotGenericSensorList.class, new CoIotSensorTypeAdapter());
@@ -107,7 +107,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     /*
      * Initialize Coap access, send discovery packet and start Status server
      */
-    @SuppressWarnings("null")
     public void start() {
         try {
             reqDescription = sendRequest(reqDescription, config.deviceIp, COLOIT_URI_DEVDESC, Type.CON);
@@ -121,9 +120,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
                 coapServer.start();
             }
-        } catch (IOException e) {
-            logger.warn("{}: {}", thingName, messages.get("coap.init.failed", e.getMessage()));
-        } catch (IllegalArgumentException | NullPointerException e) {
+        } catch (UnknownHostException | IllegalArgumentException | NullPointerException e) {
             logger.debug("{}: Coap Exception: {} ({})\n{}", thingName, e.getMessage(), e.getClass(), e.getStackTrace());
         }
     }
@@ -180,9 +177,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                         case COIOT_OPTION_STATUS_SERIAL:
                             serial = opt.getIntegerValue();
                             if (serial == lastSerial) {
-                                // ShellyDeviceProfile profile = thingHandler.getProfile();
-                                // if ((profile != null) && profile.isSensor) { // work around for Shelly HT
-
                                 // As per specification the serial changes when any sensor data has changed. The App
                                 // should ignore any updates with
                                 // the same serial. However, as we have seen with the Shelly HT and Shelly 4 Pro this is
@@ -227,7 +221,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                  */
                 reqStatus = sendRequest(reqStatus, config.deviceIp, COLOIT_URI_DEVSTATUS, Type.NON);
             }
-        } catch (NullPointerException | IOException e) {
+        } catch (NullPointerException e) {
             logger.debug("{}: Unable to process CoIoT Message: {} ({}); payload={}\n{}", thingName, e.getMessage(),
                     e.getClass(), payload, e.getStackTrace());
             resetSerial();
@@ -285,7 +279,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         }
 
         // Save to thing properties
-        thingHandler.updateProperties(PROPERTY_COAP_DESCR, payload);
+        th.updateProperties(PROPERTY_COAP_DESCR, payload);
     }
 
     private void addSensor(CoIotDescrSen sen) {
@@ -314,10 +308,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      * @param serial Serial for this request. If this the the same as last serial
      *            the update was already sent and processed so this one gets
      *            ignored.
-     * @throws IOException Exception on sending GET for device description.
      */
     @SuppressWarnings({ "null", "unused" })
-    private void handleStatusUpdate(String devId, String payload, int serial) throws IOException {
+    private void handleStatusUpdate(String devId, String payload, int serial) {
         logger.debug("{}: CoIoT Sensor data {}", thingName, payload);
         if (blockMap.size() == 0) {
             // send discovery packet
@@ -325,7 +318,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             reqDescription = sendRequest(reqDescription, config.deviceIp, COLOIT_URI_DEVDESC, Type.CON);
 
             // try to uses description from last initialization
-            String savedDescr = thingHandler.getProperty(PROPERTY_COAP_DESCR);
+            String savedDescr = th.getProperty(PROPERTY_COAP_DESCR);
             if (savedDescr.isEmpty()) {
                 logger.debug("{}: Device description not yet received, trigger auto-initialization", thingName);
                 return;
@@ -346,11 +339,11 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             return;
         }
 
-        Validate.notNull(thingHandler, "thingHandler must not be null!");
-        ShellyDeviceProfile profile = thingHandler.getProfile();
-        if (profile == null) {
+        Validate.notNull(th, "th must not be null!");
+        ShellyDeviceProfile profile = th.getProfile();
+        if (!profile.isInitialized()) {
             logger.debug("{}: Thing not initialized yet, skip update (ID={})", thingName, devId);
-            thingHandler.requestUpdates(1, true);
+            th.requestUpdates(1, true);
             return;
         }
 
@@ -444,7 +437,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
                                 case "overtemp":
                                     if (s.value == 1) {
-                                        thingHandler.postEvent(ALARM_TYPE_OVERTEMP, true);
+                                        th.postEvent(ALARM_TYPE_OVERTEMP, true);
                                     }
                                     break;
 
@@ -465,11 +458,11 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                     break;
 
                                 case "energy counter total [w-h]": // EM3 reports W/h
-                                    s.value = s.value * 60;
                                 case "energy counter total [w-min]":
                                 case "e cnt total [w-min]": // 4 Pro
-                                    updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH, toQuantityType(
-                                            s.value / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                    updateChannel(updates, rGroup, CHANNEL_METER_TOTALKWH,
+                                            toQuantityType(profile.isEMeter ? s.value / 1000 : s.value / 60 / 1000,
+                                                    DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                                     break;
                                 case "voltage":
                                     updateChannel(updates, rGroup, CHANNEL_EMETER_VOLTAGE,
@@ -513,8 +506,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                             if ((relay != null) && (s.value != 0)
                                                     && (relay.btnType.equalsIgnoreCase(SHELLY_BTNT_MOMENTARY)
                                                             || relay.btnType.equalsIgnoreCase(SHELLY_BTNT_DETACHED))) {
-                                                thingHandler.postEvent(
-                                                        s.value == 1 ? EVENT_TYPE_SHORTPUSH : EVENT_TYPE_LONGPUSH,
+                                                th.postEvent(s.value == 1 ? EVENT_TYPE_SHORTPUSH : EVENT_TYPE_LONGPUSH,
                                                         true);
                                             }
                                         }
@@ -591,7 +583,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             for (Map.Entry<String, State> u : updates.entrySet()) {
                 logger.debug("{}:  Update[{}] channel {}, value={} (type {})", thingName, i, u.getKey(), u.getValue(),
                         u.getValue().getClass());
-                thingHandler.updateChannel(u.getKey(), u.getValue(), true);
+                th.updateChannel(u.getKey(), u.getValue(), true);
                 i++;
             }
 
@@ -600,8 +592,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 // values for the 3 mins
                 // To prevent confusing the user we schedule a regular REST update shortly
                 // This will be removed once Coap returns all values, which have changed since the last update
-                if (thingHandler.scheduledUpdates == 0) {
-                    thingHandler.requestUpdates(1, false);
+                if (th.scheduledUpdates == 0) {
+                    th.requestUpdates(1, false);
                 }
             }
         }
@@ -638,7 +630,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 updateChannel(updates, group, channel + "$Switch", state);
                 if (lastBrightness < 0.0) {
                     // get current value from channel
-                    QuantityType<?> last = (QuantityType<?>) thingHandler.getChannelValue(group, channel + "$Value");
+                    QuantityType<?> last = (QuantityType<?>) th.getChannelValue(group, channel + "$Value");
                     lastBrightness = last != null ? last.doubleValue() : 50;
                 }
                 updateChannel(updates, group, channel + "$Value", toQuantityType(
@@ -655,7 +647,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     }
 
     private boolean updateChannel(Map<String, State> updates, String group, String channel, State value) {
-        State v = (State) thingHandler.getChannelValue(group, channel);
+        State v = (State) th.getChannelValue(group, channel);
         if ((v != null) && v.equals(value)) {
             return false;
         }
@@ -794,10 +786,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      * @param uri The URI we are calling (CoIoT = /cit/d or /cit/s)
      * @param con true: send as CON, false: send as NON
      * @return new packet
-     *
-     * @throws IOException
      */
-    private Request sendRequest(@Nullable Request request, String ipAddress, String uri, Type con) throws IOException {
+    private Request sendRequest(@Nullable Request request, String ipAddress, String uri, Type con) {
         if ((request != null) && !request.isCanceled()) {
             request.cancel();
         }
@@ -815,9 +805,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      * @param uri The URI we are calling (CoIoT = /cit/d or /cit/s)
      * @param con true: send as CON, false: send as NON
      * @return new packet
-     * @throws IOException
      */
-    private Request newRequest(String ipAddress, String uri, Type con) throws IOException {
+
+    private Request newRequest(String ipAddress, String uri, Type con) {
         // We need to build our own Request to set an empty Token
         Request request = new Request(Code.GET, con);
         request.setURI(completeUrl(ipAddress, uri));

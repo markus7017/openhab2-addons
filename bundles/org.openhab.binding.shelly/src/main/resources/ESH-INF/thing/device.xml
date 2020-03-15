@@ -10,7 +10,6 @@
 		<channels>
 			<channel id="uptime" typeId="uptime" />
 			<channel id="wifiSignal" typeId="system.signal-strength" />
-			<channel id="internalTemp" typeId="deviceTemp" />
 			<channel id="alarm" typeId="alarmTrigger" />
 		</channels>
 	</channel-group-type>

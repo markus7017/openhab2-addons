@@ -32,6 +32,7 @@ import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.types.Command;
+import org.openhab.binding.shelly.internal.api.ShellyApiException;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyControlRoller;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsDimmer;
@@ -44,7 +45,6 @@ import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusRela
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
-import org.openhab.binding.shelly.internal.util.ShellyException;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,9 +70,9 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param localIP local IP of the openHAB host
      * @param httpPort port of the openHAB HTTP API
      */
-    public ShellyRelayHandler(Thing thing, @Nullable ShellyTranslationProvider translationProvider,
-            ShellyBindingConfiguration bindingConfig, @Nullable ShellyCoapServer coapServer, String localIP,
-            int httpPort, @Nullable HttpClient httpClient) {
+    public ShellyRelayHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
+            final ShellyBindingConfiguration bindingConfig, final @Nullable ShellyCoapServer coapServer,
+            final String localIP, int httpPort, @Nullable final HttpClient httpClient) {
         super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort, httpClient);
     }
 
@@ -84,7 +84,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
     @SuppressWarnings("null")
     @Override
-    public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws ShellyException {
+    public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws ShellyApiException {
         // Process command
         String groupName = channelUID.getGroupId();
         Integer rIndex = 0;
@@ -162,10 +162,10 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      *
      * @param command
      * @param index
-     * @throws ShellyException
+     * @throws ShellyApiException
      */
     @SuppressWarnings("null")
-    private void handleBrightness(Command command, Integer index) throws ShellyException {
+    private void handleBrightness(Command command, Integer index) throws ShellyApiException {
         Integer value = -1;
         if (command instanceof PercentType) { // Dimmer
             value = ((PercentType) command).intValue();
@@ -206,7 +206,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
     }
 
     @Override
-    public boolean updateDeviceStatus(ShellySettingsStatus status) throws ShellyException {
+    public boolean updateDeviceStatus(ShellySettingsStatus status) throws ShellyApiException {
         // map status to channels
         boolean updated = false;
         updated |= updateRelays(status);
@@ -222,11 +222,11 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param groupName relay, roller...
      * @param index relay number
      * @param isControl true: is the Rollershutter channel, false: rollerpos channel
-     * @throws ShellyException
+     * @throws ShellyApiException
      */
     @SuppressWarnings("null")
     private void handleRoller(Command command, String groupName, Integer index, boolean isControl)
-            throws ShellyException {
+            throws ShellyApiException {
         Integer position = -1;
 
         if ((command instanceof UpDownType) || (command instanceof OnOffType)) {
@@ -301,10 +301,10 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param profile ShellyDeviceProfile
      * @param status Last ShellySettingsStatus
      *
-     * @throws ShellyException
+     * @throws ShellyApiException
      */
     @SuppressWarnings("null")
-    public boolean updateRelays(ShellySettingsStatus status) throws ShellyException {
+    public boolean updateRelays(ShellySettingsStatus status) throws ShellyApiException {
         Validate.notNull(status, "status must not be null!");
         ShellyDeviceProfile profile = getProfile();
 
@@ -333,15 +333,15 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                             // for whatever reason those are not represented as an array, but 3 elements
                             logger.debug("{}: Updating external sensors", thingName);
                             if (rstatus.extTemperature.sensor1 != null) {
-                                updated |= updateChannel(groupName, CHANNEL_ETEMP_SENSOR1,
+                                updated |= updateChannel(CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR1,
                                         toQuantityType(getDouble(rstatus.extTemperature.sensor1.tC), SIUnits.CELSIUS));
                             }
                             if (rstatus.extTemperature.sensor2 != null) {
-                                updated |= updateChannel(groupName, CHANNEL_ETEMP_SENSOR2,
+                                updated |= updateChannel(CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR2,
                                         toQuantityType(getDouble(rstatus.extTemperature.sensor2.tC), SIUnits.CELSIUS));
                             }
                             if (rstatus.extTemperature.sensor3 != null) {
-                                updated |= updateChannel(groupName, CHANNEL_ETEMP_SENSOR3,
+                                updated |= updateChannel(CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR3,
                                         toQuantityType(getDouble(rstatus.extTemperature.sensor3.tC), SIUnits.CELSIUS));
                             }
                         }
@@ -411,10 +411,10 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param profile ShellyDeviceProfile
      * @param status Last ShellySettingsStatus
      *
-     * @throws ShellyException
+     * @throws ShellyApiException
      */
     @SuppressWarnings("null")
-    public boolean updateDimmers(ShellySettingsStatus orgStatus) throws ShellyException {
+    public boolean updateDimmers(ShellySettingsStatus orgStatus) throws ShellyApiException {
         ShellyDeviceProfile profile = getProfile();
 
         boolean updated = false;

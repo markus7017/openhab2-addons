@@ -12,6 +12,9 @@
  */
 package org.openhab.binding.shelly.internal.api;
 
+import static org.eclipse.jetty.http.HttpStatus.*;
+import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -28,7 +31,7 @@ public class ShellyApiResult {
     public String url = "";
     public String method = "";
     public String response = "";
-    public Integer httpCode = 0;
+    public Integer httpCode = OK_200;
     public String httpReason = "";
 
     public ShellyApiResult() {
@@ -47,7 +50,6 @@ public class ShellyApiResult {
         this.response = response;
     }
 
-    @SuppressWarnings("null")
     public ShellyApiResult(@Nullable ContentResponse contentResponse) {
         fillFromResponse(contentResponse);
     }
@@ -63,6 +65,27 @@ public class ShellyApiResult {
             url = request.getURI().toString();
             method = request.getMethod();
         }
+    }
+
+    public String getHttpResponse() {
+        String r = response != null ? response : "";
+        return httpCode.toString() + ": " + response;
+    }
+
+    public boolean isHttpOk() {
+        return httpCode == OK_200;
+    }
+
+    public boolean isHttpAccessUnauthorized() {
+        return (httpCode == UNAUTHORIZED_401 || response.contains(SHELLY_APIERR_UNAUTHORIZED));
+    }
+
+    public boolean isHttpTimeout() {
+        return response.toUpperCase().contains(SHELLY_APIERR_TIMEOUT);
+    }
+
+    public boolean isNotCalibrtated() {
+        return getHttpResponse().contains(SHELLY_APIERR_NOT_CALIBRATED);
     }
 
     private void fillFromResponse(@Nullable ContentResponse contentResponse) {

@@ -10,13 +10,15 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.shelly.internal.util;
+package org.openhab.binding.shelly.internal.api;
 
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.text.MessageFormat;
 
-import org.openhab.binding.shelly.internal.api.ShellyApiResult;
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * The {@link CarNetException} implements an extension to the standard Exception class. This allows to keep also the
@@ -24,53 +26,58 @@ import org.openhab.binding.shelly.internal.api.ShellyApiResult;
  *
  * @author Markus Michels - Initial contribution
  */
-public class ShellyException extends Exception {
+@NonNullByDefault
+public class ShellyApiException extends Exception {
     private static final long serialVersionUID = -5809459454769761821L;
 
-    private Throwable e = null;
+    private @Nullable Exception e = null;
     private ShellyApiResult apiResult = new ShellyApiResult();
 
-    public ShellyException(String message) {
+    public ShellyApiException() {
+        super();
+    }
+
+    public ShellyApiException(String message) {
         super(message);
     }
 
-    public ShellyException(String message, Throwable throwable) {
-        super(message, throwable);
-        e = throwable;
+    public ShellyApiException(String message, Exception exception) {
+        super(message, exception);
+        e = exception;
     }
 
-    public ShellyException(String message, ShellyApiResult result) {
+    public ShellyApiException(String message, ShellyApiResult result) {
         super(message);
         apiResult = result;
     }
 
-    public ShellyException(String message, ShellyApiResult result, Throwable throwable) {
+    public ShellyApiException(String message, ShellyApiResult result, Exception exception) {
         super(message);
         apiResult = result;
-        e = throwable;
+        e = exception;
     }
 
     @Override
     public String getMessage() {
-        return super.getMessage();
+        String m = super.getMessage();
+        return m != null ? m : "";
     }
 
-    @SuppressWarnings({ "null", "unused" })
     @Override
     public String toString() {
         String message = super.getMessage();
         if (e != null) {
-            if (e.getClass() == UnknownHostException.class) {
+            if (isUnknownHost()) {
                 String[] string = message.split(": "); // java.net.UnknownHostException: api.rach.io
                 message = MessageFormat.format("Unable to connect to {0} (unknown host / internet connection down)",
                         string[1]);
-            } else if (e.getClass() == MalformedURLException.class) {
+            } else if (isMalformedURL()) {
                 message = MessageFormat.format("Invalid URL: '{0}'", message);
             } else {
                 message = MessageFormat.format("'{0}' ({1}", e.toString(), e.getMessage());
             }
         } else {
-            if (super.getClass() != ShellyException.class) {
+            if (isApiException()) {
                 message = MessageFormat.format("{0} {1}", super.getClass().toString(), super.getMessage());
             } else {
                 message = super.getMessage();
@@ -85,7 +92,32 @@ public class ShellyException extends Exception {
         return MessageFormat.format("{0} {1}{2}", message, url, resultString);
     }
 
-    public ShellyApiResult getApiResult() {
-        return apiResult;
+    public boolean isApiException() {
+        return (e != null) && (e.getClass() == ShellyApiException.class);
     }
+
+    public boolean isUnknownHost() {
+        return (e != null) && (e.getClass() == MalformedURLException.class);
+    }
+
+    public boolean isMalformedURL() {
+        return (e != null) && (e.getClass() == UnknownHostException.class);
+    }
+
+    public ShellyApiResult getApiResult() {
+        return apiResult != null ? apiResult : new ShellyApiResult();
+    }
+
+    public static String getExceptionType(@Nullable ShellyApiException e) {
+        if ((e == null) || (e.getClass() == null) || e.getClass().toString().isEmpty()) {
+            return "";
+        }
+
+        String msg = StringUtils.substringAfterLast(e.getClass().toString(), ".");
+        if (msg != null) {
+            return msg;
+        }
+        return e.getCause().toString();
+    }
+
 }

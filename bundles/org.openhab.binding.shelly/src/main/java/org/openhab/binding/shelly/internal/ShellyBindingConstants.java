@@ -273,34 +273,6 @@ public class ShellyBindingConstants {
     public static final String EVENT_TYPE_SHORTPUSH = "SHOTRTPUSH";
     public static final String EVENT_TYPE_LONGPUSH = "LONGPUSH";
 
-    public static final String SHELLY_NULL_URL = "null";
-    public static final String SHELLY_URL_DEVINFO = "/shelly";
-    public static final String SHELLY_URL_STATUS = "/status";
-    public static final String SHELLY_URL_SETTINGS = "/settings";
-    public static final String SHELLY_URL_SETTINGS_AP = "/settings/ap";
-    public static final String SHELLY_URL_SETTINGS_STA = "/settings/sta";
-    public static final String SHELLY_URL_SETTINGS_LOGIN = "/settings/sta";
-    public static final String SHELLY_URL_SETTINGS_CLOUD = "/settings/cloud";
-    public static final String SHELLY_URL_LIST_IR = "/ir/list";
-    public static final String SHELLY_URL_SEND_IR = "/ir/emit";
-
-    public static final String SHELLY_URL_SETTINGS_RELAY = "/settings/relay";
-    public static final String SHELLY_URL_STATUS_RELEAY = "/status/relay";
-    public static final String SHELLY_URL_CONTROL_RELEAY = "/relay";
-
-    public static final String SHELLY_URL_SETTINGS_EMETER = "/settings/emeter";
-    public static final String SHELLY_URL_STATUS_EMETER = "/emeter";
-    public static final String SHELLY_URL_DATA_EMETER = "/emeter/{0}/em_data.csv";
-
-    public static final String SHELLY_URL_CONTROL_ROLLER = "/roller";
-    public static final String SHELLY_URL_SETTINGS_ROLLER = "/settings/roller";
-
-    public static final String SHELLY_URL_SETTINGS_LIGHT = "/settings/light";
-    public static final String SHELLY_URL_STATUS_LIGHT = "/light";
-    public static final String SHELLY_URL_CONTROL_LIGHT = "/light";
-
-    public static final String SHELLY_URL_SETTINGS_DIMMER = "/settings/light";
-
     public static final String SHELLY_CALLBACK_URI = "/shelly/event";
     public static final String EVENT_TYPE_RELAY = "relay";
     public static final String EVENT_TYPE_ROLLER = "roller";
@@ -311,16 +283,6 @@ public class ShellyBindingConstants {
     public static final String SHELLY_IR_CODET_PRONTO = "pronto";
     public static final String SHELLY_IR_CODET_PRONTO_HEX = "pronto_hex";
 
-    public static final String HTTP_DELETE = "DELETE";
-    public static final String HTTP_HEADER_AUTH = "Authorization";
-    public static final String HTTP_AUTH_TYPE_BASIC = "Basic";
-    public static final String CONTENT_TYPE_XML = "text/xml; charset=UTF-8";
-    public static final String CONTENT_TYPE_JSON = "application/json";
-
-    public static final String APIERR_HTTP_401_UNAUTHORIZED = "401 Unauthorized";
-    public static final String APIERR_TIMEOUT = "Timeout";
-    public static final String APIERR_NOT_CALIBRATED = "Not calibrated!";
-
     // Minimum signal strength for basic connectivity. Packet delivery may be unreliable.
     public static final int HEALTH_CHECK_INTERVAL_SEC = 300;
 
@@ -329,7 +291,7 @@ public class ShellyBindingConstants {
     // Formatting: Number of scaling digits
     public static final int DIGITS_NONE = 0;
     public static final int DIGITS_WATT = 3;
-    public static final int DIGITS_KWH = 4;
+    public static final int DIGITS_KWH = 5;
     public static final int DIGITS_VOLT = 2;
     public static final int DIGITS_TEMP = 2;
     public static final int DIGITS_LUX = 2;
