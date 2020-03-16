@@ -62,10 +62,25 @@ import org.slf4j.LoggerFactory;
 public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     private final Logger logger = LoggerFactory.getLogger(ShellyDiscoveryParticipant.class);
     private final ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
-    private @Nullable LocaleProvider localeProvider;
-    private @Nullable TranslationProvider i18nProvider;
-    private ShellyTranslationProvider messages = new ShellyTranslationProvider();
-    private @Nullable HttpClient httpClient;
+    private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
+    private final HttpClient httpClient;
+
+    /**
+     * OSGI Service Activation
+     *
+     * @param componentContext
+     * @param localeProvider
+     */
+    @Activate
+    public ShellyDiscoveryParticipant(@Reference HttpClientFactory httpClientFactory,
+            @Reference LocaleProvider localeProvider, @Reference TranslationProvider i18nProvider,
+            ComponentContext componentContext) {
+        logger.debug("Activating ShellyDiscovery service");
+        this.messages.initFrom(new ShellyTranslationProvider(componentContext.getBundleContext().getBundle(),
+                i18nProvider, localeProvider));
+        this.httpClient = httpClientFactory.getCommonHttpClient();
+        bindingConfig.updateFromProperties(componentContext.getProperties());
+    }
 
     @Override
     public Set<ThingTypeUID> getSupportedThingTypeUIDs() {
@@ -78,22 +93,6 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     }
 
     /**
-     * OSGI Service Activation
-     *
-     * @param componentContext
-     * @param localeProvider
-     * @param localeProvider
-     */
-    @Activate
-    protected void activate(ComponentContext componentContext) {
-        logger.debug("Shelly Discovery service activated");
-        Validate.notNull(componentContext);
-        messages.initFrom(new ShellyTranslationProvider(componentContext.getBundleContext().getBundle(), i18nProvider,
-                localeProvider));
-        bindingConfig.updateFromProperties(componentContext.getProperties());
-    }
-
-    /**
      *
      * Process updates to Binding Config
      *
@@ -102,15 +101,12 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     @Modified
     protected void modified(final ComponentContext componentContext) {
         logger.debug("Shelly Binding Configuration refreshed");
-        Validate.notNull(bindingConfig);
         bindingConfig.updateFromProperties(componentContext.getProperties());
     }
 
     @Nullable
     @Override
     public DiscoveryResult createResult(final ServiceInfo service) {
-        Validate.notNull(messages);
-        Validate.notNull(bindingConfig);
         String name = service.getName().toLowerCase(); // Duao: Name starts with" Shelly" rather than "shelly"
         if (!name.startsWith("shelly")) {
             return null;
@@ -146,9 +142,6 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
 
                 profile = api.getDeviceProfile(thingType);
                 logger.debug("Shelly settings : {}", profile.settingsJson);
-                Validate.notNull(profile, "Unable to get device profile: ");
-                Validate.notNull(profile.settings);
-                Validate.notNull(profile.settings.device);
                 model = getString(profile.settings.device.type);
                 mode = profile.mode;
 
@@ -203,32 +196,4 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
         Validate.notNull(service);
         return ShellyThingCreator.getThingUID(service.getName().toLowerCase(), "", false);
     }
-
-    @Reference
-    protected void setLocaleProvider(final LocaleProvider localeProvider) {
-        this.localeProvider = localeProvider;
-    }
-
-    protected void unsetLocaleProvider(final LocaleProvider localeProvider) {
-        this.localeProvider = null;
-    }
-
-    @Reference
-    protected void setTranslationProvider(TranslationProvider i18nProvider) {
-        this.i18nProvider = i18nProvider;
-    }
-
-    protected void unsetTranslationProvider(TranslationProvider i18nProvider) {
-        this.i18nProvider = null;
-    }
-
-    @Reference
-    protected void setHttpClientFactory(HttpClientFactory httpClientFactory) {
-        this.httpClient = httpClientFactory.getCommonHttpClient();
-    }
-
-    protected void unsetHttpClientFactory(HttpClientFactory httpClientFactory) {
-        this.httpClient = null;
-    }
-
 }

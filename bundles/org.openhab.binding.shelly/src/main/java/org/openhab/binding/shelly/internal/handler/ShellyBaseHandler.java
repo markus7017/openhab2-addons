@@ -901,6 +901,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             if (refreshSettings) {
                 logger.debug("{}: Refresh settings", thingName);
                 profile = api.getDeviceProfile(getThing().getThingTypeUID().getId());
+                Validate.notNull(profile.settings);
+                Validate.notNull(profile.settings.device);
             }
         } finally {
             refreshSettings = false;

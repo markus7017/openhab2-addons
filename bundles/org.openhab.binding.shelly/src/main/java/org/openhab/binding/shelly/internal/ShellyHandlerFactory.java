@@ -81,13 +81,11 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
             @Reference HttpClientFactory httpClientFactory, ComponentContext componentContext,
             Map<String, @Nullable Object> configProperties) {
         Validate.notNull(configProperties, "configProperties must not be null!");
-        this.httpClient = httpClientFactory.getCommonHttpClient();
-
         logger.debug("Activate Shelly HandlerFactory");
         super.activate(componentContext);
 
+        this.httpClient = httpClientFactory.getCommonHttpClient();
         this.messages.initFrom(new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider, localeProvider));
-        Validate.notNull(messages, "Unable to created translation provide!");
         this.coapServer = new ShellyCoapServer();
         Validate.notNull(coapServer, "Unable to created coapServer!");
 
