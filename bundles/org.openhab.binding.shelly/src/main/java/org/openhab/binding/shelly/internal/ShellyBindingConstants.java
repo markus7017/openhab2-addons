@@ -162,13 +162,6 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_TIMER_AUTOOFF = "autoOff";
     public static final String CHANNEL_TIMER_ACTIVE = "timerActive";
 
-    // External sensors for Shelly1/1PM
-    public static final String CHANNEL_GROUP_ETEMP_SENSORS = "sensors";
-    public static final String CHANNEL_ETEMP_SENSOR = "temperature";
-    public static final String CHANNEL_ETEMP_SENSOR1 = CHANNEL_ETEMP_SENSOR + "1";
-    public static final String CHANNEL_ETEMP_SENSOR2 = CHANNEL_ETEMP_SENSOR + "2";
-    public static final String CHANNEL_ETEMP_SENSOR3 = CHANNEL_ETEMP_SENSOR + "3";
-
     // Roller
     public static final String CHANNEL_GROUP_ROL_CONTROL = "roller";
     public static final String CHANNEL_ROL_CONTROL_CONTROL = "control";
@@ -213,6 +206,11 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_SENSOR_MOTION = "motion";
     public static final String CHANNEL_SENSOR_CHARGER = "charger";
     public static final String CHANNEL_SENSOR_ERROR = "lastError";
+    // External sensors for Shelly1/1PM
+    public static final String CHANNEL_ESENDOR_TEMP = "temperature";
+    public static final String CHANNEL_ESENDOR_TEMP1 = CHANNEL_ESENDOR_TEMP + "1";
+    public static final String CHANNEL_ESENDOR_TEMP2 = CHANNEL_ESENDOR_TEMP + "2";
+    public static final String CHANNEL_ESENDOR_TEMP3 = CHANNEL_ESENDOR_TEMP + "3";
 
     public static final String CHANNEL_GROUP_SENSE_CONTROL = "control";
     public static final String CHANNEL_SENSE_KEY = "key";

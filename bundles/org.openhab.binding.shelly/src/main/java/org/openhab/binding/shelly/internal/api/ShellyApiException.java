@@ -108,7 +108,7 @@ public class ShellyApiException extends Exception {
         return apiResult != null ? apiResult : new ShellyApiResult();
     }
 
-    public static String getExceptionType(@Nullable ShellyApiException e) {
+    public static String getExceptionType(ShellyApiException e) {
         if ((e == null) || (e.getClass() == null) || e.getClass().toString().isEmpty()) {
             return "";
         }

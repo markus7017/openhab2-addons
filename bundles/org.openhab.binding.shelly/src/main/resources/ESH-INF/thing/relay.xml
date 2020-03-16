@@ -9,7 +9,7 @@
 		<description>Shelly1 device with single relay</description>
 		<channel-groups>
 			<channel-group id="relay" typeId="relayChannel" />
-			<channel-group id="sensors" typeId="externalTemperature" />
+			<channel-group id="sensors" typeId="externalSensors" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
@@ -22,7 +22,7 @@
 		<channel-groups>
 			<channel-group id="relay" typeId="relayChannel" />
 			<channel-group id="meter" typeId="meter" />
-			<channel-group id="sensors" typeId="externalTemperature" />
+			<channel-group id="sensors" typeId="externalSensors" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
@@ -227,13 +227,14 @@
 		</channels>
 	</channel-group-type>
 
-	<channel-group-type id="externalTemperature">
+	<channel-group-type id="externalSensors">
 		<label>External Sensors</label>
 		<description>Temperatures from external sensors (if extension is installed and sensor connected)</description>
 		<channels>
 			<channel id="temperature1" typeId="sensorTempExt" />
 			<channel id="temperature2" typeId="sensorTempExt" />
 			<channel id="temperature3" typeId="sensorTempExt" />
+			<channel id="humidity" typeId="sensorHumidity" />
 		</channels>
 	</channel-group-type>
 

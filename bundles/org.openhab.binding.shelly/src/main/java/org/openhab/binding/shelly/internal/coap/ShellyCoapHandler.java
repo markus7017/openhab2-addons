@@ -77,7 +77,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private String thingName;
 
     private final ShellyCoapServer coapServer;
-    private @Nullable CoapClient statusClient = new CoapClient();
+    private @Nullable CoapClient statusClient;
     private @Nullable Request reqDescription;
     private @Nullable Request reqStatus;
 
@@ -161,7 +161,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 Validate.notNull(options);
                 int i = 0;
                 while (i < options.size()) {
-                    @Nullable
                     Option opt = options.get(i);
                     Validate.notNull(opt);
                     switch (opt.getNumber()) {
@@ -246,7 +245,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
         logger.debug("{}: CoIoT Device Description for {}: {}", thingName, devId, payload);
 
         // Decode Json
-        @Nullable
         CoIotDevDescription descr = gson.fromJson(payload, CoIotDevDescription.class);
         Validate.notNull(descr);
 
@@ -848,7 +846,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private Integer getSensorNumber(String sensorName, String sensorId) {
         Integer idx = 0;
         for (Map.Entry<String, CoIotDescrSen> se : sensorMap.entrySet()) {
-            @Nullable
             CoIotDescrSen sen = se.getValue();
             if (sen.desc.equalsIgnoreCase(sensorName)) {
                 idx++; // iterate from input1..2..n
@@ -870,7 +867,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private Integer getExtTempId(String sensorId) {
         Integer idx = 0;
         for (Map.Entry<String, CoIotDescrSen> se : sensorMap.entrySet()) {
-            @Nullable
             CoIotDescrSen sen = se.getValue();
             if (sen.desc.equalsIgnoreCase("External_temperature")) {
                 idx++; // iterate from temperature1..2..n

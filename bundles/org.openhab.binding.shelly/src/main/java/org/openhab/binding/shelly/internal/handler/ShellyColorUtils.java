@@ -17,7 +17,6 @@ import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import java.math.BigDecimal;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
@@ -181,7 +180,7 @@ public class ShellyColorUtils {
         return toPercent(value, 0, SHELLY_MAX_COLOR);
     }
 
-    public static PercentType toPercent(@Nullable Integer _value, Integer min, Integer max) {
+    public static PercentType toPercent(Integer _value, Integer min, Integer max) {
         Double range = max.doubleValue() - min.doubleValue();
         Double value = _value != null ? _value.doubleValue() : 0;
         value = value < min ? min.doubleValue() : value;

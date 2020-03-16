@@ -42,7 +42,7 @@ public class ShellyProtectedHandler extends ShellyBaseHandler {
      */
     public ShellyProtectedHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
             final ShellyBindingConfiguration bindingConfig, final @Nullable ShellyCoapServer coapServer,
-            final String localIP, int httpPort, final @Nullable HttpClient httpClient) {
+            final String localIP, int httpPort, final HttpClient httpClient) {
         super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort, httpClient);
     }
 

@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class ShellyLightHandler extends ShellyBaseHandler {
     private final Logger logger = LoggerFactory.getLogger(ShellyLightHandler.class);
-    private @Nullable Map<Integer, ShellyColorUtils> channelColors;
+    private final Map<Integer, ShellyColorUtils> channelColors;
 
     /**
      * Constructor
@@ -67,7 +67,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
      */
     public ShellyLightHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
             final ShellyBindingConfiguration bindingConfig, final @Nullable ShellyCoapServer coapServer,
-            final String localIP, int httpPort, final @Nullable HttpClient httpClient) {
+            final String localIP, int httpPort, final HttpClient httpClient) {
         super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort, httpClient);
         channelColors = new TreeMap<>();
     }
@@ -236,7 +236,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
     }
 
     @SuppressWarnings("null")
-    private boolean handleColorPicker(@Nullable ShellyDeviceProfile profile, Integer lightId, ShellyColorUtils col,
+    private boolean handleColorPicker(ShellyDeviceProfile profile, Integer lightId, ShellyColorUtils col,
             Command command) throws ShellyApiException {
         Validate.notNull(profile);
 
@@ -317,7 +317,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
     @SuppressWarnings({ "null", "unused" })
     private ShellyColorUtils getCurrentColors(Integer lightId) {
         Validate.notNull(channelColors);
-        @Nullable
         ShellyColorUtils col = channelColors.get(lightId);
         if (col == null) {
             col = new ShellyColorUtils(); // create a new entry
@@ -461,7 +460,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         }
     }
 
-    private void sendColors(@Nullable ShellyDeviceProfile profile, Integer lightId, ShellyColorUtils oldCol,
+    private void sendColors(ShellyDeviceProfile profile, Integer lightId, ShellyColorUtils oldCol,
             ShellyColorUtils newCol, boolean autoOn) throws ShellyApiException {
         Validate.notNull(profile);
 

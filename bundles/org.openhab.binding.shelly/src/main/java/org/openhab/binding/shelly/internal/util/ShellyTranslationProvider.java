@@ -31,13 +31,12 @@ public class ShellyTranslationProvider {
 
     private @Nullable Bundle bundle;
     private @Nullable TranslationProvider i18nProvider;
-    private @Nullable LocaleProvider localeProvider = null;
+    private @Nullable LocaleProvider localeProvider;
 
     public ShellyTranslationProvider() {
     }
 
-    public ShellyTranslationProvider(Bundle bundle, @Nullable TranslationProvider i18nProvider,
-            @Nullable LocaleProvider localeProvider) {
+    public ShellyTranslationProvider(Bundle bundle, TranslationProvider i18nProvider, LocaleProvider localeProvider) {
         this.bundle = bundle;
         this.i18nProvider = i18nProvider;
         this.localeProvider = localeProvider;

@@ -50,11 +50,11 @@ public class ShellyApiResult {
         this.response = response;
     }
 
-    public ShellyApiResult(@Nullable ContentResponse contentResponse) {
+    public ShellyApiResult(ContentResponse contentResponse) {
         fillFromResponse(contentResponse);
     }
 
-    public ShellyApiResult(@Nullable ContentResponse contentResponse, Throwable e) {
+    public ShellyApiResult(ContentResponse contentResponse, Throwable e) {
         fillFromResponse(contentResponse);
         response = response + "(" + e.toString() + ")";
     }
@@ -68,7 +68,6 @@ public class ShellyApiResult {
     }
 
     public String getHttpResponse() {
-        String r = response != null ? response : "";
         return httpCode.toString() + ": " + response;
     }
 

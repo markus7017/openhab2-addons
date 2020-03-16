@@ -87,7 +87,6 @@ public class ShellyHttpApi {
         this.httpClient = httpClient;
     }
 
-    @Nullable
     public ShellySettingsDevice getDevInfo() throws ShellyApiException {
         return callApi(SHELLY_URL_DEVINFO, ShellySettingsDevice.class);
     }
@@ -143,7 +142,6 @@ public class ShellyHttpApi {
         return status;
     }
 
-    @Nullable
     public ShellyStatusRelay getRelayStatus(Integer relayIndex) throws ShellyApiException {
         return callApi(SHELLY_URL_STATUS_RELEAY + "/" + relayIndex.toString(), ShellyStatusRelay.class);
     }
@@ -158,7 +156,6 @@ public class ShellyHttpApi {
         request(getControlUrlPrefix(id) + "?" + turn + "brightness=" + brightness.toString());
     }
 
-    @Nullable
     public ShellyControlRoller getRollerStatus(Integer rollerIndex) throws ShellyApiException {
         String uri = SHELLY_URL_CONTROL_ROLLER + "/" + rollerIndex.toString() + "/pos";
         return callApi(uri, ShellyControlRoller.class);

@@ -72,7 +72,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      */
     public ShellyRelayHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
             final ShellyBindingConfiguration bindingConfig, final @Nullable ShellyCoapServer coapServer,
-            final String localIP, int httpPort, @Nullable final HttpClient httpClient) {
+            final String localIP, int httpPort, final HttpClient httpClient) {
         super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort, httpClient);
     }
 
@@ -333,15 +333,15 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                             // for whatever reason those are not represented as an array, but 3 elements
                             logger.debug("{}: Updating external sensors", thingName);
                             if (rstatus.extTemperature.sensor1 != null) {
-                                updated |= updateChannel(CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR1,
+                                updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP1,
                                         toQuantityType(getDouble(rstatus.extTemperature.sensor1.tC), SIUnits.CELSIUS));
                             }
                             if (rstatus.extTemperature.sensor2 != null) {
-                                updated |= updateChannel(CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR2,
+                                updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP2,
                                         toQuantityType(getDouble(rstatus.extTemperature.sensor2.tC), SIUnits.CELSIUS));
                             }
                             if (rstatus.extTemperature.sensor3 != null) {
-                                updated |= updateChannel(CHANNEL_GROUP_ETEMP_SENSORS, CHANNEL_ETEMP_SENSOR3,
+                                updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP3,
                                         toQuantityType(getDouble(rstatus.extTemperature.sensor3.tC), SIUnits.CELSIUS));
                             }
                         }

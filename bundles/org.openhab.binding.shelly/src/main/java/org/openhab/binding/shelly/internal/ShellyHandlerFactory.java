@@ -79,7 +79,7 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     public ShellyHandlerFactory(@Reference NetworkAddressService networkAddressService,
             @Reference LocaleProvider localeProvider, @Reference TranslationProvider i18nProvider,
             @Reference HttpClientFactory httpClientFactory, ComponentContext componentContext,
-            Map<String, @Nullable Object> configProperties) {
+            Map<String, Object> configProperties) {
         Validate.notNull(configProperties, "configProperties must not be null!");
         logger.debug("Activate Shelly HandlerFactory");
         super.activate(componentContext);
@@ -171,7 +171,6 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
         }
     }
 
-    @Nullable
     public ShellyBindingConfiguration getBindingConfig() {
         return bindingConfig;
     }

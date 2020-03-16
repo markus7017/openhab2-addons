@@ -633,8 +633,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         skipCount = config.updateInterval / UPDATE_STATUS_INTERVAL_SECONDS;
     }
 
-    @SuppressWarnings("null")
-    private void checkVersion(@Nullable ShellyDeviceProfile prf, ShellySettingsStatus status) {
+    private void checkVersion(ShellyDeviceProfile prf, ShellySettingsStatus status) {
         try {
             ShellyVersion version = new ShellyVersion();
             if (version.checkBeta(getString(prf.fwVersion))) {
@@ -914,12 +913,10 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         return profile;
     }
 
-    @Nullable
     protected ShellyHttpApi getShellyApi() {
         return api;
     }
 
-    @Nullable
     protected ShellyDeviceProfile getDeviceProfile() {
         return profile;
     }
