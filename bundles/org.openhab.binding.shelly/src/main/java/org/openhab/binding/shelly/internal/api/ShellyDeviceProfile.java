@@ -164,7 +164,6 @@ public class ShellyDeviceProfile {
         supportsSensorUrls = settingsJson.contains(SHELLY_API_EVENTURL_REPORT);
 
         initialized = true;
-
         return this;
     }
 

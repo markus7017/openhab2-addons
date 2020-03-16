@@ -333,8 +333,7 @@ public class ShellyHttpApi {
 
     /**
      * Set event callback URLs. Depending on the device different event types are supported. In fact all of them will be
-     * redirected to the binding's
-     * servlet and act as a trigger to schedule a status update
+     * redirected to the binding's servlet and act as a trigger to schedule a status update
      *
      * @param ShellyApiException
      * @throws ShellyApiException
@@ -367,7 +366,7 @@ public class ShellyHttpApi {
 
     /**
      * Set event URL for HT (report_url)
-     *
+     * 
      * @param deviceName
      * @throws ShellyApiException
      */
@@ -442,7 +441,7 @@ public class ShellyHttpApi {
 
     /**
      * Submit GET request and return response, check for invalid responses
-     *
+     * 
      * @param uri: URI (e.g. "/settings")
      */
     public <T> T callApi(String uri, Class<T> classOfT) throws ShellyApiException {
@@ -493,13 +492,6 @@ public class ShellyHttpApi {
                     HTTP_AUTH_TYPE_BASIC + " " + Base64.getEncoder().encodeToString(value.getBytes()));
         }
         request.header(HttpHeader.ACCEPT, CONTENT_TYPE_JSON);
-        /*
-         * if (data != null) {
-         * request.content(new StringContentProvider(data, StandardCharsets.UTF_8));
-         * }
-         * logger.trace("HTTP {} {}, parms={}, data={}, headers={}", method.toString(), url, gs(parms), gs(headers),
-         * gs(data));
-         */
         logger.trace("{}: HTTP GET for {}", thingName, url);
 
         // Do request and get response

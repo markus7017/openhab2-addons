@@ -80,7 +80,6 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
             @Reference LocaleProvider localeProvider, @Reference TranslationProvider i18nProvider,
             @Reference HttpClientFactory httpClientFactory, ComponentContext componentContext,
             Map<String, Object> configProperties) {
-        Validate.notNull(configProperties, "configProperties must not be null!");
         logger.debug("Activate Shelly HandlerFactory");
         super.activate(componentContext);
 
@@ -162,7 +161,7 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
                     // event processed
                     break;
                 }
-            } catch (NullPointerException e) {
+            } catch (IllegalArgumentException | NullPointerException e) {
                 logger.debug("Unable to process callback: {} ({}), deviceName={}, type={}, index={}, parameters={}\n{}",
                         e.getMessage(), e.getClass(), deviceName, eventType, componentIndex, parameters.toString(),
                         e.getStackTrace());

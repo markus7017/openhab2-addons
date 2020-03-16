@@ -78,7 +78,6 @@ public class ShellyCoapServer {
                 }
             }
         }
-
     }
 
     public void addListener(ShellyCoapListener listener) {
@@ -154,5 +153,4 @@ public class ShellyCoapServer {
     public void dispose() {
         stop();
     }
-
 }

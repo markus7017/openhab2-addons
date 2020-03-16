@@ -126,9 +126,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     }
 
     /**
-     * Process an inbound Response (or mapped Request)
-     * - decode Coap options
-     * - handle discery result or status updates
+     * Process an inbound Response (or mapped Request): decode Coap options. handle discovery result or status updates
      *
      * @param response The Response packet
      */
@@ -177,12 +175,10 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             serial = opt.getIntegerValue();
                             if (serial == lastSerial) {
                                 // As per specification the serial changes when any sensor data has changed. The App
-                                // should ignore any updates with
-                                // the same serial. However, as we have seen with the Shelly HT and Shelly 4 Pro this is
-                                // not always the case. The
-                                // device comes up with an status packet having the same serial, but new payload
-                                // information.
-                                // Work Around: Packet will only ignore when Serial AND Payload are the same as last
+                                // should ignore any updates with the same serial. However, as we have seen with the
+                                // Shelly HT and Shelly 4 Pro this is not always the case. The device comes up with an
+                                // status packet having the same serial, but new payload information.
+                                // Work Around: Packet will only be ignored when Serial AND Payload are the same as last
                                 // time
                                 if (!lastPayload.isEmpty() && !lastPayload.equals(payload)) {
                                     logger.debug(
@@ -215,9 +211,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             }
 
             if (reqStatus == null) {
-                /*
-                 * Observe Status Updates
-                 */
+                // Observe Status Updates
                 reqStatus = sendRequest(reqStatus, config.deviceIp, COLOIT_URI_DEVSTATUS, Type.NON);
             }
         } catch (NullPointerException e) {
@@ -229,10 +223,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
     /**
      * Process a CoIoT device description message. This includes definitions on device units (Relay0, Relay1, Sensors
-     * etc.) as well as a definition of
-     * sensors and actors. This information needs to be stored allowing to map ids from status updates to the device
-     * units and matching the correct
-     * thing channel.
+     * etc.) as well as a definition of sensors and actors. This information needs to be stored allowing to map ids from
+     * status updates to the device units and matching the correct thing channel.
      *
      * @param payload Device desciption in JSon format, example:
      *            {"blk":[{"I":0,"D":"Relay0"}],"sen":[{"I":112,"T":"Switch","R":"0/1","L":0}],"act":[{"I":211,"D":"Switch","L":0,"P":[{"I":2011,"D":"ToState","R":"0/1"}]}]}
@@ -240,8 +232,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      * @param devId The device id reported in the CoIoT message.
      */
     private void handleDeviceDescription(String devId, String payload) {
-        // Device description
-        // payload = StringUtils.substringBefore(payload, "}]}]}") + "}]}]}";
+        // Device description: payload = StringUtils.substringBefore(payload, "}]}]}") + "}]}]}";
         logger.debug("{}: CoIoT Device Description for {}: {}", thingName, devId, payload);
 
         // Decode Json
@@ -297,9 +288,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     }
 
     /**
-     * Process CoIoT status update message. If a status update is received, but the
-     * device description has not been received yet a GET is send to query device
-     * description.
+     * Process CoIoT status update message. If a status update is received, but the device description has not been
+     * received yet a GET is send to query device description.
      *
      * @param devId device id included in the status packet
      * @param payload Coap payload (Json format), example: {"G":[[0,112,0]]}
@@ -352,8 +342,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 CoIotSensor s = list.generic.get(i);
                 CoIotDescrSen sen = sensorMap.get(s.index);
                 if (sen != null) {
-                    // find matching sensor definition from device description, use the Link ID as
-                    // index
+                    // find matching sensor definition from device description, use the Link ID as index
                     Validate.notNull(sen.links != null, "Coap: sen.L must not be null!");
                     sen = fixDescription(sen);
                     CoIotDescrBlk element = blockMap.get(sen.links);
@@ -432,13 +421,11 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                 case "output":
                                     updatePower(profile, updates, rIndex, sen, s);
                                     break;
-
                                 case "overtemp":
                                     if (s.value == 1) {
                                         th.postEvent(ALARM_TYPE_OVERTEMP, true);
                                     }
                                     break;
-
                                 case "energy counter 0 [w-min]":
                                 case "e cnt 0 [w-min]": // 4 Pro
                                     updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN1,
@@ -454,7 +441,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                     updateChannel(updates, rGroup, CHANNEL_METER_LASTMIN3,
                                             toQuantityType(s.value, DIGITS_WATT, SmartHomeUnits.WATT));
                                     break;
-
                                 case "energy counter total [w-h]": // EM3 reports W/h
                                 case "energy counter total [w-min]":
                                 case "e cnt total [w-min]": // 4 Pro
@@ -473,7 +459,6 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                 case "pf":
                                     updateChannel(updates, rGroup, CHANNEL_EMETER_PFACTOR, getDecimal(s.value));
                                     break;
-
                                 case "position":
                                     // work around: Roller reports 101% instead max 100
                                     double pos = Math.max(SHELLY_MIN_ROLLER_POS,
@@ -587,8 +572,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
             if (!profile.isSensor) {
                 // For now the Coap interface is not providing all updates, e.g. currentWatts yes, but not the average
-                // values for the 3 mins
-                // To prevent confusing the user we schedule a regular REST update shortly
+                // values for the 3 mins. To prevent confusing the user we schedule a regular REST update shortly
                 // This will be removed once Coap returns all values, which have changed since the last update
                 if (th.scheduledUpdates == 0) {
                     th.requestUpdates(1, false);
@@ -656,11 +640,10 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     }
 
     /**
-     * Work around to fix inconsistent sensor types and description
-     * Shelly not uses always the same coding for sen.T and sen.D - this helps to unify the format and simplifies
-     * processing
+     * Work around to fix inconsistent sensor types and description. Shelly not uses always the same coding for sen.T
+     * and sen.D - this helps to unify the format and simplifies processing
      *
-     * @param sen
+     * @param sen Semsor description
      * @return updated sen
      */
     private CoIotDescrSen fixDescription(CoIotDescrSen sen) {

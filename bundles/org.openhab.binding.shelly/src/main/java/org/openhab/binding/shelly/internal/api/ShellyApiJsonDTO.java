@@ -82,6 +82,47 @@ public class ShellyApiJsonDTO {
     public static final String SHELLY_LED_STATUS_DISABLE = "led_status_disable";
     public static final String SHELLY_LED_POWER_DISABLE = "led_power_disable";
 
+    public static final String SHELLY_TIMER_AUTOON = "auto_on";
+    public static final String SHELLY_TIMER_AUTOOFF = "auto_off";
+    public static final String SHELLY_TIMER_ACTIVE = "has_timer";
+
+    public static final String SHELLY_LIGHT_TURN = "turn";
+    public static final String SHELLY_LIGHT_DEFSTATE = "def_state";
+    public static final String SHELLY_LIGHTTIMER = "timer";
+
+    public static final String SHELLY_COLOR_RED = "red";
+    public static final String SHELLY_COLOR_BLUE = "blue";
+    public static final String SHELLY_COLOR_GREEN = "green";
+    public static final String SHELLY_COLOR_YELLOW = "yellow";
+    public static final String SHELLY_COLOR_WHITE = "white";
+    public static final String SHELLY_COLOR_GAIN = "gain";
+    public static final String SHELLY_COLOR_BRIGHTNESS = "brightness";
+    public static final String SHELLY_COLOR_TEMP = "temp";
+    public static final String SHELLY_COLOR_EFFECT = "effect";
+
+    public static final int SHELLY_MIN_ROLLER_POS = 0;
+    public static final int SHELLY_MAX_ROLLER_POS = 100;
+    public static final int SHELLY_MIN_BRIGHTNESS = 0;
+    public static final int SHELLY_MAX_BRIGHTNESS = 100;
+    public static final int SHELLY_MIN_GAIN = 0;
+    public static final int SHELLY_MAX_GAIN = 100;
+    public static final int SHELLY_MIN_COLOR = 0;
+    public static final int SHELLY_MAX_COLOR = 255;
+    public static final int SHELLY_DIM_STEPSIZE = 10;
+
+    // color temperature: 3000 = warm, 4750 = white, 6565 = cold; gain: 0..100
+    public static final int MIN_COLOR_TEMP_BULB = 3000;
+    public static final int MAX_COLOR_TEMP_BULB = 6500;
+    public static final int MIN_COLOR_TEMP_DUO = 2700;
+    public static final int MAX_COLOR_TEMP_DUO = 6500;
+    public static final int COLOR_TEMP_RANGE_BULB = MAX_COLOR_TEMP_DUO - MIN_COLOR_TEMP_DUO;
+    public static final int COLOR_TEMP_RANGE_DUO = MAX_COLOR_TEMP_DUO - MIN_COLOR_TEMP_DUO;
+    public static final double MIN_BRIGHTNESS = 0.0;
+    public static final double MAX_BRIGHTNESS = 100.0;
+    public static final double SATURATION_FACTOR = 2.55;
+    public static final double GAIN_FACTOR = SHELLY_MAX_GAIN / 100;
+    public static final double BRIGHTNESS_FACTOR = SHELLY_MAX_BRIGHTNESS / 100;
+
     // Door/Window
     public final static String SHELLY_API_ILLUM_DARK = "dark";
     public final static String SHELLY_API_ILLUM_TWILIGHT = "twilight";
@@ -484,18 +525,15 @@ public class ShellyApiJsonDTO {
         @SerializedName("wifi_sta")
         public String wifiSta; // WiFi client configuration. See /settings/sta for details
         public String login; // credentials used for HTTP Basic authentication for the REST interface. If
-                             // enabled is
-                             // true clients must include an Authorization: Basic ... HTTP header with valid
-                             // credentials
-                             // when performing TP requests.
+                             // enabled is true clients must include an Authorization: Basic ... HTTP header with valid
+                             // credentials when performing TP requests.
         public String name; // unique name of the device.
         public String fw; // current FW version
     }
 
     public static class ShellySettingsStatus {
         @SerializedName("wifi_sta")
-        public ShellySettingsWiFiNetwork wifiSta; // WiFi client configuration. See /settings/sta for
-                                                  // details
+        public ShellySettingsWiFiNetwork wifiSta; // WiFi client configuration. See /settings/sta for details
 
         public String time;
         public Integer serial;
@@ -625,17 +663,15 @@ public class ShellyApiJsonDTO {
         @SerializedName("fs_size")
         public Integer fsSize;
         @SerializedName("fs_free")
-        public Integer fsFree; // Total and available amount of file system space in
-                               // bytes
-        public Integer uptime; // econds elapsed since boot
+        public Integer fsFree; // Total and available amount of file system space in bytes
+        public Integer uptime; // seconds elapsed since boot
     }
 
     public static class ShellyControlRoller {
         @SerializedName("roller_pos")
         public Integer rollerPos; // number Desired position in percent
         public Integer duration; // If specified, the motor will move for this period in seconds. If missing, the
-                                 // value of
-                                 // maxtime in /settings/roller/N will be used.
+                                 // value of maxtime in /settings/roller/N will be used.
         public String state; // One of stop, open, close
         public Double power; // Current power consumption in Watts
         @SerializedName("is_valid")
@@ -871,47 +907,6 @@ public class ShellyApiJsonDTO {
         public ArrayList<ShellySenseKeyCode> keyCodes;
     }
 
-    public static final String SHELLY_TIMER_AUTOON = "auto_on";
-    public static final String SHELLY_TIMER_AUTOOFF = "auto_off";
-    public static final String SHELLY_TIMER_ACTIVE = "has_timer";
-
-    public static final String SHELLY_LIGHT_TURN = "turn";
-    public static final String SHELLY_LIGHT_DEFSTATE = "def_state";
-    public static final String SHELLY_LIGHTTIMER = "timer";
-
-    public static final String SHELLY_COLOR_RED = "red";
-    public static final String SHELLY_COLOR_BLUE = "blue";
-    public static final String SHELLY_COLOR_GREEN = "green";
-    public static final String SHELLY_COLOR_YELLOW = "yellow";
-    public static final String SHELLY_COLOR_WHITE = "white";
-    public static final String SHELLY_COLOR_GAIN = "gain";
-    public static final String SHELLY_COLOR_BRIGHTNESS = "brightness";
-    public static final String SHELLY_COLOR_TEMP = "temp";
-    public static final String SHELLY_COLOR_EFFECT = "effect";
-
-    public static final int SHELLY_MIN_ROLLER_POS = 0;
-    public static final int SHELLY_MAX_ROLLER_POS = 100;
-    public static final int SHELLY_MIN_BRIGHTNESS = 0;
-    public static final int SHELLY_MAX_BRIGHTNESS = 100;
-    public static final int SHELLY_MIN_GAIN = 0;
-    public static final int SHELLY_MAX_GAIN = 100;
-    public static final int SHELLY_MIN_COLOR = 0;
-    public static final int SHELLY_MAX_COLOR = 255;
-    public static final int SHELLY_DIM_STEPSIZE = 10;
-
-    // color temperature: 3000 = warm, 4750 = white, 6565 = cold; gain: 0..100
-    public static final int MIN_COLOR_TEMP_BULB = 3000;
-    public static final int MAX_COLOR_TEMP_BULB = 6500;
-    public static final int MIN_COLOR_TEMP_DUO = 2700;
-    public static final int MAX_COLOR_TEMP_DUO = 6500;
-    public static final int COLOR_TEMP_RANGE_BULB = MAX_COLOR_TEMP_DUO - MIN_COLOR_TEMP_DUO;
-    public static final int COLOR_TEMP_RANGE_DUO = MAX_COLOR_TEMP_DUO - MIN_COLOR_TEMP_DUO;
-    public static final double MIN_BRIGHTNESS = 0.0;
-    public static final double MAX_BRIGHTNESS = 100.0;
-    public static final double SATURATION_FACTOR = 2.55;
-    public static final double GAIN_FACTOR = SHELLY_MAX_GAIN / 100;
-    public static final double BRIGHTNESS_FACTOR = SHELLY_MAX_BRIGHTNESS / 100;
-
     /**
      * Shelly Dimmer returns light[]. However, the structure doesn't match the lights[] of a Bulb/RGBW2.
      * The tag lights[] will be replaced with dimmers[] so this could be mapped to a different Gson structure.
@@ -926,5 +921,4 @@ public class ShellyApiJsonDTO {
         return !json.contains("\"lights\":[") ? json
                 : json.replaceFirst(java.util.regex.Pattern.quote("\"lights\":["), "\"dimmers\":[");
     }
-
 }

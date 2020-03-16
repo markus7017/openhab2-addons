@@ -156,6 +156,7 @@ end
 |sensors   |temperature1 |Number   |yes      |Temperature value of external sensor #1 (if connected to device)                 |
 |          |temperature2 |Number   |yes      |Temperature value of external sensor #2 (if connected to device)                 |
 |          |temperature3 |Number   |yes      |Temperature value of external sensor #3 (if connected to device)                 |
+|          |temperature3 |Number   |yes      |Temperature value of external sensor #3 (if connected to device)                 |
 
 ### Shelly 1PM (thing-type: shelly1pm)
 

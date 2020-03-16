@@ -93,9 +93,8 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     }
 
     /**
-     *
      * Process updates to Binding Config
-     *
+     * 
      * @param componentContext
      */
     @Modified

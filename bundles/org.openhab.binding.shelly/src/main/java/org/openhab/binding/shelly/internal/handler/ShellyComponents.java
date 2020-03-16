@@ -34,8 +34,7 @@ import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 
 /***
  * The{@link ShellyComponents} implements updates for supplemental components
- * Meter will be used by Relay + Light
- * Sensor is also part of Flood, Sense
+ * Meter will be used by Relay + Light; Sensor is part of H&T, Flood, Door Window, Sense
  *
  * @author Markus Michels - Initial contribution
  */
@@ -43,9 +42,8 @@ import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 public class ShellyComponents {
 
     /**
-     *
      * Update device status
-     *
+     * 
      * @param th Thing Handler instance
      * @param profile ShellyDeviceProfile
      */

@@ -155,8 +155,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
     /**
      * PaperUI Control has a combined Slider for Brightness combined with On/Off
      * Brightness channel has 2 functions: Switch On/Off (OnOnType) and setting brightness (PercentType)
-     * There is some more logic in the control
-     * When brightness is set to 0 the control sends also an OFF command
+     * There is some more logic in the control. When brightness is set to 0 the control sends also an OFF command
      * When current brightness is 0 and slider will be moved the new brightness will be set, but also a ON command is
      * send.
      *
@@ -423,8 +422,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
             // We need to fixup the returned Json: The dimmer returns light[] element, which is ok, but it doesn't have
             // the same structure as lights[] from Bulb,RGBW2 and Duo. The tag gets replaced by dimmers[] so that Gson
-            // maps
-            // to a different structure (ShellyShortLight).
+            // maps to a different structure (ShellyShortLight).
             Gson gson = new Gson();
             ShellySettingsStatus dstatus = gson.fromJson(ShellyApiJsonDTO.fixDimmerJson(orgStatus.json),
                     ShellySettingsStatus.class);
@@ -439,7 +437,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                 Integer r = l + 1;
                 String groupName = profile.numRelays <= 1 ? CHANNEL_GROUP_DIMMER_CONTROL
                         : CHANNEL_GROUP_DIMMER_CONTROL + r.toString();
-                // updated |= updateChannel(groupName, CHANNEL_OUTPUT, getOnOff(dimmer.ison));
 
                 // On a status update we map a dimmer.ison = false to brightness 0 rather than the device's brightness
                 // and send a OFF status to the same channel.

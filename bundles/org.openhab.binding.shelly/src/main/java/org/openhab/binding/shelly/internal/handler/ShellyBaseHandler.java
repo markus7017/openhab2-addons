@@ -72,7 +72,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     protected ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
     protected ShellyThingConfiguration config = new ShellyThingConfiguration();
     private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
-    private final @Nullable HttpClient httpClient;
+    private final HttpClient httpClient;
     protected ShellyHttpApi api = new ShellyHttpApi();
     private @Nullable ShellyCoapHandler coap;
     protected ShellyDeviceProfile profile = new ShellyDeviceProfile(); // init empty profile to avoid NPE
@@ -112,7 +112,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      */
     public ShellyBaseHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
             final ShellyBindingConfiguration bindingConfig, @Nullable final ShellyCoapServer coapServer,
-            final String localIP, int httpPort, final @Nullable HttpClient httpClient) {
+            final String localIP, int httpPort, final HttpClient httpClient) {
         super(thing);
 
         this.messages.initFrom(translationProvider);
@@ -950,7 +950,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
     /**
      * Device specific command handlers are overriding this method to do additional stuff
-     *
+     * 
      * @throws ShellyApiException Communication problem on the API call
      */
     public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws ShellyApiException {
@@ -959,7 +959,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
     /**
      * Device specific handlers are overriding this method to do additional stuff
-     *
+     * 
      * @throws ShellyApiException Communication problem on the API call
      */
     public boolean updateDeviceStatus(ShellySettingsStatus status) throws ShellyApiException {

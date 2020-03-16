@@ -68,20 +68,6 @@ public class ShellyEventServlet extends HttpServlet {
         }
     }
 
-    /*
-     * @SuppressWarnings("null")
-     *
-     * @Activate
-     * protected void activate(Map<String, Object> config) {
-     * try {
-     * httpService.registerServlet(SHELLY_CALLBACK_URI, this, null, httpService.createDefaultHttpContext());
-     * logger.debug("Shelly: CallbackServlet started at '{}'", SHELLY_CALLBACK_URI);
-     * } catch (NamespaceException | ServletException e) {
-     * logger.warn("Could not start CallbackServlet: {} ({})", e.getMessage(), e.getClass());
-     * }
-     * }
-     */
-
     @Deactivate
     protected void deactivate() {
         if (httpService != null) {

@@ -145,14 +145,6 @@ public class ShellyColorUtils {
         Integer values[] = new Integer[4];
         values[0] = values[1] = values[2] = values[3] = -1;
         try {
-            /*
-             * TEST
-             * StringTokenizer st = new StringTokenizer(rgbw, ",");
-             * int i = 0;
-             * while (st.hasMoreElements()) {
-             * values[i++] = Integer.parseInt((String) st.nextElement());
-             * }
-             */
             String rgbw[] = rgbwString.split(",");
             for (int i = 0; i < rgbw.length; i++) {
                 values[i] = Integer.parseInt(rgbw[i]);

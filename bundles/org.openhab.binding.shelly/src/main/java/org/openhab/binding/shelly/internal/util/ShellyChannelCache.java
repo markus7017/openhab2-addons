@@ -73,8 +73,6 @@ public class ShellyChannelCache {
         Validate.notNull(value, "updateChannel(): value must not be null!");
         try {
             Object current = channelData.get(channelId);
-            // logger.trace("{}: Predict channel {}.{} to become {} (type {}).", thingName,
-            // group, channel, value, value.getClass());
             if (!enabled || forceUpdate || (current == null) || !current.equals(value)) {
                 // For channels that support multiple types (like brightness) a suffix is added
                 // this gets removed to get the channelId for updateState

@@ -156,7 +156,5 @@ public class ShellyCoapJSonDTO {
             }
             out.endObject();
         }
-
     }
-
 }
