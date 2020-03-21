@@ -366,7 +366,7 @@ public class ShellyHttpApi {
 
     /**
      * Set event URL for HT (report_url)
-     * 
+     *
      * @param deviceName
      * @throws ShellyApiException
      */
@@ -441,7 +441,7 @@ public class ShellyHttpApi {
 
     /**
      * Submit GET request and return response, check for invalid responses
-     * 
+     *
      * @param uri: URI (e.g. "/settings")
      */
     public <T> T callApi(String uri, Class<T> classOfT) throws ShellyApiException {
@@ -469,9 +469,9 @@ public class ShellyHttpApi {
                 timeoutsRecovered++; // recoverd
             } catch (UnknownHostException | MalformedURLException | ExecutionException | InterruptedException
                     | TimeoutException e2) {
-                logger.debug("{}: API call returned {}/{}, retry", thingName, e.getClass(),
-                        apiResult.getHttpResponse());
-                throw new ShellyApiException("API Call failed: " + apiResult.getHttpResponse(), e2);
+                ShellyApiException ea = new ShellyApiException("API Call failed: " + apiResult.getHttpResponse(), e2);
+                logger.debug("{}: API call returned {}", thingName, ea.toString());
+                throw ea;
             }
         }
         return apiResult.response;

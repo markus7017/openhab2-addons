@@ -256,7 +256,7 @@ public class ShellyBindingConstants {
     public static final String SERVICE_TYPE = "_http._tcp.local.";
     public static final String SHELLY_API_MIN_FWVERSION = "v1.5.7";// v1.5.2
     public static final String SHELLY_API_MIN_FWCOIOT = "v1.6";// v1.5.2
-    public static final int SHELLY_API_TIMEOUT_MS = 5000;
+    public static final int SHELLY_API_TIMEOUT_MS = 3000;
 
     // Alarm types/messages
     public static final String ALARM_TYPE_NONE = "NONE";

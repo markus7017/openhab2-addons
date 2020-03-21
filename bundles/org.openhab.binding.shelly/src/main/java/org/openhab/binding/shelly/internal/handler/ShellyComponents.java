@@ -43,17 +43,17 @@ public class ShellyComponents {
 
     /**
      * Update device status
-     * 
+     *
      * @param th Thing Handler instance
      * @param profile ShellyDeviceProfile
      */
     public static boolean updateDeviceStatus(ShellyBaseHandler th, ShellySettingsStatus status) {
         Integer rssi = getInteger(status.wifiSta.rssi);
         th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_UPTIME,
-                toQuantityType(new Double(getLong(status.uptime)), DIGITS_TEMP, SIUnits.CELSIUS));
+                toQuantityType(new Double(getLong(status.uptime)), DIGITS_TEMP, SmartHomeUnits.SECOND));
         th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_RSSI, mapSignalStrength(rssi));
         if (status.tmp != null) {
-            th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
+            th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_SENSOR_TEMP,
                     toQuantityType(getDouble(status.tmp.tC), DIGITS_TEMP, SIUnits.CELSIUS));
         }
 

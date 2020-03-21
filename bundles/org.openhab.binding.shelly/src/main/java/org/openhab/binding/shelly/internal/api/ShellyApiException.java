@@ -15,6 +15,7 @@ package org.openhab.binding.shelly.internal.api;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.text.MessageFormat;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -39,6 +40,11 @@ public class ShellyApiException extends Exception {
 
     public ShellyApiException(String message) {
         super(message);
+    }
+
+    public ShellyApiException(Exception exception) {
+        super(exception);
+        e = exception;
     }
 
     public ShellyApiException(String message, Exception exception) {
@@ -94,6 +100,12 @@ public class ShellyApiException extends Exception {
 
     public boolean isApiException() {
         return (e != null) && (e.getClass() == ShellyApiException.class);
+    }
+
+    public boolean isTimeout() {
+        Class<?> extype = e.getClass();
+        return (e != null) && (extype != null) && ((extype == TimeoutException.class)
+                || (extype == InterruptedException.class) || getMessage().toLowerCase().contains("timeout"));
     }
 
     public boolean isUnknownHost() {

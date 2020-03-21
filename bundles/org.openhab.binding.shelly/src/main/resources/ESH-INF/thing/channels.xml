@@ -295,7 +295,7 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
-	<channel-type id="sensorTempExt" advanced="true">
+	<channel-type id="sensorExtTemp" advanced="true">
 		<item-type>Number:Temperature</item-type>
 		<label>Temperature</label>
 		<description>Temperature from the external sensor</description>
@@ -306,6 +306,17 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
+    <channel-type id="sensorExtHum" advanced="true">
+        <item-type>Number:Dimensionless</item-type>
+        <label>Humidity</label>
+        <description>Relative humidity in % (0..100%) from external sensor</description>
+        <category>Humidity</category>
+        <tags>
+            <tag>CurrentHumidity</tag>
+        </tags>
+        <state readOnly="true" pattern="%f %unit%">
+        </state>
+    </channel-type>
 	<channel-type id="sensorHumidity">
 		<item-type>Number:Dimensionless</item-type>
 		<label>Humidity</label>
