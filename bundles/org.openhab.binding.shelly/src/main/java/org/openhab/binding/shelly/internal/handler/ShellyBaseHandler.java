@@ -453,11 +453,9 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
         if (getBool(status.overtemperature)) {
             alarm = ALARM_TYPE_OVERTEMP;
-        }
-        if (getBool(status.overload)) {
+        } else if (getBool(status.overload)) {
             alarm = ALARM_TYPE_OVERLOAD;
-        }
-        if (getBool(status.loaderror)) {
+        } else if (getBool(status.loaderror)) {
             alarm = ALARM_TYPE_LOADERR;
         }
 
@@ -544,6 +542,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
                 // map some of the events to system defined button triggers
                 String channel = "";
+                String onoff = "";
                 String payload = "";
                 String event = type.contentEquals(ShellyBindingConstants.EVENT_TYPE_SENSORDATA)
                         ? SHELLY_EVENT_SENSORDATA
@@ -567,36 +566,30 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                         channel = CHANNEL_EVENT_TRIGGER;
                         payload = event;
                         break;
-
                     case SHELLY_EVENT_BTN_ON:
-                        updateChannel(group, CHANNEL_INPUT, OnOffType.ON);
-                        break;
                     case SHELLY_EVENT_BTN_OFF:
-                        updateChannel(group, CHANNEL_INPUT, OnOffType.OFF);
+                        onoff = CHANNEL_INPUT;
                         break;
                     case SHELLY_EVENT_BTN1_ON:
-                        updateChannel(group, CHANNEL_INPUT1, OnOffType.ON);
-                        break;
                     case SHELLY_EVENT_BTN1_OFF:
-                        updateChannel(group, CHANNEL_INPUT1, OnOffType.OFF);
+                        onoff = CHANNEL_INPUT1;
                         break;
                     case SHELLY_EVENT_BTN2_ON:
-                        updateChannel(group, CHANNEL_INPUT2, OnOffType.ON);
-                        break;
                     case SHELLY_EVENT_BTN2_OFF:
-                        updateChannel(group, CHANNEL_INPUT2, OnOffType.OFF);
+                        onoff = CHANNEL_INPUT2;
                         break;
                     case SHELLY_EVENT_OUT_ON:
-                        updateChannel(group, CHANNEL_OUTPUT, OnOffType.ON);
-                        break;
                     case SHELLY_EVENT_OUT_OFF:
-                        updateChannel(group, CHANNEL_OUTPUT, OnOffType.OFF);
+                        onoff = CHANNEL_OUTPUT;
                         break;
-
                     default:
                         // trigger will be provided by input/output channel or sensor channels
                 }
 
+                if (!onoff.isEmpty()) {
+                    updateChannel(group, onoff, event.toLowerCase().contains("_on") ? OnOffType.ON : OnOffType.OFF);
+
+                }
                 if (!payload.isEmpty()) {
                     // Pass event to trigger channel
                     payload = payload.toUpperCase();
@@ -950,7 +943,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
     /**
      * Device specific command handlers are overriding this method to do additional stuff
-     * 
+     *
      * @throws ShellyApiException Communication problem on the API call
      */
     public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws ShellyApiException {
@@ -959,7 +952,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
     /**
      * Device specific handlers are overriding this method to do additional stuff
-     * 
+     *
      * @throws ShellyApiException Communication problem on the API call
      */
     public boolean updateDeviceStatus(ShellySettingsStatus status) throws ShellyApiException {

@@ -207,10 +207,10 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_SENSOR_CHARGER = "charger";
     public static final String CHANNEL_SENSOR_ERROR = "lastError";
     // External sensors for Shelly1/1PM
-    public static final String CHANNEL_ESENDOR_TEMP = "temperature";
-    public static final String CHANNEL_ESENDOR_TEMP1 = CHANNEL_ESENDOR_TEMP + "1";
-    public static final String CHANNEL_ESENDOR_TEMP2 = CHANNEL_ESENDOR_TEMP + "2";
-    public static final String CHANNEL_ESENDOR_TEMP3 = CHANNEL_ESENDOR_TEMP + "3";
+    public static final String CHANNEL_ESENDOR_TEMP1 = CHANNEL_SENSOR_TEMP + "1";
+    public static final String CHANNEL_ESENDOR_TEMP2 = CHANNEL_SENSOR_TEMP + "2";
+    public static final String CHANNEL_ESENDOR_TEMP3 = CHANNEL_SENSOR_TEMP + "3";
+    public static final String CHANNEL_ESENDOR_HUMIDITY = CHANNEL_SENSOR_HUM;
 
     public static final String CHANNEL_GROUP_SENSE_CONTROL = "control";
     public static final String CHANNEL_SENSE_KEY = "key";

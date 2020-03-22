@@ -234,7 +234,7 @@
 			<channel id="temperature1" typeId="sensorExtTemp" />
 			<channel id="temperature2" typeId="sensorExtTemp" />
 			<channel id="temperature3" typeId="sensorExtTemp" />
-			<channel id="humidity"     typeId="sensorExtHum" />
+			<channel id="humidity" typeId="sensorExtHum" />
 		</channels>
 	</channel-group-type>
 
