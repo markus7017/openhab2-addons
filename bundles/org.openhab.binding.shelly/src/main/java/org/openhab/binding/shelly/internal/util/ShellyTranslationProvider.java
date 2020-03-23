@@ -54,7 +54,7 @@ public class ShellyTranslationProvider {
     }
 
     public @Nullable String get(String key, @Nullable Object... arguments) {
-        return getText(key.contains("@text/") ? key : "message." + key, arguments);
+        return getText(key.contains("@text/") || key.contains(".shelly.") ? key : "message." + key, arguments);
     }
 
     public @Nullable String getText(String key, @Nullable Object... arguments) {

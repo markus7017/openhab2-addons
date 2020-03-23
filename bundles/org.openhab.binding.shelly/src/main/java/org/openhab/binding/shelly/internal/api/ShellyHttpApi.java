@@ -16,8 +16,6 @@ import static org.openhab.binding.shelly.internal.ShellyBindingConstants.SHELLY_
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.urlEncode;
 
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 import java.util.Base64;
 import java.util.Map;
 import java.util.TreeMap;
@@ -458,56 +456,63 @@ public class ShellyHttpApi {
         ShellyApiResult apiResult = new ShellyApiResult();
         try {
             apiResult = innerRequest(HttpMethod.GET, uri);
-        } catch (UnknownHostException | MalformedURLException e) {
-            throw new ShellyApiException("Unknown host or device is offline");
-        } catch (ExecutionException | InterruptedException | TimeoutException e) {
+        } catch (ShellyApiException e) {
             try {
-                logger.debug("{}: API call returned {}/{}, retry", thingName, e.getClass(),
-                        apiResult.getHttpResponse());
-                timeoutErrors++; // count the retries
-                apiResult = innerRequest(HttpMethod.GET, uri);
-                timeoutsRecovered++; // recoverd
-            } catch (UnknownHostException | MalformedURLException | ExecutionException | InterruptedException
-                    | TimeoutException e2) {
-                ShellyApiException ea = new ShellyApiException("API Call failed: " + apiResult.getHttpResponse(), e2);
-                logger.debug("{}: API call returned {}", thingName, ea.toString());
-                throw ea;
+                if (e.getApiResult().isHttpAccessUnauthorized()) {
+                    throw e;
+                }
+                if (e.isTimeout()) {
+                    timeoutErrors++; // count the retries
+                    logger.debug("{}: {}, #{} retry", thingName, e.toString(), timeoutErrors);
+                    apiResult = innerRequest(HttpMethod.GET, uri);
+                    timeoutsRecovered++; // recoverd
+                    logger.debug("{}: API timeout #{}/{} recovered", thingName, timeoutErrors, timeoutsRecovered);
+                } else {
+                    logger.debug("{}: API  returned {}, retry", thingName, e.toString());
+                    apiResult = innerRequest(HttpMethod.GET, uri);
+                }
+            } catch (ShellyApiException e2) {
+                logger.debug("{}: API call returned {}", thingName, e2.toString());
+                throw e2;
             }
         }
         return apiResult.response;
     }
 
     @SuppressWarnings("null")
-    private ShellyApiResult innerRequest(HttpMethod method, String uri) throws ShellyApiException, UnknownHostException,
-            MalformedURLException, InterruptedException, ExecutionException, TimeoutException {
+    private ShellyApiResult innerRequest(HttpMethod method, String uri) throws ShellyApiException {
         Request request = null;
         String url = "http://" + config.deviceIp + uri;
         ShellyApiResult apiResult = new ShellyApiResult(method.toString(), url);
-        request = httpClient.newRequest(url).method(method.toString()).timeout(SHELLY_API_TIMEOUT_MS,
-                TimeUnit.MILLISECONDS);
 
-        if (!config.userId.isEmpty()) {
-            String value = config.userId + ":" + config.password;
-            request.header(HTTP_HEADER_AUTH,
-                    HTTP_AUTH_TYPE_BASIC + " " + Base64.getEncoder().encodeToString(value.getBytes()));
+        try {
+            request = httpClient.newRequest(url).method(method.toString()).timeout(SHELLY_API_TIMEOUT_MS,
+                    TimeUnit.MILLISECONDS);
+
+            if (!config.userId.isEmpty()) {
+                String value = config.userId + ":" + config.password;
+                request.header(HTTP_HEADER_AUTH,
+                        HTTP_AUTH_TYPE_BASIC + " " + Base64.getEncoder().encodeToString(value.getBytes()));
+            }
+            request.header(HttpHeader.ACCEPT, CONTENT_TYPE_JSON);
+            logger.trace("{}: HTTP GET for {}", thingName, url);
+
+            // Do request and get response
+            ContentResponse contentResponse = request.send();
+            apiResult = new ShellyApiResult(contentResponse);
+            String response = contentResponse.getContentAsString().replaceAll("\t", "").replaceAll("\r\n", "").trim();
+
+            // validate response, API errors are reported as Json
+            logger.trace("HTTP Response: {}", response);
+            if (contentResponse.getStatus() != HttpStatus.OK_200) {
+                throw new ShellyApiException("API Call failed", apiResult);
+            }
+            if (response == null || response.isEmpty() || !response.startsWith("{") && !response.startsWith("[")) {
+                throw new ShellyApiException("Unexpected HTTP response: " + response);
+            }
+        } catch (ExecutionException | InterruptedException | TimeoutException | IllegalArgumentException e) {
+            throw new ShellyApiException("API Call failed", apiResult, e);
         }
-        request.header(HttpHeader.ACCEPT, CONTENT_TYPE_JSON);
-        logger.trace("{}: HTTP GET for {}", thingName, url);
-
-        // Do request and get response
-        ContentResponse contentResponse = request.send();
-        apiResult = new ShellyApiResult(contentResponse);
-        String response = contentResponse.getContentAsString().replaceAll("\t", "").replaceAll("\r\n", "").trim();
-
-        // validate response, API errors are reported as Json
-        logger.trace("HTTP Response: {}", response);
-        if (contentResponse.getStatus() != HttpStatus.OK_200) {
-            throw new ShellyApiException("API Call failed", apiResult);
-        }
-        if (response == null || response.isEmpty() || !response.startsWith("{") && !response.startsWith("[")) {
-            throw new ShellyApiException("Unexpected HTTP response: " + response);
-        }
-
         return apiResult;
     }
 

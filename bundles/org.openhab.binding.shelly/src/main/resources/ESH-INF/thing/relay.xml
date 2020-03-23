@@ -33,13 +33,13 @@
 		<label>ShellyEM (SHEM)</label>
 		<description>ShellyEM device with single relay and power meter</description>
 		<channel-groups>
-			<channel-group id="relay" typeId="relayChannel" />
-			<channel-group id="meter1" typeId="emeter">
+			<channel-group id="meter1" typeId="meter">
 				<label>Power Meter 1</label>
 			</channel-group>
-			<channel-group id="meter2" typeId="emeter">
+			<channel-group id="meter2" typeId="meter">
 				<label>Power Meter 2</label>
 			</channel-group>
+			<channel-group id="relay" typeId="relayChannel" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
@@ -49,16 +49,16 @@
 		<label>ShellyEM3 (SHEM-3)</label>
 		<description>ShellyEM3 device with 3 power meters and a relay</description>
 		<channel-groups>
-			<channel-group id="relay" typeId="relayChannel" />
-			<channel-group id="meter1" typeId="emeter3">
+			<channel-group id="meter1" typeId="meter">
 				<label>Power Meter 1</label>
 			</channel-group>
-			<channel-group id="meter2" typeId="emeter3">
+			<channel-group id="meter2" typeId="meter">
 				<label>Power Meter 2</label>
 			</channel-group>
-			<channel-group id="meter3" typeId="emeter3">
+			<channel-group id="meter3" typeId="meter">
 				<label>Power Meter 3</label>
 			</channel-group>
+			<channel-group id="relay" typeId="relayChannel" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
@@ -102,11 +102,11 @@
 			<channel-group id="relay1" typeId="relayChannel">
 				<label>Relay 1</label>
 			</channel-group>
-			<channel-group id="relay2" typeId="relayChannel">
-				<label>Relay 2</label>
-			</channel-group>
 			<channel-group id="meter1" typeId="meter">
 				<label>Power Meter 1</label>
+			</channel-group>
+			<channel-group id="relay2" typeId="relayChannel">
+				<label>Relay 2</label>
 			</channel-group>
 			<channel-group id="meter2" typeId="meter">
 				<label>Power Meter 2</label>
@@ -137,23 +137,23 @@
 			<channel-group id="relay1" typeId="relayChannel">
 				<label>Relay 1</label>
 			</channel-group>
-			<channel-group id="relay2" typeId="relayChannel">
-				<label>Relay 2</label>
-			</channel-group>
-			<channel-group id="relay3" typeId="relayChannel">
-				<label>Relay 3</label>
-			</channel-group>
-			<channel-group id="relay4" typeId="relayChannel">
-				<label>Relay 4</label>
-			</channel-group>
 			<channel-group id="meter1" typeId="meter">
 				<label>Power Meter 1</label>
+			</channel-group>
+			<channel-group id="relay2" typeId="relayChannel">
+				<label>Relay 2</label>
 			</channel-group>
 			<channel-group id="meter2" typeId="meter">
 				<label>Power Meter 2</label>
 			</channel-group>
+			<channel-group id="relay3" typeId="relayChannel">
+				<label>Relay 3</label>
+			</channel-group>
 			<channel-group id="meter3" typeId="meter">
 				<label>Power Meter 3</label>
+			</channel-group>
+			<channel-group id="relay4" typeId="relayChannel">
+				<label>Relay 4</label>
 			</channel-group>
 			<channel-group id="meter4" typeId="meter">
 				<label>Power Meter 4</label>
@@ -230,12 +230,6 @@
 	<channel-group-type id="externalSensors">
 		<label>External Sensors</label>
 		<description>Temperatures from external sensors (if extension is installed and sensor connected)</description>
-		<channels>
-			<channel id="temperature1" typeId="sensorExtTemp" />
-			<channel id="temperature2" typeId="sensorExtTemp" />
-			<channel id="temperature3" typeId="sensorExtTemp" />
-			<channel id="humidity" typeId="sensorExtHum" />
-		</channels>
 	</channel-group-type>
 
 
@@ -268,47 +262,6 @@
 	<channel-group-type id="meter">
 		<label>Power Meter</label>
 		<description>Power consumption for the relay</description>
-		<channels>
-			<channel id="currentWatts" typeId="meterWatts" />
-			<channel id="lastPower1" typeId="lastPower1" />
-			<channel id="lastPower2" typeId="lastPower2" />
-			<channel id="lastPower3" typeId="lastPower3" />
-			<channel id="totalKWH" typeId="meterTotal" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
-	</channel-group-type>
-	<channel-group-type id="emeter">
-		<label>Power Meter</label>
-		<description>Power consumption for the relay</description>
-		<channels>
-			<channel id="currentWatts" typeId="meterWatts" />
-			<channel id="totalKWH" typeId="meterTotal" />
-			<channel id="returnedKWH" typeId="meterReturned" />
-			<channel id="reactiveWatts" typeId="meterReactive" />
-			<channel id="voltage" typeId="meterVoltage" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
-	</channel-group-type>
-	<channel-group-type id="emeter3">
-		<label>Power Meter</label>
-		<description>Power consumption</description>
-		<channels>
-			<channel id="currentWatts" typeId="meterWatts" />
-			<channel id="totalKWH" typeId="meterTotal" />
-			<channel id="returnedKWH" typeId="meterReturned" />
-			<channel id="reactiveWatts" typeId="meterReactive" />
-			<channel id="voltage" typeId="meterVoltage" />
-			<channel id="current" typeId="meterCurrent" />
-			<channel id="powerFactor" typeId="meterPowerFactor" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
-	</channel-group-type>
-	<channel-group-type id="basicMeter">
-		<label>Power Meter</label>
-		<description>Power consumption</description>
-		<channels>
-			<channel id="currentWatts" typeId="meterWatts" />
-		</channels>
 	</channel-group-type>
 	<channel-group-type id="ledControl">
 		<label>LED Control</label>

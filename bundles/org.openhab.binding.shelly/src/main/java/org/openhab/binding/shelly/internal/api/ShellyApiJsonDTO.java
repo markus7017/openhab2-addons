@@ -552,7 +552,9 @@ public class ShellyApiJsonDTO {
         public ArrayList<ShellySettingsMeter> meters;
         public ArrayList<ShellySettingsEMeter> emeters;
 
-        public ShellyStatusSensor.ShellySensorTmp tmp;
+        // Internal device temp
+        public ShellyStatusSensor.ShellySensorTmp tmp; // Shelly 1PM
+        public Double temperature; // Shelly 2.5
         public Boolean overtemperature;
 
         // Shelly Dimmer only
@@ -592,6 +594,8 @@ public class ShellyApiJsonDTO {
         public Boolean ison; // Whether output channel is on or off
         @SerializedName("has_timer")
         public Boolean hasTimer; // Whether a timer is currently armed for this channel
+        @SerializedName("timer_remaining")
+        public Integer timerRemaining;
         public Boolean overpower; // Shelly1PM only if maximum allowed power was exceeded
         public Double temperature; // Internal device temperature
         public Boolean overtemperature; // Device over heated
@@ -614,10 +618,14 @@ public class ShellyApiJsonDTO {
         public String mac; // MAC
         public ArrayList<ShellyShortStatusRelay> relays; // relay status
         public ArrayList<ShellySettingsMeter> meters; // current meter value
+
         @SerializedName("ext_temperature")
         public ShellyStatusSensor.ShellyExtTemperature extTemperature; // Shelly 1/1PM: sensor values
         @SerializedName("ext_humidity")
         public ShellyStatusSensor.ShellyExtHumidity extHumidity; // Shelly 1/1PM: sensor values
+
+        public Double temperature; // device temp acc. on the selected temp unit
+        public ShellyStatusSensor.ShellySensorTmp tmp;
 
         @SerializedName("has_update")
         public Boolean hasUpdate; // If a newer firmware version is available

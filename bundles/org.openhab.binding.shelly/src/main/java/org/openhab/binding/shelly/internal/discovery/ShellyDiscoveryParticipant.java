@@ -161,8 +161,8 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                     logger.debug("{}: Exception {}\n{}", name, e.toString(), e.getStackTrace());
                 }
             } catch (Exception e) { // (IllegalArgumentException | NullPointerException e) {
-                logger.debug("{}: Unable to initialize: {} ({}), retrying later\n{}", name, getString(e), e.getClass(),
-                        e.getStackTrace());
+                logger.debug("{}: Unable to initialize - {} ({}), retrying later\n{}", name, getString(e),
+                        getString(e.getClass().toString()), e.getStackTrace());
             }
 
             if (thingUID != null) {

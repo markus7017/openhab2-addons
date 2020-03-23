@@ -53,8 +53,11 @@ public class ShellyComponents {
                 toQuantityType(new Double(getLong(status.uptime)), DIGITS_TEMP, SmartHomeUnits.SECOND));
         th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_RSSI, mapSignalStrength(rssi));
         if (status.tmp != null) {
-            th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_SENSOR_TEMP,
+            th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ITEMP,
                     toQuantityType(getDouble(status.tmp.tC), DIGITS_TEMP, SIUnits.CELSIUS));
+        } else if (status.temperature != null) {
+            th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ITEMP,
+                    toQuantityType(getDouble(status.temperature), DIGITS_TEMP, SIUnits.CELSIUS));
         }
 
         return false; // device status never triggers update
@@ -67,7 +70,6 @@ public class ShellyComponents {
      * @param profile ShellyDeviceProfile
      * @param status Last ShellySettingsStatus
      */
-    @SuppressWarnings("null")
     public static boolean updateMeters(ShellyBaseHandler th, ShellySettingsStatus status) {
         Validate.notNull(th);
         ShellyDeviceProfile profile = th.getProfile();
@@ -85,12 +87,17 @@ public class ShellyComponents {
                         Integer meterIndex = m + 1;
                         if (getBool(meter.isValid) || profile.isLight) { // RGBW2-white doesn't report das flag
                                                                          // correctly in white mode
+
                             String groupName = "";
                             if (profile.numMeters > 1) {
                                 groupName = CHANNEL_GROUP_METER + meterIndex.toString();
                             } else {
                                 groupName = CHANNEL_GROUP_METER;
                             }
+
+                            th.updateChannelDefinitions(
+                                    ShellyChannelDefinitions.createMeterChannels(th.getThing(), meter, groupName));
+
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
                                     toQuantityType(getDouble(meter.power), DIGITS_WATT, SmartHomeUnits.WATT));
                             // convert Watt/Min to kw/h
@@ -117,6 +124,9 @@ public class ShellyComponents {
                         if (getBool(emeter.isValid)) {
                             String groupName = profile.numMeters > 1 ? CHANNEL_GROUP_METER + meterIndex.toString()
                                     : CHANNEL_GROUP_METER;
+                            th.updateChannelDefinitions(
+                                    ShellyChannelDefinitions.createEMeterChannels(th.getThing(), emeter, groupName));
+
                             // convert Watt/Hour tok w/h
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
                                     toQuantityType(getDouble(emeter.power), DIGITS_WATT, SmartHomeUnits.WATT));
@@ -167,6 +177,10 @@ public class ShellyComponents {
                         }
                     }
                 }
+                // Create channels for 1 Meter
+                th.updateChannelDefinitions(
+                        ShellyChannelDefinitions.createMeterChannels(th.getThing(), status.meters.get(0), groupName));
+
                 updated |= th.updateChannel(groupName, CHANNEL_METER_LASTMIN1,
                         toQuantityType(getDouble(lastMin1), DIGITS_WATT, SmartHomeUnits.WATT));
                 updated |= th.updateChannel(groupName, CHANNEL_METER_LASTMIN2,
@@ -208,6 +222,7 @@ public class ShellyComponents {
         if (profile.isSensor || profile.hasBattery) {
             th.logger.debug("{}: Updating sensor", th.thingName);
             ShellyStatusSensor sdata = th.api.getSensorStatus();
+
             if (sdata != null) {
                 if (sdata.actReasons != null) {
                     boolean changed = th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_WAKEUP,

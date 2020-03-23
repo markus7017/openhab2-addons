@@ -24,6 +24,7 @@ import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.shelly.internal.ShellyBindingConstants;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsGlobal;
+import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.util.ShellyUtils;
 
 import com.google.gson.Gson;
@@ -45,6 +46,7 @@ public class ShellyDeviceProfile {
 
     public String settingsJson = "";
     public ShellySettingsGlobal settings = new ShellySettingsGlobal();
+    public ShellySettingsStatus status = new ShellySettingsStatus();
 
     public String hostname = "";
     public String mode = "";
@@ -139,12 +141,12 @@ public class ShellyDeviceProfile {
         hasRelays = (numRelays > 0) || isDimmer;
         numRollers = getInteger(settings.device.numRollers);
 
+        isEMeter = settings.emeters != null;
         numMeters = !isEMeter ? getInteger(settings.device.numMeters) : getInteger(settings.device.numEMeters);
         if ((numMeters == 0) && isLight) {
             // RGBW2 doesn't report, but has one
             numMeters = inColor ? 1 : getInteger(settings.device.numOutputs);
         }
-        isEMeter = settings.emeters != null;
         isDimmer = deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
 
         boolean isHT = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);

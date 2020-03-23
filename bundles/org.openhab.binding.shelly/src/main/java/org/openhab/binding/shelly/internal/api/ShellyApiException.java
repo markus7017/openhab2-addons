@@ -15,6 +15,7 @@ package org.openhab.binding.shelly.internal.api;
 import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.text.MessageFormat;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.StringUtils;
@@ -72,30 +73,34 @@ public class ShellyApiException extends Exception {
     @Override
     public String toString() {
         String message = super.getMessage();
-        if (e != null) {
-            if (isUnknownHost()) {
-                String[] string = message.split(": "); // java.net.UnknownHostException: api.rach.io
-                message = MessageFormat.format("Unable to connect to {0} (unknown host / internet connection down)",
-                        string[1]);
-            } else if (isMalformedURL()) {
-                message = MessageFormat.format("Invalid URL: '{0}'", message);
-            } else {
-                message = MessageFormat.format("'{0}' ({1}", e.toString(), e.getMessage());
-            }
-        } else {
-            if (isApiException()) {
-                message = MessageFormat.format("{0} {1}", super.getClass().toString(), super.getMessage());
-            } else {
-                message = super.getMessage();
-            }
-        }
-
-        String url = !apiResult.url.isEmpty() ? MessageFormat.format("{0} {1} (HTTP {2} {3})", apiResult.method,
+        String url = !apiResult.url.isEmpty() ? MessageFormat.format("{0} {1} > HTTP {2} {3}", apiResult.method,
                 apiResult.url, apiResult.httpCode, apiResult.httpReason) : "";
         String resultString = !apiResult.response.isEmpty()
                 ? MessageFormat.format(", result = '{0}'", apiResult.response)
                 : "";
-        return MessageFormat.format("{0} {1}{2}", message, url, resultString);
+
+        if (e != null) {
+            if (isUnknownHost()) {
+                String[] string = message.split(": "); // java.net.UnknownHostException: api.rach.io
+                return MessageFormat.format("Unable to connect to {0} (Unknown host / Network down / Low signal)",
+                        string[1]);
+            } else if (isMalformedURL()) {
+                return MessageFormat.format("Invalid URL: {0}", url);
+            } else if (isTimeout()) {
+                return MessageFormat.format("{0} {1}", message, url);
+            } else {
+                return MessageFormat.format("{0} ({1})", e.toString(), e.getMessage());
+            }
+        } else {
+            if (isApiException()) {
+                message = MessageFormat.format("{0} {1}", getString(super.getClass().toString()),
+                        getString(super.getMessage()));
+            } else {
+                message = getString(super.getMessage());
+            }
+        }
+
+        return MessageFormat.format("{0} {1} {2}", message, url, resultString);
     }
 
     public boolean isApiException() {
@@ -103,9 +108,14 @@ public class ShellyApiException extends Exception {
     }
 
     public boolean isTimeout() {
-        Class<?> extype = e.getClass();
-        return (e != null) && (extype != null) && ((extype == TimeoutException.class)
-                || (extype == InterruptedException.class) || getMessage().toLowerCase().contains("timeout"));
+        Class<?> extype = e != null ? e.getClass() : null;
+        return (e != null) && (extype != null)
+                && ((extype == TimeoutException.class) || (extype == ExecutionException.class)
+                        || (extype == InterruptedException.class) || getMessage().toLowerCase().contains("timeout"));
+    }
+
+    public boolean isHttpAccessUnauthorized() {
+        return apiResult != null ? apiResult.isHttpAccessUnauthorized() : false;
     }
 
     public boolean isUnknownHost() {
@@ -132,4 +142,7 @@ public class ShellyApiException extends Exception {
         return e.getCause().toString();
     }
 
+    private static String getString(String s) {
+        return s != null ? s : "";
+    }
 }

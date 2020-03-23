@@ -37,7 +37,7 @@
 		<channel-groups>
 			<channel-group id="control" typeId="lightControl" />
 			<channel-group id="color" typeId="colorSettingsRGBW2" />
-			<channel-group id="meter" typeId="basicMeter" />
+			<channel-group id="meter" typeId="meter" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
@@ -60,16 +60,16 @@
 			<channel-group id="channel4" typeId="rgbw2Channel">
 				<label>Channel 4</label>
 			</channel-group>
-			<channel-group id="meter1" typeId="basicMeter">
+			<channel-group id="meter1" typeId="meter">
 				<label>Power Meter Channel 1</label>
 			</channel-group>
-			<channel-group id="meter2" typeId="basicMeter">
+			<channel-group id="meter2" typeId="meter">
 				<label>Power Meter Channel 2</label>
 			</channel-group>
-			<channel-group id="meter3" typeId="basicMeter">
+			<channel-group id="meter3" typeId="meter">
 				<label>Power Meter Channel 3</label>
 			</channel-group>
-			<channel-group id="meter4" typeId="basicMeter">
+			<channel-group id="meter4" typeId="meter">
 				<label>Power Meter Channel 4</label>
 			</channel-group>
 			<channel-group id="device" typeId="deviceStatus" />

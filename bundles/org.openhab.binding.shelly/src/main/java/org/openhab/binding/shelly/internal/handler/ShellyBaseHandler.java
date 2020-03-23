@@ -18,6 +18,7 @@ import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.discovery.ShellyThingCreator.getThingTypeUID;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ScheduledFuture;
@@ -29,6 +30,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.thing.Channel;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.CommonTriggerEvents;
 import org.eclipse.smarthome.core.thing.Thing;
@@ -36,6 +38,7 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
+import org.eclipse.smarthome.core.thing.binding.builder.ThingBuilder;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.eclipse.smarthome.core.types.State;
@@ -67,6 +70,7 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceListener {
     protected final Logger logger = LoggerFactory.getLogger(ShellyBaseHandler.class);
+    protected final ShellyChannelDefinitions channelDefinitions;
 
     public String thingName = "";
     protected ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
@@ -79,6 +83,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     private final @Nullable ShellyCoapServer coapServer;
     private boolean autoCoIoT = false;
     protected boolean lockUpdates = false;
+    private boolean channelsCreated = false;
 
     private long lastUptime = 0;
     private long lastAlarmTs = 0;
@@ -116,6 +121,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         super(thing);
 
         this.messages.initFrom(translationProvider);
+        this.channelDefinitions = new ShellyChannelDefinitions(messages);
         this.bindingConfig = bindingConfig;
         this.httpClient = httpClient;
         this.coapServer = coapServer;
@@ -384,6 +390,9 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 updated |= ShellyComponents.updateMeters(this, status);
                 updated |= ShellyComponents.updateSensors(this, status);
 
+                // All channels must be created after the first cycle
+                channelsCreated = true;
+
                 if (scheduledUpdates <= 1) {
                     fillDeviceStatus(status, updated);
                 }
@@ -426,7 +435,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 cache.enable();
             }
         }
-
     }
 
     private void fillDeviceStatus(ShellySettingsStatus status, boolean updated) {
@@ -690,6 +698,12 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         }
     }
 
+    @Override
+    public void thingUpdated(Thing thing) {
+        logger.debug("{}: Channel definitions updated.", thingName);
+        super.thingUpdated(thing);
+    }
+
     /**
      * Start the background updates
      */
@@ -774,6 +788,42 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     @Nullable
     public Object getChannelValue(String group, String channel) {
         return cache.getValue(group, channel);
+    }
+
+    /**
+     * Update Thing's channels according to available status information from the API
+     *
+     * @param thingHandler
+     */
+    protected void updateChannelDefinitions(Map<String, Channel> dynChannels) {
+        if (channelsCreated) {
+            return; // already done
+        }
+
+        try {
+            // Get subset of those channels that currently do not exist
+            List<Channel> existingChannels = getThing().getChannels();
+            for (Channel channel : existingChannels) {
+                String id = channel.getUID().getId();
+                if (dynChannels.containsKey(id)) {
+                    dynChannels.remove(id);
+                }
+            }
+
+            if (!dynChannels.isEmpty()) {
+                logger.debug("{}: Updating channel definitions, {} channels", thingName, dynChannels.size());
+                ThingBuilder thingBuilder = editThing();
+                for (Map.Entry<String, Channel> channel : dynChannels.entrySet()) {
+                    Channel c = channel.getValue();
+                    logger.debug("{}: Adding channel {}", thingName, c.getUID().getId());
+                    thingBuilder.withChannel(c);
+                }
+                updateThing(thingBuilder.build());
+                logger.debug("{}: Channel definitions updated", thingName);
+            }
+        } catch (IllegalArgumentException e) {
+            logger.debug("{}: Unable to update channel definitions: {}", thingName, getString(e));
+        }
     }
 
     /**

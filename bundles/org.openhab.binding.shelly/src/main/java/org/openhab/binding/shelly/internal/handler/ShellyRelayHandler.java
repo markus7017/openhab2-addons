@@ -163,7 +163,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param index
      * @throws ShellyApiException
      */
-    @SuppressWarnings("null")
     private void handleBrightness(Command command, Integer index) throws ShellyApiException {
         Integer value = -1;
         if (command instanceof PercentType) { // Dimmer
@@ -223,7 +222,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param isControl true: is the Rollershutter channel, false: rollerpos channel
      * @throws ShellyApiException
      */
-    @SuppressWarnings("null")
     private void handleRoller(Command command, String groupName, Integer index, boolean isControl)
             throws ShellyApiException {
         Integer position = -1;
@@ -294,6 +292,17 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
     }
 
     /**
+     * Auto-create relay channels depending on relay type/mode
+     */
+    private void createRelayChannels(ShellyStatusRelay relays) {
+        updateChannelDefinitions(ShellyChannelDefinitions.createRelayChannels(getThing(), relays));
+    }
+
+    private void createRollerChannels(ShellyControlRoller roller) {
+        updateChannelDefinitions(ShellyChannelDefinitions.createRollerChannels(getThing(), roller));
+    }
+
+    /**
      * Update Relay/Roller channels
      *
      * @param th Thing Handler instance
@@ -315,6 +324,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
             int i = 0;
             ShellyStatusRelay rstatus = api.getRelayStatus(i);
             if (rstatus != null) {
+                createRelayChannels(rstatus);
                 for (ShellyShortStatusRelay relay : rstatus.relays) {
                     if ((relay.isValid == null) || relay.isValid) {
                         Integer r = i + 1;
@@ -381,6 +391,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                     Integer relayIndex = i + 1;
                     String groupName = profile.numRollers > 1 ? CHANNEL_GROUP_ROL_CONTROL + relayIndex.toString()
                             : CHANNEL_GROUP_ROL_CONTROL;
+                    createRollerChannels(control);
 
                     if (getString(control.state).equals(SHELLY_ALWD_ROLLER_TURN_STOP)) { // only valid in stop state
                         Integer pos = Math.max(SHELLY_MIN_ROLLER_POS,

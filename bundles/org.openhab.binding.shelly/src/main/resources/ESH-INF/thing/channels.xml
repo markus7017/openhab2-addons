@@ -296,7 +296,7 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
-	<channel-type id="sensorExtTemp" advanced="true">
+	<channel-type id="sensorExtTemp">
 		<item-type>Number:Temperature</item-type>
 		<label>Temperature</label>
 		<description>Temperature from the external sensor</description>
@@ -307,7 +307,7 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
-	<channel-type id="sensorExtHum" advanced="true">
+	<channel-type id="sensorExtHum">
 		<item-type>Number:Dimensionless</item-type>
 		<label>Humidity</label>
 		<description>Relative humidity in % (0..100%) from external sensor</description>
@@ -437,7 +437,7 @@
 			</options>
 		</event>
 	</channel-type>
-	<channel-type id="deviceTemp">
+	<channel-type id="deviceTemp" advanced="true">
 		<item-type>Number:Temperature</item-type>
 		<label>Internal Temperature</label>
 		<description>Internal device temperature, helps to detect overheating due to installation issues</description>
