@@ -49,7 +49,6 @@ public class FSInternetRadioDiscoveryParticipant implements UpnpDiscoveryPartici
 
     static {
         // to allow case-insensitive match: add all values UPPER-CASE!
-
         // format: MANUFACTURER -> MODEL NAME, as shown e.g. by UPnP Tester as explained here:
         // https://community.openhab.org/t/internet-radio-i-need-your-help/2131
 
