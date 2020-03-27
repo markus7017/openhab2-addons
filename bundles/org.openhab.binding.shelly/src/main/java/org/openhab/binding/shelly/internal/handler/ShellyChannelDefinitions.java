@@ -16,9 +16,9 @@ import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -30,7 +30,10 @@ import org.eclipse.smarthome.core.thing.type.ChannelTypeUID;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyControlRoller;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsEMeter;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsMeter;
+import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusRelay;
+import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusSensor;
+import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 
 /**
@@ -46,18 +49,17 @@ public class ShellyChannelDefinitions {
 
     private static String CHGR_METER = CHANNEL_GROUP_METER;
     private static String CHGR_SENSOR = CHANNEL_GROUP_SENSOR;
+    private static String CHGR_BAT = CHANNEL_GROUP_BATTERY;
 
     public ShellyChannelDefinitions(ShellyTranslationProvider m) {
         // Device: Internal Temp
         channelDefinitions
                 // Device
                 .add(new ShellyChannel(m, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ITEMP, "deviceTemp", ITEM_TYPE_TEMP))
-
-                // Addon with external sensors
-                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP1, "sensorExtTemp", ITEM_TYPE_TEMP))
-                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP2, "sensorExtTemp", ITEM_TYPE_TEMP))
-                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP3, "sensorExtTemp", ITEM_TYPE_TEMP))
-                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_HUMIDITY, "sensorExtHum", ITEM_TYPE_PERCENT))
+                .add(new ShellyChannel(m, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCUWATTS, "meterAccuWatts",
+                        ITEM_TYPE_POWER))
+                .add(new ShellyChannel(m, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP, "sensorWakeup",
+                        ITEM_TYPE_STRING))
 
                 // Power Meter
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_METER_CURRENTWATTS, "meterWatts", ITEM_TYPE_POWER))
@@ -65,6 +67,7 @@ public class ShellyChannelDefinitions {
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_METER_LASTMIN1, "lastPower1", ITEM_TYPE_ENERGY))
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_METER_LASTMIN2, "lastPower2", ITEM_TYPE_ENERGY))
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_METER_LASTMIN3, "lastPower3", ITEM_TYPE_ENERGY))
+                .add(new ShellyChannel(m, CHGR_METER, CHANNEL_LAST_UPDATE, "lastUpdate", ITEM_TYPE_DATETIME))
 
                 // EMeter
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_EMETER_TOTALRET, "meterReturned", ITEM_TYPE_ENERGY))
@@ -73,12 +76,35 @@ public class ShellyChannelDefinitions {
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_EMETER_CURRENT, "meterCurrent", ITEM_TYPE_AMP))
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_EMETER_PFACTOR, "meterPowerFactor", ITEM_TYPE_NUMBER))
 
-                // Last update for Meters
-                .add(new ShellyChannel(m, CHGR_METER, CHANNEL_LAST_UPDATE, "timestamp", ITEM_TYPE_DATETIME))
+                // Sensors
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_TEMP, "sensorTemp", ITEM_TYPE_TEMP))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_HUM, "sensorHumidity", ITEM_TYPE_PERCENT))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_LUX, "sensorLux", ITEM_TYPE_LUX))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_ILLUM, "sensorIllumination", ITEM_TYPE_STRING))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_VIBRATION, "sensorVibration", ITEM_TYPE_SWITCH))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_FLOOD, "sensorFlood", ITEM_TYPE_SWITCH))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_STATE, "sensorState", ITEM_TYPE_CONTACT))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_CHARGER, "sensorCharger", ITEM_TYPE_SWITCH))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_MOTION, "sensorMotion", ITEM_TYPE_SWITCH))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_ERROR, "sensorError", ITEM_TYPE_STRING))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_LAST_UPDATE, "lastUpdate", ITEM_TYPE_DATETIME))
+
+                // Addon with external sensors
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP1, "sensorExtTemp", ITEM_TYPE_TEMP))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP2, "sensorExtTemp", ITEM_TYPE_TEMP))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP3, "sensorExtTemp", ITEM_TYPE_TEMP))
+                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_ESENDOR_HUMIDITY, "sensorExtHum", ITEM_TYPE_PERCENT))
+
+                // Battery
+                .add(new ShellyChannel(m, CHGR_BAT, CHANNEL_SENSOR_BAT_LEVEL, "system:battery-level",
+                        ITEM_TYPE_PERCENT))
+                .add(new ShellyChannel(m, CHGR_BAT, CHANNEL_SENSOR_BAT_LOW, "system:low-battery", ITEM_TYPE_STRING))
+                .add(new ShellyChannel(m, CHGR_BAT, CHANNEL_SENSOR_BAT_VOLT, "batVoltage", ITEM_TYPE_SWITCH))
 
         ;
     }
 
+    @SuppressWarnings({ "null", "unused" })
     public static ShellyChannel getDefinition(String channelName) throws IllegalArgumentException {
         String group = StringUtils.substringBefore(channelName, "#");
         String channel = StringUtils.substringAfter(channelName, "#");
@@ -87,7 +113,33 @@ public class ShellyChannelDefinitions {
         } else if (group.contains(CHANNEL_GROUP_RELAY_CONTROL)) {
             group = CHANNEL_GROUP_RELAY_CONTROL; // map meter1..n to meter
         }
-        return channelDefinitions.get(group + "#" + channel);
+        String channelId = group + "#" + channel;
+        ShellyChannel chan = channelDefinitions.get(channelId);
+        if (chan == null) {
+            throw new IllegalArgumentException("Unable to find definition for channel " + channelId);
+        }
+        return chan;
+    }
+
+    /**
+     * Auto-create relay channels depending on relay type/mode
+     *
+     * @return ArrayList<Channel> of channels to be added to the thing
+     */
+    public static Map<String, Channel> createDeviceChannels(final Thing thing, final ShellyDeviceProfile profile,
+            final ShellySettingsStatus status) {
+        Map<String, Channel> add = new LinkedHashMap<>();
+        if (!profile.isSensor) {
+            // Only some devices report the internal device temp
+            addChannel(thing, add, (status.tmp != null) || (status.temperature != null), CHANNEL_GROUP_DEV_STATUS,
+                    CHANNEL_DEVST_ITEMP);
+
+            // If device has more than 1 meter the channel accumulatedWatts receives the accumulated value
+            boolean accuChannel = (((status.meters != null) && (status.meters.size() > 1))
+                    || ((status.emeters != null && status.emeters.size() > 1)));
+            addChannel(thing, add, accuChannel, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCUWATTS);
+        }
+        return add;
     }
 
     /**
@@ -96,9 +148,7 @@ public class ShellyChannelDefinitions {
      * @return ArrayList<Channel> of channels to be added to the thing
      */
     public static Map<String, Channel> createRelayChannels(final Thing thing, final ShellyStatusRelay relays) {
-        Map<String, Channel> add = new TreeMap<>();
-        // Only some devices report the internal device temp
-        addChannel(thing, add, relays.temperature != null, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ITEMP);
+        Map<String, Channel> add = new LinkedHashMap<>();
 
         // Shelly 1/1PM Addon
         if (relays.extTemperature != null) {
@@ -113,7 +163,7 @@ public class ShellyChannelDefinitions {
     }
 
     public static Map<String, Channel> createRollerChannels(Thing thing, final ShellyControlRoller roller) {
-        Map<String, Channel> add = new TreeMap<>();
+        Map<String, Channel> add = new LinkedHashMap<>();
 
         // No dynamic channels so far, maybe added in the future
 
@@ -121,27 +171,65 @@ public class ShellyChannelDefinitions {
     }
 
     public static Map<String, Channel> createMeterChannels(Thing thing, final ShellySettingsMeter meter, String group) {
-        Map<String, Channel> newChannels = new TreeMap<>();
-        addChannel(thing, newChannels, meter.power != null, group, CHANNEL_METER_CURRENTWATTS);
-        addChannel(thing, newChannels, meter.total != null, group, CHANNEL_METER_TOTALKWH);
-        if (meter.counters != null) {
-            addChannel(thing, newChannels, meter.counters[0] != null, group, CHANNEL_METER_LASTMIN1);
-            addChannel(thing, newChannels, meter.counters[1] != null, group, CHANNEL_METER_LASTMIN2);
-            addChannel(thing, newChannels, meter.counters[2] != null, group, CHANNEL_METER_LASTMIN3);
+        Map<String, Channel> newChannels = new LinkedHashMap<>();
+        if (meter != null) {
+            addChannel(thing, newChannels, meter.power != null, group, CHANNEL_METER_CURRENTWATTS);
+            addChannel(thing, newChannels, meter.total != null, group, CHANNEL_METER_TOTALKWH);
+            if (meter.counters != null) {
+                addChannel(thing, newChannels, meter.counters[0] != null, group, CHANNEL_METER_LASTMIN1);
+                addChannel(thing, newChannels, meter.counters[1] != null, group, CHANNEL_METER_LASTMIN2);
+                addChannel(thing, newChannels, meter.counters[2] != null, group, CHANNEL_METER_LASTMIN3);
+            }
+            addChannel(thing, newChannels, meter.timestamp != null, group, CHANNEL_LAST_UPDATE);
         }
         return newChannels;
     }
 
     public static Map<String, Channel> createEMeterChannels(final Thing thing, final ShellySettingsEMeter emeter,
             String group) {
-        Map<String, Channel> newChannels = new TreeMap<>();
-        addChannel(thing, newChannels, emeter.power != null, group, CHANNEL_METER_CURRENTWATTS);
-        addChannel(thing, newChannels, emeter.total != null, group, CHANNEL_METER_TOTALKWH);
-        addChannel(thing, newChannels, emeter.totalReturned != null, group, CHANNEL_EMETER_TOTALRET);
-        addChannel(thing, newChannels, emeter.reactive != null, group, CHANNEL_EMETER_REACTWATTS);
-        addChannel(thing, newChannels, emeter.voltage != null, group, CHANNEL_EMETER_VOLTAGE);
-        addChannel(thing, newChannels, emeter.current != null, group, CHANNEL_EMETER_CURRENT);
-        addChannel(thing, newChannels, emeter.pf != null, group, CHANNEL_EMETER_PFACTOR);
+        Map<String, Channel> newChannels = new LinkedHashMap<>();
+        if (emeter != null) {
+            addChannel(thing, newChannels, emeter.power != null, group, CHANNEL_METER_CURRENTWATTS);
+            addChannel(thing, newChannels, emeter.total != null, group, CHANNEL_METER_TOTALKWH);
+            addChannel(thing, newChannels, emeter.totalReturned != null, group, CHANNEL_EMETER_TOTALRET);
+            addChannel(thing, newChannels, emeter.reactive != null, group, CHANNEL_EMETER_REACTWATTS);
+            addChannel(thing, newChannels, emeter.voltage != null, group, CHANNEL_EMETER_VOLTAGE);
+            addChannel(thing, newChannels, emeter.current != null, group, CHANNEL_EMETER_CURRENT);
+            addChannel(thing, newChannels, emeter.pf != null, group, CHANNEL_EMETER_PFACTOR);
+            addChannel(thing, newChannels, true, group, CHANNEL_LAST_UPDATE);
+        }
+        return newChannels;
+    }
+
+    public static Map<String, Channel> createSensorChannels(final Thing thing, final ShellyStatusSensor sdata) {
+        Map<String, Channel> newChannels = new LinkedHashMap<>();
+        if (sdata != null) {
+            // Sensor data
+            addChannel(thing, newChannels, sdata.tmp != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP);
+            addChannel(thing, newChannels, sdata.hum != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM);
+            addChannel(thing, newChannels, sdata.lux != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX);
+            addChannel(thing, newChannels, sdata.accel != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_VIBRATION);
+            addChannel(thing, newChannels, sdata.flood != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD);
+            addChannel(thing, newChannels, sdata.lux != null && sdata.lux.illumination != null, CHANNEL_GROUP_SENSOR,
+                    CHANNEL_SENSOR_ILLUM);
+            addChannel(thing, newChannels, sdata.contact != null && sdata.contact.state != null, CHANNEL_GROUP_SENSOR,
+                    CHANNEL_SENSOR_STATE);
+            addChannel(thing, newChannels, sdata.motion != null && sdata.contact.state != null, CHANNEL_GROUP_SENSOR,
+                    CHANNEL_SENSOR_MOTION);
+            addChannel(thing, newChannels, sdata.charger != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER);
+            addChannel(thing, newChannels, sdata.sensorError != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR);
+            addChannel(thing, newChannels, true, CHANNEL_GROUP_SENSOR, CHANNEL_LAST_UPDATE);
+            addChannel(thing, newChannels, sdata.actReasons != null, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP);
+
+            // Battery
+            if (sdata.bat != null) {
+                addChannel(thing, newChannels, sdata.bat.voltage != null, CHANNEL_GROUP_BATTERY,
+                        CHANNEL_SENSOR_BAT_VOLT);
+                addChannel(thing, newChannels, sdata.bat.value != null, CHANNEL_GROUP_BATTERY,
+                        CHANNEL_SENSOR_BAT_LEVEL);
+                addChannel(thing, newChannels, sdata.bat.value != null, CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW);
+            }
+        }
         return newChannels;
     }
 
@@ -151,7 +239,9 @@ public class ShellyChannelDefinitions {
             final String channelId = group + "#" + channelName;
             final ShellyChannel channelDef = getDefinition(channelId);
             final ChannelUID channelUID = new ChannelUID(thing.getUID(), channelId);
-            final ChannelTypeUID channelTypeUID = new ChannelTypeUID(BINDING_ID, channelDef.typeId);
+            final ChannelTypeUID channelTypeUID = channelDef.typeId.contains("system:")
+                    ? new ChannelTypeUID(channelDef.typeId)
+                    : new ChannelTypeUID(BINDING_ID, channelDef.typeId);
 
             // Channel channel = ChannelBuilder.create(channelUID, channelId).withType(channelTypeUID)
             // .withLabel(channelDef.label).withDescription(channelDef.description).build();
@@ -164,11 +254,14 @@ public class ShellyChannelDefinitions {
     public static String ITEM_TYPE_STRING = "String";
     public static String ITEM_TYPE_DATETIME = "DateTime";
     public static String ITEM_TYPE_TEMP = "Number:Temperature";
+    public static String ITEM_TYPE_LUX = "Number:Illuminance";
     public static String ITEM_TYPE_POWER = "Number:Power";
     public static String ITEM_TYPE_ENERGY = "Number:Energy";
     public static String ITEM_TYPE_VOLT = "Number:ElectricPotential";
     public static String ITEM_TYPE_AMP = "Number:ElectricPotential";
     public static String ITEM_TYPE_PERCENT = "Number:Dimensionless";
+    public static String ITEM_TYPE_SWITCH = "Switch";
+    public static String ITEM_TYPE_CONTACT = "Contact";
 
     public static String PREFIX_GROUP = "definitions.shelly.group.";
     public static String PREFIX_CHANNEL = "channel-type.shelly.";
@@ -214,7 +307,7 @@ public class ShellyChannelDefinitions {
     }
 
     public static class ChannelMap {
-        private final HashMap<String, ShellyChannel> map = new HashMap<>();
+        private final Map<String, ShellyChannel> map = new LinkedHashMap<>();
 
         private ChannelMap add(ShellyChannel def) {
             map.put(def.getChanneId(), def);

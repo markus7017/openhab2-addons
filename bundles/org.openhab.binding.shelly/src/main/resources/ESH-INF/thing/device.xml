@@ -8,9 +8,9 @@
 		<label>Device Status</label>
 		<description>Some details on the device status</description>
 		<channels>
-			<channel id="uptime" typeId="uptime" />
-			<channel id="wifiSignal" typeId="system.signal-strength" />
 			<channel id="alarm" typeId="alarmTrigger" />
+			<channel id="wifiSignal" typeId="system.signal-strength" />
+			<channel id="uptime" typeId="uptime" />
 		</channels>
 	</channel-group-type>
 

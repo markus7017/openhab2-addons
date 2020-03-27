@@ -31,14 +31,14 @@ public class ShellyApiResult {
     public String url = "";
     public String method = "";
     public String response = "";
-    public Integer httpCode = OK_200;
+    public Integer httpCode = -1;
     public String httpReason = "";
 
     public ShellyApiResult() {
 
     }
 
-    public ShellyApiResult(String url, String method) {
+    public ShellyApiResult(String method, String url) {
         this.method = method;
         this.url = url;
     }
@@ -80,7 +80,7 @@ public class ShellyApiResult {
     }
 
     public boolean isHttpTimeout() {
-        return response.toUpperCase().contains(SHELLY_APIERR_TIMEOUT);
+        return httpCode == -1 || response.toUpperCase().contains(SHELLY_APIERR_TIMEOUT);
     }
 
     public boolean isNotCalibrtated() {

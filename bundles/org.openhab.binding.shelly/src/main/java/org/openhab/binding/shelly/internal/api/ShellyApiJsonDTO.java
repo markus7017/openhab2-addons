@@ -802,7 +802,8 @@ public class ShellyApiJsonDTO {
         public ShellySensorLux lux;
         public ShellySensorAccel accel;
         public ShellySensorBat bat;
-        public ShellySensorState sensor;
+        @SerializedName("sensor")
+        public ShellySensorState contact;
 
         public Boolean flood; // Shelly Flood: true = flood condition detected
         @SerializedName("rain_sensor")

@@ -83,6 +83,7 @@ public class ShellyHttpApi {
         this.config = config;
         this.thingName = thingName;
         this.httpClient = httpClient;
+        profile.initFromThingType(thingName);
     }
 
     public ShellySettingsDevice getDevInfo() throws ShellyApiException {
@@ -458,7 +459,8 @@ public class ShellyHttpApi {
             apiResult = innerRequest(HttpMethod.GET, uri);
         } catch (ShellyApiException e) {
             try {
-                if (e.getApiResult().isHttpAccessUnauthorized()) {
+                if (e.isTimeout() && profile.isSensor) {
+                    // Sensor in sleep mode
                     throw e;
                 }
                 if (e.isTimeout()) {
@@ -468,11 +470,9 @@ public class ShellyHttpApi {
                     timeoutsRecovered++; // recoverd
                     logger.debug("{}: API timeout #{}/{} recovered", thingName, timeoutErrors, timeoutsRecovered);
                 } else {
-                    logger.debug("{}: API  returned {}, retry", thingName, e.toString());
-                    apiResult = innerRequest(HttpMethod.GET, uri);
+                    throw e;
                 }
             } catch (ShellyApiException e2) {
-                logger.debug("{}: API call returned {}", thingName, e2.toString());
                 throw e2;
             }
         }
@@ -505,13 +505,13 @@ public class ShellyHttpApi {
             // validate response, API errors are reported as Json
             logger.trace("HTTP Response: {}", response);
             if (contentResponse.getStatus() != HttpStatus.OK_200) {
-                throw new ShellyApiException("API Call failed", apiResult);
+                throw new ShellyApiException(apiResult);
             }
             if (response == null || response.isEmpty() || !response.startsWith("{") && !response.startsWith("[")) {
-                throw new ShellyApiException("Unexpected HTTP response: " + response);
+                throw new ShellyApiException("Unexpected response: " + response);
             }
         } catch (ExecutionException | InterruptedException | TimeoutException | IllegalArgumentException e) {
-            throw new ShellyApiException("API Call failed", apiResult, e);
+            throw new ShellyApiException(apiResult, e);
         }
         return apiResult;
     }

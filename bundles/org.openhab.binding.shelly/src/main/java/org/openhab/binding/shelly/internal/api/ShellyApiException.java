@@ -48,32 +48,30 @@ public class ShellyApiException extends Exception {
         e = exception;
     }
 
-    public ShellyApiException(String message, Exception exception) {
+    public ShellyApiException(Exception exception, String message) {
         super(message, exception);
         e = exception;
     }
 
-    public ShellyApiException(String message, ShellyApiResult result) {
-        super(message);
+    public ShellyApiException(ShellyApiResult result) {
         apiResult = result;
     }
 
-    public ShellyApiException(String message, ShellyApiResult result, Exception exception) {
-        super(message);
+    public ShellyApiException(ShellyApiResult result, Exception exception) {
+        super(exception);
         apiResult = result;
         e = exception;
     }
 
     @Override
     public String getMessage() {
-        String m = super.getMessage();
-        return m != null ? m : "";
+        return getString(super.getMessage());
     }
 
     @Override
     public String toString() {
         String message = super.getMessage();
-        String url = !apiResult.url.isEmpty() ? MessageFormat.format("{0} {1} > HTTP {2} {3}", apiResult.method,
+        String url = !apiResult.url.isEmpty() ? MessageFormat.format("{0} {1} HTTP {2} {3}", apiResult.method,
                 apiResult.url, apiResult.httpCode, apiResult.httpReason) : "";
         String resultString = !apiResult.response.isEmpty()
                 ? MessageFormat.format(", result = '{0}'", apiResult.response)
@@ -87,9 +85,9 @@ public class ShellyApiException extends Exception {
             } else if (isMalformedURL()) {
                 return MessageFormat.format("Invalid URL: {0}", url);
             } else if (isTimeout()) {
-                return MessageFormat.format("{0} {1}", message, url);
+                return MessageFormat.format("API Timeout or device unreachable ({0})", url);
             } else {
-                return MessageFormat.format("{0} ({1})", e.toString(), e.getMessage());
+                return MessageFormat.format("{0} ({1})", e.toString(), message);
             }
         } else {
             if (isApiException()) {
@@ -109,7 +107,7 @@ public class ShellyApiException extends Exception {
 
     public boolean isTimeout() {
         Class<?> extype = e != null ? e.getClass() : null;
-        return (e != null) && (extype != null)
+        return (apiResult.httpCode == -1) || (e != null) && (extype != null)
                 && ((extype == TimeoutException.class) || (extype == ExecutionException.class)
                         || (extype == InterruptedException.class) || getMessage().toLowerCase().contains("timeout"));
     }

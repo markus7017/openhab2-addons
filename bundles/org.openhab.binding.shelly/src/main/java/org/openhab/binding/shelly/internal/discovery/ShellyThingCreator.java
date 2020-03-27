@@ -28,7 +28,6 @@ import org.eclipse.smarthome.core.thing.ThingUID;
  */
 @NonNullByDefault
 public class ShellyThingCreator {
-
     public static ThingUID getThingUID(String serviceName, String mode, boolean unknown) {
         String devid = StringUtils.substringAfterLast(serviceName, "-");
         return new ThingUID(!unknown ? getThingTypeUID(serviceName, mode)
@@ -45,6 +44,10 @@ public class ShellyThingCreator {
 
     public static String getThingType(String hostname, String mode) {
         String name = hostname.toLowerCase();
+        String devid = StringUtils.substringAfterLast(name, "-");
+        if (devid == null) {
+            throw new IllegalArgumentException("Invalid device name format: " + hostname);
+        }
 
         if (name.startsWith(THING_TYPE_SHELLY1PN_STR)) {
             return THING_TYPE_SHELLY1PN_STR;

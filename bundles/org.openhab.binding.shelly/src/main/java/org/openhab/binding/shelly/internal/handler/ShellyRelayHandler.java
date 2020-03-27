@@ -295,11 +295,15 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * Auto-create relay channels depending on relay type/mode
      */
     private void createRelayChannels(ShellyStatusRelay relays) {
-        updateChannelDefinitions(ShellyChannelDefinitions.createRelayChannels(getThing(), relays));
+        if (!areChannelsCreated()) {
+            updateChannelDefinitions(ShellyChannelDefinitions.createRelayChannels(getThing(), relays));
+        }
     }
 
     private void createRollerChannels(ShellyControlRoller roller) {
-        updateChannelDefinitions(ShellyChannelDefinitions.createRollerChannels(getThing(), roller));
+        if (!areChannelsCreated()) {
+            updateChannelDefinitions(ShellyChannelDefinitions.createRollerChannels(getThing(), roller));
+        }
     }
 
     /**
@@ -385,14 +389,15 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
         {
             logger.trace("{}: Updating {} rollers", thingName, profile.numRollers.toString());
             int i = 0;
+
             for (ShellySettingsRoller roller : status.rollers) {
                 if (roller.isValid) {
                     ShellyControlRoller control = api.getRollerStatus(i);
                     Integer relayIndex = i + 1;
                     String groupName = profile.numRollers > 1 ? CHANNEL_GROUP_ROL_CONTROL + relayIndex.toString()
                             : CHANNEL_GROUP_ROL_CONTROL;
-                    createRollerChannels(control);
 
+                    createRollerChannels(control);
                     if (getString(control.state).equals(SHELLY_ALWD_ROLLER_TURN_STOP)) { // only valid in stop state
                         Integer pos = Math.max(SHELLY_MIN_ROLLER_POS,
                                 Math.min(control.currentPos, SHELLY_MAX_ROLLER_POS));

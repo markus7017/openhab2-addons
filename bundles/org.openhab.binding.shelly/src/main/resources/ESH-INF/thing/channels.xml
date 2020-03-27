@@ -92,6 +92,13 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
+	<channel-type id="meterAccuWatts" advanced="true">
+		<item-type>Number:Power</item-type>
+		<label>Accumulated Watt</label>
+		<description>Accumulated current power consumption in Watt from all meters</description>
+		<state readOnly="true" pattern="%f %unit%">
+		</state>
+	</channel-type>
 	<channel-type id="meterReactive">
 		<item-type>Number:Power</item-type>
 		<label>Reactive Watt</label>
@@ -266,19 +273,19 @@
 	</channel-type>
 
 	<channel-type id="sensorState">
-		<item-type>Switch</item-type>
+		<item-type>Contact</item-type>
 		<label>Contact</label>
 		<description>State of the contact: open/close</description>
 		<category>Contact</category>
 		<state pattern="%s" readOnly="true">
 			<options>
-				<option value="open">Open</option>
-				<option value="close">Closed</option>
+				<option value="OPEN">Open</option>
+				<option value="CLOSED">Closed</option>
 			</options>
 		</state>
 	</channel-type>
-	<channel-type id="sensorWakeup">
-		<item-type>Text</item-type>
+	<channel-type id="sensorWakeup" advanced="true">
+		<item-type>String</item-type>
 		<label>Wakeup reason</label>
 		<description>Reasons which woke up the device: battery, button, periodic, poweron, sensor, alarm</description>
 		<state readOnly="true">

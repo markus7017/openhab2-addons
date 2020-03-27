@@ -195,7 +195,6 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_LED_POWER_DISABLE = "powerLed";
 
     public static final String CHANNEL_GROUP_SENSOR = "sensors";
-    public static final String CHANNEL_SENSOR_WAKEUP = "wakeupReason";
     public static final String CHANNEL_SENSOR_TEMP = "temperature";
     public static final String CHANNEL_SENSOR_HUM = "humidity";
     public static final String CHANNEL_SENSOR_LUX = "lux";
@@ -246,7 +245,9 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_DEVST_UPTIME = "uptime";
     public static final String CHANNEL_DEVST_RSSI = "wifiSignal";
     public static final String CHANNEL_DEVST_ITEMP = "internalTemp";
+    public static final String CHANNEL_DEVST_WAKEUP = "wakeupReason";
     public static final String CHANNEL_DEVST_ALARM = "alarm";
+    public static final String CHANNEL_DEVST_ACCUWATTS = "accumulatedWatts";
 
     // General
     public static final String CHANNEL_LAST_UPDATE = "lastUpdate";

@@ -140,7 +140,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                     col.setGain(setColor(lightId, SHELLY_COLOR_GAIN, command, SHELLY_MIN_GAIN, SHELLY_MAX_GAIN));
                     break;
                 case CHANNEL_BRIGHTNESS: // only in white mode
-                    if (profile.isLight && (profile.inColor || profile.isBulb)) {
+                    if (profile.inColor && !profile.isBulb) {
                         logger.debug("{}: Not in white mode, brightness not available", thingName);
                         break;
                     }

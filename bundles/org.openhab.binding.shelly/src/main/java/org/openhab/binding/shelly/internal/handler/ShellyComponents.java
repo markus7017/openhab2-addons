@@ -48,6 +48,11 @@ public class ShellyComponents {
      * @param profile ShellyDeviceProfile
      */
     public static boolean updateDeviceStatus(ShellyBaseHandler th, ShellySettingsStatus status) {
+        if (!th.areChannelsCreated()) {
+            th.updateChannelDefinitions(
+                    ShellyChannelDefinitions.createDeviceChannels(th.getThing(), th.getProfile(), status));
+        }
+
         Integer rssi = getInteger(status.wifiSta.rssi);
         th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_UPTIME,
                 toQuantityType(new Double(getLong(status.uptime)), DIGITS_TEMP, SmartHomeUnits.SECOND));
@@ -74,6 +79,8 @@ public class ShellyComponents {
         Validate.notNull(th);
         ShellyDeviceProfile profile = th.getProfile();
 
+        Double accumulatedWatts = 0.0;
+
         boolean updated = false;
         if ((profile.numMeters > 0) && ((status.meters != null) || (status.emeters != null))) {
             if (!profile.isRoller) {
@@ -87,7 +94,6 @@ public class ShellyComponents {
                         Integer meterIndex = m + 1;
                         if (getBool(meter.isValid) || profile.isLight) { // RGBW2-white doesn't report das flag
                                                                          // correctly in white mode
-
                             String groupName = "";
                             if (profile.numMeters > 1) {
                                 groupName = CHANNEL_GROUP_METER + meterIndex.toString();
@@ -95,11 +101,15 @@ public class ShellyComponents {
                                 groupName = CHANNEL_GROUP_METER;
                             }
 
-                            th.updateChannelDefinitions(
-                                    ShellyChannelDefinitions.createMeterChannels(th.getThing(), meter, groupName));
+                            if (!th.areChannelsCreated()) {
+                                th.updateChannelDefinitions(
+                                        ShellyChannelDefinitions.createMeterChannels(th.getThing(), meter, groupName));
+                            }
 
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
                                     toQuantityType(getDouble(meter.power), DIGITS_WATT, SmartHomeUnits.WATT));
+                            accumulatedWatts += getDouble(meter.power);
+
                             // convert Watt/Min to kw/h
                             if (meter.total != null) {
                                 updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH, toQuantityType(
@@ -124,12 +134,15 @@ public class ShellyComponents {
                         if (getBool(emeter.isValid)) {
                             String groupName = profile.numMeters > 1 ? CHANNEL_GROUP_METER + meterIndex.toString()
                                     : CHANNEL_GROUP_METER;
-                            th.updateChannelDefinitions(
-                                    ShellyChannelDefinitions.createEMeterChannels(th.getThing(), emeter, groupName));
+                            if (!th.areChannelsCreated()) {
+                                th.updateChannelDefinitions(ShellyChannelDefinitions.createEMeterChannels(th.getThing(),
+                                        emeter, groupName));
+                            }
 
                             // convert Watt/Hour tok w/h
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
                                     toQuantityType(getDouble(emeter.power), DIGITS_WATT, SmartHomeUnits.WATT));
+                            accumulatedWatts += getDouble(emeter.power);
                             updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH, toQuantityType(
                                     getDouble(emeter.total) / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                             updated |= th.updateChannel(groupName, CHANNEL_EMETER_TOTALRET, toQuantityType(
@@ -178,8 +191,10 @@ public class ShellyComponents {
                     }
                 }
                 // Create channels for 1 Meter
-                th.updateChannelDefinitions(
-                        ShellyChannelDefinitions.createMeterChannels(th.getThing(), status.meters.get(0), groupName));
+                if (!th.areChannelsCreated()) {
+                    th.updateChannelDefinitions(ShellyChannelDefinitions.createMeterChannels(th.getThing(),
+                            status.meters.get(0), groupName));
+                }
 
                 updated |= th.updateChannel(groupName, CHANNEL_METER_LASTMIN1,
                         toQuantityType(getDouble(lastMin1), DIGITS_WATT, SmartHomeUnits.WATT));
@@ -194,13 +209,17 @@ public class ShellyComponents {
                         toQuantityType(getDouble(currentWatts), DIGITS_WATT, SmartHomeUnits.WATT));
                 updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH,
                         toQuantityType(getDouble(totalWatts), DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                accumulatedWatts += currentWatts;
 
                 if (updated) {
                     th.updateChannel(groupName, CHANNEL_LAST_UPDATE,
                             getTimestamp(getString(profile.settings.timezone), timestamp));
                 }
             }
+            th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCUWATTS,
+                    toQuantityType(accumulatedWatts, DIGITS_WATT, SmartHomeUnits.WATT));
         }
+
         return updated;
     }
 
@@ -224,21 +243,27 @@ public class ShellyComponents {
             ShellyStatusSensor sdata = th.api.getSensorStatus();
 
             if (sdata != null) {
+                if (!th.areChannelsCreated()) {
+                    th.updateChannelDefinitions(ShellyChannelDefinitions.createSensorChannels(th.getThing(), sdata));
+                }
+
                 if (sdata.actReasons != null) {
-                    boolean changed = th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_WAKEUP,
+                    boolean changed = th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP,
                             getStringType(sdata.actReasons[0]));
                     updated |= changed;
 
                 }
-                if ((sdata.sensor != null) && sdata.sensor.isValid) {
+                if ((sdata.contact != null) && sdata.contact.isValid) {
                     // Shelly DW: “sensor”:{“state”:“open”, “is_valid”:true},
+                    th.logger.debug("{}: Updating DW state with {}", th.thingName, getString(sdata.contact.state));
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
-                            sdata.sensor.state.equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN) ? OpenClosedType.OPEN
+                            getString(sdata.contact.state).equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN)
+                                    ? OpenClosedType.OPEN
                                     : OpenClosedType.CLOSED);
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR,
                             getStringType(sdata.sensorError));
                 }
-                if (getBool(sdata.tmp.isValid)) {
+                if ((sdata.tmp != null) && getBool(sdata.tmp.isValid)) {
                     th.logger.trace("{}: Updating temperature", th.thingName);
                     DecimalType temp = getString(sdata.tmp.units).toUpperCase().equals(SHELLY_TEMP_CELSIUS)
                             ? getDecimal(sdata.tmp.tC)
@@ -272,7 +297,7 @@ public class ShellyComponents {
                 if (sdata.flood != null) {
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD, getOnOff(sdata.flood));
                 }
-                if ((sdata.bat != null) && (sdata.bat.value != null)) { // no update for Sense
+                if (sdata.bat != null) { // no update for Sense
                     th.logger.trace("{}: Updating battery", th.thingName);
                     updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
                             toQuantityType(getDouble(sdata.bat.value), DIGITS_PERCENT, SmartHomeUnits.PERCENT));

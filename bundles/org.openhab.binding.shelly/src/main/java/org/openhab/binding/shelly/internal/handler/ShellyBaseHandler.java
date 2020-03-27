@@ -150,8 +150,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 if (isAuthorizationFailed(res)) {
                     start = false;
                 }
-                logger.debug("{}: Unable to initialize: {} ({}), retrying later\n{}", getThing().getLabel(),
-                        getString(e), e.getClass(), e.getStackTrace());
+                logger.debug("{}: Unable to initialize: {}, retrying later", getThing().getLabel(), e.toString());
             } catch (IllegalArgumentException | NullPointerException e) {
                 logger.debug("{}: Unable to initialize: {} ({}), retrying later\n{}", getThing().getLabel(),
                         getString(e), e.getClass(), e.getStackTrace());
@@ -215,6 +214,9 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             config.eventsSensorReport = false;
             config.eventsPush = false;
         }
+
+        // Init from thing type to have a basic profile, gets updated when device info is received from API
+        profile.initFromThingType(thingType);
 
         // Initialize API access, exceptions will be catched by initialize()
         api = new ShellyHttpApi(thingName, config, httpClient);
@@ -367,7 +369,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
             if (refreshSettings || (scheduledUpdates > 0) || (skipUpdate % skipCount == 0)) {
                 if ((!profile.isInitialized()) || ((getThing().getStatus() == ThingStatus.OFFLINE)
-                        && (getThing().getStatusInfo().getStatusDetail() != ThingStatusDetail.CONFIGURATION_ERROR))) {
+                        || (getThing().getStatus() == ThingStatus.UNKNOWN) && (getThing().getStatusInfo()
+                                .getStatusDetail() != ThingStatusDetail.CONFIGURATION_ERROR))) {
                     logger.debug("{}: Status update triggered thing initialization", thingName);
                     initializeThing(); // may fire an exception if initialization failed
                 }
@@ -417,11 +420,13 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 logger.debug("{}: Unable to update status: {} ({})", thingName, e.getMessage(), e.getClass());
                 status = "@text/offline.status-error-unexpected-api-result";
             }
-            if (!status.isEmpty() && (profile.isInitialized() && profile.isSensor)) {
+            if (!res.isHttpTimeout() || !profile.isSensor) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, status);
             }
-        } catch (NullPointerException e) {
-            logger.warn("{}: {}", thingName, messages.get("statusupdate.failed", e.getMessage(), e.getClass()));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            logger.warn("{}: {}\n{}", thingName,
+                    messages.get("statusupdate.failed", getString(e), getString(e.getClass().toString())),
+                    e.getStackTrace());
         } finally {
             if (scheduledUpdates > 0) {
                 --scheduledUpdates;
@@ -778,11 +783,11 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     }
 
     public boolean updateChannel(String group, String channel, State value) {
-        return cache.updateChannel(group, channel, value);
+        return updateChannel(mkChannelId(group, channel), value, false);
     }
 
     public boolean updateChannel(String channelId, State value, boolean force) {
-        return cache.updateChannel(channelId, value, force);
+        return isLinked(channelId) && cache.updateChannel(channelId, value, force);
     }
 
     @Nullable
@@ -824,6 +829,10 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         } catch (IllegalArgumentException e) {
             logger.debug("{}: Unable to update channel definitions: {}", thingName, getString(e));
         }
+    }
+
+    public boolean areChannelsCreated() {
+        return channelsCreated;
     }
 
     /**

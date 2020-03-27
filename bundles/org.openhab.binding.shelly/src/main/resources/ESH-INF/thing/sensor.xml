@@ -71,24 +71,24 @@
 	<channel-group-type id="htSensor">
 		<label>Sensor Data</label>
 		<description>Data from the HT Sensor</description>
-		<channels>
+		<!--  channels>
 			<channel id="temperature" typeId="sensorTemp" />
 			<channel id="humidity" typeId="sensorHumidity" />
 			<channel id="charger" typeId="sensorCharger" />
 			<channel id="wakeupReason" typeId="sensorWakeup" />
 			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
+		</channels -->
 	</channel-group-type>
 
 	<channel-group-type id="floodSensor">
 		<label>Sensor Data</label>
 		<description>Data from the Flood Sensor</description>
-		<channels>
+		<!-- channels>
 			<channel id="temperature" typeId="sensorTemp" />
 			<channel id="flood" typeId="sensorFlood" />
 			<channel id="wakeupReason" typeId="sensorWakeup" />
 			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
+		</channels -->
 	</channel-group-type>
 
 	<channel-group-type id="smokeSensor">

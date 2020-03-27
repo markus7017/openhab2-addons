@@ -365,7 +365,8 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                             Double value = getDouble(s.value);
                             switch (sen.desc.toLowerCase()) {
                                 case "temperature":
-                                    if (profile.settings.temperatureUnits.equalsIgnoreCase("F")) {
+                                    if ((profile.settings.temperatureUnits != null)
+                                            && profile.settings.temperatureUnits.equalsIgnoreCase("F")) {
                                         value = (getDouble(s.value) - 32) * (0.5556);
                                     }
                                     updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,

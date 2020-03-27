@@ -98,6 +98,7 @@ public class ShellyDeviceProfile {
         initialized = false;
 
         try {
+            initFromThingType(thingType);
             settingsJson = json;
             settings = gson.fromJson(json, ShellySettingsGlobal.class);
             Validate.notNull(settings, "Converted device settings must not be null!\nsettings=" + json);
@@ -120,16 +121,6 @@ public class ShellyDeviceProfile {
         fwId = getString(StringUtils.substringAfter(settings.fw, "@"));
         discoverable = (settings.discoverable == null) || settings.discoverable;
 
-        isRoller = mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
-        isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
-
-        isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
-        isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYVINTAGE_STR);
-        isRGBW2 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
-        hasLed = isPlugS;
-        isLight = isBulb || isDuo || isRGBW2;
         inColor = isLight && mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
         minTemp = isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO;
         maxTemp = isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO;
@@ -148,14 +139,7 @@ public class ShellyDeviceProfile {
             numMeters = inColor ? 1 : getInteger(settings.device.numOutputs);
         }
         isDimmer = deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
-
-        boolean isHT = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
-        boolean isFlood = thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR);
-        boolean isDW = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
-        boolean isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
-        isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
-        isSensor = isHT || isFlood || isDW || isSmoke || isSense;
-        hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
+        isRoller = mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
 
         supportsButtonUrls = settingsJson.contains(SHELLY_API_EVENTURL_BTN_ON)
                 || settingsJson.contains(SHELLY_API_EVENTURL_BTN1_ON)
@@ -171,5 +155,27 @@ public class ShellyDeviceProfile {
 
     public Boolean isInitialized() {
         return initialized;
+    }
+
+    public void initFromThingType(String name) {
+        String thingType = name.contains("-") ? StringUtils.substringBefore(name, "-") : name;
+
+        isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
+
+        isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
+        isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYVINTAGE_STR);
+        isRGBW2 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
+                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
+        hasLed = isPlugS;
+        isLight = isBulb || isDuo || isRGBW2;
+
+        boolean isHT = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
+        boolean isFlood = thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR);
+        boolean isDW = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDOORWIN_STR);
+        boolean isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
+        isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
+        isSensor = isHT | isFlood | isDW | isSmoke | isSense;
+        hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
     }
 }
