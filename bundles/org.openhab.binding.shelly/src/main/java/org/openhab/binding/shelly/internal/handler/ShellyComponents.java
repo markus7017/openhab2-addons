@@ -80,6 +80,8 @@ public class ShellyComponents {
         ShellyDeviceProfile profile = th.getProfile();
 
         Double accumulatedWatts = 0.0;
+        Double accumulatedTotal = 0.0;
+        Double accumulatedReturned = 0.0;
 
         boolean updated = false;
         if ((profile.numMeters > 0) && ((status.meters != null) || (status.emeters != null))) {
@@ -114,6 +116,7 @@ public class ShellyComponents {
                             if (meter.total != null) {
                                 updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH, toQuantityType(
                                         getDouble(meter.total) / 60 / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                                accumulatedTotal += getDouble(meter.total);
                             }
                             if (meter.counters != null) {
                                 updated |= th.updateChannel(groupName, CHANNEL_METER_LASTMIN1,
@@ -142,7 +145,6 @@ public class ShellyComponents {
                             // convert Watt/Hour tok w/h
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
                                     toQuantityType(getDouble(emeter.power), DIGITS_WATT, SmartHomeUnits.WATT));
-                            accumulatedWatts += getDouble(emeter.power);
                             updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH, toQuantityType(
                                     getDouble(emeter.total) / 1000, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
                             updated |= th.updateChannel(groupName, CHANNEL_EMETER_TOTALRET, toQuantityType(
@@ -160,6 +162,10 @@ public class ShellyComponents {
                             }
 
                             if (updated) {
+                                accumulatedWatts += getDouble(emeter.power);
+                                accumulatedTotal += getDouble(emeter.total) / 1000;
+                                accumulatedReturned += getDouble(emeter.totalReturned) / 1000;
+
                                 th.updateChannel(groupName, CHANNEL_LAST_UPDATE, getTimestamp());
                             }
                             m++;
@@ -209,15 +215,21 @@ public class ShellyComponents {
                         toQuantityType(getDouble(currentWatts), DIGITS_WATT, SmartHomeUnits.WATT));
                 updated |= th.updateChannel(groupName, CHANNEL_METER_TOTALKWH,
                         toQuantityType(getDouble(totalWatts), DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
-                accumulatedWatts += currentWatts;
 
                 if (updated) {
                     th.updateChannel(groupName, CHANNEL_LAST_UPDATE,
                             getTimestamp(getString(profile.settings.timezone), timestamp));
                 }
             }
-            th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCUWATTS,
-                    toQuantityType(accumulatedWatts, DIGITS_WATT, SmartHomeUnits.WATT));
+
+            if (updated && !profile.isRoller) {
+                th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCUWATTS,
+                        toQuantityType(accumulatedWatts, DIGITS_WATT, SmartHomeUnits.WATT));
+                th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCUTOTAL,
+                        toQuantityType(accumulatedTotal, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+                th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCURETURNED,
+                        toQuantityType(accumulatedReturned, DIGITS_KWH, SmartHomeUnits.KILOWATT_HOUR));
+            }
         }
 
         return updated;
@@ -251,6 +263,9 @@ public class ShellyComponents {
                     boolean changed = th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP,
                             getStringType(sdata.actReasons[0]));
                     updated |= changed;
+                    if (changed) {
+                        th.postEvent(getString(sdata.actReasons[0]).toUpperCase(), true);
+                    }
 
                 }
                 if ((sdata.contact != null) && sdata.contact.isValid) {
@@ -260,8 +275,12 @@ public class ShellyComponents {
                             getString(sdata.contact.state).equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN)
                                     ? OpenClosedType.OPEN
                                     : OpenClosedType.CLOSED);
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR,
+                    boolean changed = th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR,
                             getStringType(sdata.sensorError));
+                    if (changed) {
+                        th.postEvent(sdata.sensorError, true);
+                    }
+                    updated |= changed;
                 }
                 if ((sdata.tmp != null) && getBool(sdata.tmp.isValid)) {
                     th.logger.trace("{}: Updating temperature", th.thingName);
@@ -297,15 +316,19 @@ public class ShellyComponents {
                 if (sdata.flood != null) {
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD, getOnOff(sdata.flood));
                 }
+                if (sdata.smoke != null) {
+                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_SMOKE, getOnOff(sdata.smoke));
+                }
                 if (sdata.bat != null) { // no update for Sense
                     th.logger.trace("{}: Updating battery", th.thingName);
                     updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
                             toQuantityType(getDouble(sdata.bat.value), DIGITS_PERCENT, SmartHomeUnits.PERCENT));
                     updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_VOLT,
                             toQuantityType(getDouble(sdata.bat.voltage), DIGITS_VOLT, SmartHomeUnits.VOLT));
-                    updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW,
+                    boolean changed = th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW,
                             getDouble(sdata.bat.value) < th.config.lowBattery ? OnOffType.ON : OnOffType.OFF);
-                    if (getDouble(sdata.bat.value) < th.config.lowBattery) {
+                    updated |= changed;
+                    if (changed && getDouble(sdata.bat.value) < th.config.lowBattery) {
                         th.postEvent(ALARM_TYPE_LOW_BATTERY, false);
                     }
                 }

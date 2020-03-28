@@ -115,12 +115,14 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
         try {
             String mode = "";
             String model = "unknown";
-            String thingType = "";
             ThingUID thingUID = null;
             ShellyDeviceProfile profile = null;
             Map<String, Object> properties = new TreeMap<>();
 
             name = service.getName().toLowerCase();
+            String thingType = name.contains("-") ? StringUtils.substringBefore(name, "-") : name;
+            ;
+
             address = StringUtils.substringBetween(service.toString(), "/", ":80");
             if (address == null) {
                 logger.debug("Shelly device {} discovered with empty IP address", name);

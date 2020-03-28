@@ -581,6 +581,8 @@ public class ShellyApiJsonDTO {
         public Boolean isValid;
         @SerializedName("has_timer")
         public Boolean hasTimer; // Whether a timer is currently armed for this channel
+        @SerializedName("timer_remaining")
+        public Integer timerRemaining; // FW 1.6+
         public Boolean overpower; // Shelly1PM only if maximum allowed power was exceeded
 
         public String turn; // Accepted values are on and off. This will turn ON/OFF the respective output
@@ -804,7 +806,7 @@ public class ShellyApiJsonDTO {
         public ShellySensorBat bat;
         @SerializedName("sensor")
         public ShellySensorState contact;
-
+        public Boolean smoke; // SHelly Smoke
         public Boolean flood; // Shelly Flood: true = flood condition detected
         @SerializedName("rain_sensor")
         public Boolean rainSensor; // Shelly Flood: true=in rain mode

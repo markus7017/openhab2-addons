@@ -99,6 +99,20 @@
 		<state readOnly="true" pattern="%f %unit%">
 		</state>
 	</channel-type>
+	<channel-type id="meterAccuTotal" advanced="true">
+		<item-type>Number:Power</item-type>
+		<label>Accumulated Total</label>
+		<description>Accumulated total power consumption in kw/h from all meters</description>
+		<state readOnly="true" pattern="%f %unit%">
+		</state>
+	</channel-type>
+	<channel-type id="meterAccuReturned" advanced="true">
+		<item-type>Number:Power</item-type>
+		<label>Accumulated Returned</label>
+		<description>Accumulated returned power consumption in kw/h from all meters</description>
+		<state readOnly="true" pattern="%f %unit%">
+		</state>
+	</channel-type>
 	<channel-type id="meterReactive">
 		<item-type>Number:Power</item-type>
 		<label>Reactive Watt</label>

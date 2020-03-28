@@ -421,6 +421,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 status = "@text/offline.status-error-unexpected-api-result";
             }
             if (!res.isHttpTimeout() || !profile.isSensor) {
+                channelsCreated = false; // check for new channels after devices gets re-initialized (e.g. new firmware)
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, status);
             }
         } catch (IllegalArgumentException | NullPointerException e) {
@@ -517,7 +518,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         if (thingName.equalsIgnoreCase(deviceName) || config.deviceIp.equals(deviceName)) {
             logger.debug("{}: Event received: class={}, index={}, parameters={}", deviceName, type, deviceIndex,
                     parameters.toString());
-            boolean hasBattery = profile.isInitialized() && profile.hasBattery ? true : false;
             Integer rindex = !deviceIndex.isEmpty() ? Integer.parseInt(deviceIndex) + 1 : -1;
             if (!profile.isInitialized()) {
                 logger.debug("{}: Device is not yet initialized, event triggers initialization", deviceName);
@@ -572,7 +572,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                                     thingName);
                         }
                         break;
-
                     case SHELLY_EVENT_ROLLER_OPEN:
                     case SHELLY_EVENT_ROLLER_CLOSE:
                     case SHELLY_EVENT_ROLLER_STOP:
@@ -595,6 +594,9 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                     case SHELLY_EVENT_OUT_OFF:
                         onoff = CHANNEL_OUTPUT;
                         break;
+                    case SHELLY_EVENT_SENSORDATA:
+                        // process sensor with next refresh
+                        break;
                     default:
                         // trigger will be provided by input/output channel or sensor channels
                 }
@@ -612,7 +614,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             }
 
             // request update on next interval (2x for non-battery devices)
-            requestUpdates(scheduledUpdates >= 2 ? 0 : !hasBattery ? 2 : 1, true);
+            requestUpdates(scheduledUpdates >= 2 ? 0 : !profile.hasBattery ? 2 : 1, true);
             return true;
         }
         return false;
@@ -787,7 +789,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     }
 
     public boolean updateChannel(String channelId, State value, boolean force) {
-        return isLinked(channelId) && cache.updateChannel(channelId, value, force);
+        return (channelId.contains("$") || isLinked(channelId)) && cache.updateChannel(channelId, value, force);
     }
 
     @Nullable

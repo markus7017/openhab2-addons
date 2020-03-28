@@ -334,7 +334,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
     @SuppressWarnings("null")
     @Override
     public boolean updateDeviceStatus(ShellySettingsStatus genericStatus) throws ShellyApiException {
-        Validate.notNull(profile, "updateThingStatus(): profile must not be null!");
+        Validate.isTrue(profile.isInitialized(), "updateThingStatus(): profile must not be initialized");
         Validate.isTrue(profile.isLight,
                 "ERROR: Device " + profile.hostname + " is not a light. but class ShellyHandlerLight is called!");
         ShellyStatusLight status = api.getLightStatus();

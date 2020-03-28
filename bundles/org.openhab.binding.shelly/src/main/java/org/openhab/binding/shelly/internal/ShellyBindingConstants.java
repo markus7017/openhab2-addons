@@ -201,6 +201,7 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_SENSOR_ILLUM = "illumination";
     public static final String CHANNEL_SENSOR_VIBRATION = "vibration";
     public static final String CHANNEL_SENSOR_FLOOD = "flood";
+    public static final String CHANNEL_SENSOR_SMOKE = "smoke";
     public static final String CHANNEL_SENSOR_STATE = "state";
     public static final String CHANNEL_SENSOR_MOTION = "motion";
     public static final String CHANNEL_SENSOR_CHARGER = "charger";
@@ -248,6 +249,8 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_DEVST_WAKEUP = "wakeupReason";
     public static final String CHANNEL_DEVST_ALARM = "alarm";
     public static final String CHANNEL_DEVST_ACCUWATTS = "accumulatedWatts";
+    public static final String CHANNEL_DEVST_ACCUTOTAL = "accumulatedWTotal";
+    public static final String CHANNEL_DEVST_ACCURETURNED = "accumulatedReturned";
 
     // General
     public static final String CHANNEL_LAST_UPDATE = "lastUpdate";

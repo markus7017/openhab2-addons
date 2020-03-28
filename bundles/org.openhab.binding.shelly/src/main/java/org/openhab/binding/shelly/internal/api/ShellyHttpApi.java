@@ -105,7 +105,7 @@ public class ShellyHttpApi {
         }
 
         // Map settings to device profile for Light and Sense
-        logger.debug("{}: Re-initializing device profile", thingName);
+        logger.debug("{}: (Re-)initializing device profile, thingType={}", thingName, thingType);
         profile.initialize(thingType, json);
 
         // 2nd level initialization

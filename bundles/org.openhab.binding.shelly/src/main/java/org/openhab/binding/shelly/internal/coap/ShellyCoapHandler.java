@@ -38,6 +38,7 @@ import org.eclipse.californium.core.coap.Response;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.OpenClosedType;
 import org.eclipse.smarthome.core.library.types.QuantityType;
 import org.eclipse.smarthome.core.library.unit.SIUnits;
 import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
@@ -620,12 +621,18 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                         state == OnOffType.ON ? lastBrightness : 0, DIGITS_NONE, SmartHomeUnits.PERCENT));
                 lastBrightness = -1.0;
             }
-        } else {
-            group = !profile.isSensor
-                    ? profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL : CHANNEL_GROUP_RELAY_CONTROL + id
-                    : CHANNEL_GROUP_SENSOR;
-            channel = !profile.isSensor ? CHANNEL_OUTPUT : CHANNEL_SENSOR_STATE;
-            updateChannel(updates, group, channel, s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+        } else if (profile.hasRelays) {
+            group = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL : CHANNEL_GROUP_RELAY_CONTROL + id;
+            updateChannel(updates, group, CHANNEL_OUTPUT, s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+        } else if (profile.isSensor) {
+            // Sensor state
+            if (profile.isDW) { // Door Window has item type Contact
+                updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
+                        s.value == 1 ? OpenClosedType.OPEN : OpenClosedType.CLOSED);
+            } else {
+                updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
+                        s.value == 1 ? OnOffType.ON : OnOffType.OFF);
+            }
         }
     }
 

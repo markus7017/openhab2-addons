@@ -61,7 +61,7 @@
 		<channel-groups>
 			<channel-group id="control" typeId="senseControl" />
 			<channel-group id="sensors" typeId="senseSensors" />
-			<channel-group id="battery" typeId="shortBatteryStatus" />
+			<channel-group id="battery" typeId="BatteryStatus" />
 			<channel-group id="device" typeId="deviceStatus" />
 		</channel-groups>
 
@@ -71,79 +71,48 @@
 	<channel-group-type id="htSensor">
 		<label>Sensor Data</label>
 		<description>Data from the HT Sensor</description>
-		<!--  channels>
-			<channel id="temperature" typeId="sensorTemp" />
-			<channel id="humidity" typeId="sensorHumidity" />
-			<channel id="charger" typeId="sensorCharger" />
-			<channel id="wakeupReason" typeId="sensorWakeup" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels -->
+		<!-- channels> <channel id="temperature" typeId="sensorTemp" /> <channel id="humidity" typeId="sensorHumidity" /> <channel 
+			id="charger" typeId="sensorCharger" /> <channel id="wakeupReason" typeId="sensorWakeup" /> <channel id="lastUpdate" typeId="timestamp" 
+			/> </channels -->
 	</channel-group-type>
 
 	<channel-group-type id="floodSensor">
 		<label>Sensor Data</label>
 		<description>Data from the Flood Sensor</description>
-		<!-- channels>
-			<channel id="temperature" typeId="sensorTemp" />
-			<channel id="flood" typeId="sensorFlood" />
-			<channel id="wakeupReason" typeId="sensorWakeup" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels -->
+		<!-- channels> <channel id="temperature" typeId="sensorTemp" /> <channel id="flood" typeId="sensorFlood" /> <channel id="wakeupReason" 
+			typeId="sensorWakeup" /> <channel id="lastUpdate" typeId="timestamp" /> </channels -->
 	</channel-group-type>
 
 	<channel-group-type id="smokeSensor">
 		<label>Sensor Data</label>
 		<description>Data from the Flood Sensor</description>
-		<channels>
-			<channel id="temperature" typeId="sensorTemp" />
-			<channel id="skmoke" typeId="sensorSmoke" />
-			<channel id="wakeupReason" typeId="sensorWakeup" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
+		<!-- channels> <channel id="temperature" typeId="sensorTemp" /> <channel id="skmoke" typeId="sensorSmoke" /> <channel id="wakeupReason" 
+			typeId="sensorWakeup" /> <channel id="lastUpdate" typeId="timestamp" /> </channels -->
 	</channel-group-type>
 	<channel-group-type id="doorWinSensors">
 		<label>Sensors</label>
 		<description>Data from the sensors</description>
-		<channels>
-			<channel id="state" typeId="sensorState" />
-			<channel id="lux" typeId="sensorLux" />
-			<channel id="illumination" typeId="sensorIllumination" />
-			<channel id="vibration" typeId="sensorVibration" />
-			<channel id="wakeupReason" typeId="sensorWakeup" />
-			<channel id="lastError" typeId="sensorError" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
+		<!-- channels> <channel id="state" typeId="sensorState" /> <channel id="lux" typeId="sensorLux" /> <channel id="illumination" 
+			typeId="sensorIllumination" /> <channel id="vibration" typeId="sensorVibration" /> <channel id="wakeupReason" typeId="sensorWakeup" 
+			/> <channel id="lastError" typeId="sensorError" /> <channel id="lastUpdate" typeId="timestamp" /> </channels -->
 	</channel-group-type>
 
 	<channel-group-type id="senseSensors">
 		<label>Sensors</label>
 		<description>Data from the Sense sensors</description>
-		<channels>
-			<channel id="temperature" typeId="sensorTemp" />
-			<channel id="humidity" typeId="sensorHumidity" />
-			<channel id="lux" typeId="sensorLux" />
-			<channel id="motion" typeId="system.motion" />
-			<channel id="charger" typeId="sensorCharger" />
-			<channel id="lastUpdate" typeId="timestamp" />
-		</channels>
+		<!-- channels> <channel id="temperature" typeId="sensorTemp" /> <channel id="humidity" typeId="sensorHumidity" /> <channel 
+			id="lux" typeId="sensorLux" /> <channel id="motion" typeId="system.motion" /> <channel id="charger" typeId="sensorCharger" 
+			/> <channel id="lastUpdate" typeId="timestamp" /> </channels -->
 	</channel-group-type>
 	<channel-group-type id="batteryStatus">
 		<label>Battery Status</label>
 		<description>Status of the device's battery</description>
-		<channels>
-			<channel id="batteryLevel" typeId="system.battery-level" />
-			<channel id="voltage" typeId="batVoltage" />
-			<channel id="lowBattery" typeId="system.low-battery" />
-		</channels>
+		<!-- channels> <channel id="batteryLevel" typeId="system.battery-level" /> <channel id="voltage" typeId="batVoltage" /> 
+			<channel id="lowBattery" typeId="system.low-battery" /> </channels -->
 	</channel-group-type>
-	<channel-group-type id="shortBatteryStatus">
-		<label>Battery Status</label>
-		<description>Status of the device's battery</description>
-		<channels>
-			<channel id="batteryLevel" typeId="system.battery-level" />
-			<channel id="lowBattery" typeId="system.low-battery" />
-		</channels>
-	</channel-group-type>
+	<!-- channel-group-type id="shortBatteryStatus"> <label>Battery Status</label> <description>Status of the device's battery</description> 
+		<channels> <channel id="batteryLevel" typeId="system.battery-level" /> <channel id="lowBattery" typeId="system.low-battery" 
+		/> </channels> </channel-group-type -->
 
 	<channel-group-type id="senseControl">
 		<label>Sense Control</label>

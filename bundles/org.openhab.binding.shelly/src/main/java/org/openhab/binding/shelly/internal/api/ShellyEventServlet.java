@@ -120,12 +120,8 @@ public class ShellyEventServlet extends HttpServlet {
                 parms.put(p.getKey(), p.getValue()[0]);
 
             }
-            if (handlerFactory != null) {
-                handlerFactory.onEvent(deviceName, index, type, parms);
-            } else {
-                logger.debug("{}: Can't process event in Servlet handlerFactory is null!", deviceName);
-            }
-        } catch (NullPointerException e) {
+            handlerFactory.onEvent(deviceName, index, type, parms);
+        } catch (IllegalArgumentException | NullPointerException e) {
             logger.debug(
                     "Exception processing callback: {} ({}), path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}\n{}",
                     e.getMessage(), e.getClass(), path, data, deviceName, index, type,

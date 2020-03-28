@@ -79,6 +79,7 @@ public class ShellyDeviceProfile {
     public Boolean isSensor = false; // true for HT & Smoke
     public Boolean hasBattery = false; // true if battery device
     public Boolean isSense = false; // true if thing is a Shelly Sense
+    public Boolean isDW = false; // true of Door Window sensor
 
     public Integer minTemp = 0; // Bulb/Duo: Min Light Temp
     public Integer maxTemp = 0; // Bulb/Duo: Max Light Temp
@@ -122,8 +123,6 @@ public class ShellyDeviceProfile {
         discoverable = (settings.discoverable == null) || settings.discoverable;
 
         inColor = isLight && mode.equalsIgnoreCase(SHELLY_MODE_COLOR);
-        minTemp = isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO;
-        maxTemp = isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO;
 
         numRelays = !isLight ? getInteger(settings.device.numOutputs) : 0;
         if ((numRelays > 0) && (settings.relays == null)) {
@@ -159,21 +158,25 @@ public class ShellyDeviceProfile {
 
     public void initFromThingType(String name) {
         String thingType = name.contains("-") ? StringUtils.substringBefore(name, "-") : name;
+        if (thingType.isEmpty()) {
+            return;
+        }
 
         isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
 
         isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
         isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR)
                 || thingType.equalsIgnoreCase(THING_TYPE_SHELLYVINTAGE_STR);
-        isRGBW2 = thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_COLOR_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYRGBW2_WHITE_STR);
+        isRGBW2 = thingType.toUpperCase().startsWith(THING_TYPE_SHELLYRGBW2_PREFIX);
         hasLed = isPlugS;
         isLight = isBulb || isDuo || isRGBW2;
+        minTemp = isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO;
+        maxTemp = isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO;
 
         boolean isHT = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
         boolean isFlood = thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR);
-        boolean isDW = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDOORWIN_STR);
         boolean isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
+        isDW = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDOORWIN_STR);
         isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
         isSensor = isHT | isFlood | isDW | isSmoke | isSense;
         hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
