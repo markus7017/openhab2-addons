@@ -68,6 +68,7 @@ public class ShellyApiException extends Exception {
         return getString(super.getMessage());
     }
 
+    @SuppressWarnings("null")
     @Override
     public String toString() {
         String message = super.getMessage();
@@ -112,6 +113,7 @@ public class ShellyApiException extends Exception {
                         || (extype == InterruptedException.class) || getMessage().toLowerCase().contains("timeout"));
     }
 
+    @SuppressWarnings("null")
     public boolean isHttpAccessUnauthorized() {
         return apiResult != null ? apiResult.isHttpAccessUnauthorized() : false;
     }
@@ -124,12 +126,13 @@ public class ShellyApiException extends Exception {
         return (e != null) && (e.getClass() == UnknownHostException.class);
     }
 
+    @SuppressWarnings("null")
     public ShellyApiResult getApiResult() {
         return apiResult != null ? apiResult : new ShellyApiResult();
     }
 
-    public static String getExceptionType(ShellyApiException e) {
-        if ((e == null) || (e.getClass() == null) || e.getClass().toString().isEmpty()) {
+    public static String getExceptionType(@Nullable ShellyApiException e) {
+        if ((e == null) || e.getClass().toString().isEmpty()) {
             return "";
         }
 
@@ -140,7 +143,7 @@ public class ShellyApiException extends Exception {
         return e.getCause().toString();
     }
 
-    private static String getString(String s) {
+    private static String getString(@Nullable String s) {
         return s != null ? s : "";
     }
 }

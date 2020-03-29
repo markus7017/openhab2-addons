@@ -22,6 +22,8 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.eclipse.smarthome.core.thing.ThingUID;
 import org.openhab.binding.shelly.internal.ShellyBindingConstants;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsGlobal;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsStatus;
@@ -157,28 +159,114 @@ public class ShellyDeviceProfile {
     }
 
     public void initFromThingType(String name) {
-        String thingType = name.contains("-") ? StringUtils.substringBefore(name, "-") : name;
+        String thingType = (name.contains("-") ? StringUtils.substringBefore(name, "-") : name).toLowerCase().trim();
         if (thingType.isEmpty()) {
             return;
         }
 
-        isPlugS = thingType.equalsIgnoreCase(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
+        isPlugS = thingType.equals(ShellyBindingConstants.THING_TYPE_SHELLYPLUGS_STR);
 
-        isBulb = thingType.equalsIgnoreCase(THING_TYPE_SHELLYBULB_STR);
-        isDuo = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDUO_STR)
-                || thingType.equalsIgnoreCase(THING_TYPE_SHELLYVINTAGE_STR);
-        isRGBW2 = thingType.toUpperCase().startsWith(THING_TYPE_SHELLYRGBW2_PREFIX);
+        isBulb = thingType.equals(THING_TYPE_SHELLYBULB_STR);
+        isDuo = thingType.equals(THING_TYPE_SHELLYDUO_STR) || thingType.equals(THING_TYPE_SHELLYVINTAGE_STR);
+        isRGBW2 = thingType.startsWith(THING_TYPE_SHELLYRGBW2_PREFIX);
         hasLed = isPlugS;
         isLight = isBulb || isDuo || isRGBW2;
         minTemp = isBulb ? MIN_COLOR_TEMP_BULB : MIN_COLOR_TEMP_DUO;
         maxTemp = isBulb ? MAX_COLOR_TEMP_BULB : MAX_COLOR_TEMP_DUO;
 
-        boolean isHT = thingType.equalsIgnoreCase(THING_TYPE_SHELLYHT_STR);
-        boolean isFlood = thingType.equalsIgnoreCase(THING_TYPE_SHELLYFLOOD_STR);
-        boolean isSmoke = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSMOKE_STR);
-        isDW = thingType.equalsIgnoreCase(THING_TYPE_SHELLYDOORWIN_STR);
-        isSense = thingType.equalsIgnoreCase(THING_TYPE_SHELLYSENSE_STR);
+        boolean isHT = thingType.equals(THING_TYPE_SHELLYHT_STR);
+        boolean isFlood = thingType.equals(THING_TYPE_SHELLYFLOOD_STR);
+        boolean isSmoke = thingType.equals(THING_TYPE_SHELLYSMOKE_STR);
+        isDW = thingType.equals(THING_TYPE_SHELLYDOORWIN_STR);
+        isSense = thingType.equals(THING_TYPE_SHELLYSENSE_STR);
         isSensor = isHT | isFlood | isDW | isSmoke | isSense;
         hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
+    }
+
+    public static ThingUID getThingUID(String serviceName, String mode, boolean unknown) {
+        String devid = StringUtils.substringAfterLast(serviceName, "-");
+        return new ThingUID(!unknown ? getThingTypeUID(serviceName, mode)
+                : getThingTypeUID(THING_TYPE_SHELLYPROTECTED_STR + "-" + devid, mode), devid);
+    }
+
+    public static ThingTypeUID getThingTypeUID(String serviceName, String mode) {
+        return new ThingTypeUID(BINDING_ID, getThingType(serviceName, mode));
+    }
+
+    public static ThingTypeUID getUnknownTTUID() {
+        return new ThingTypeUID(BINDING_ID, THING_TYPE_SHELLYPROTECTED_STR);
+    }
+
+    public static String getThingType(String hostname, String mode) {
+        String name = hostname.toLowerCase();
+        String devid = StringUtils.substringAfterLast(name, "-");
+        if (devid == null) {
+            throw new IllegalArgumentException("Invalid device name format: " + hostname);
+        }
+
+        if (name.startsWith(THING_TYPE_SHELLY1PN_STR)) {
+            return THING_TYPE_SHELLY1PN_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYEM3_STR)) {
+            return THING_TYPE_SHELLYEM3_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYEM_STR)) {
+            return THING_TYPE_SHELLYEM_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLY1_STR)) {
+            return THING_TYPE_SHELLY1_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLY25_PREFIX)) { // Shelly v2.5
+            return mode.equals(SHELLY_MODE_RELAY) ? THING_TYPE_SHELLY25_RELAY_STR : THING_TYPE_SHELLY25_ROLLER_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLY2_PREFIX)) { // Shelly v2
+            return mode.equals(SHELLY_MODE_RELAY) ? THING_TYPE_SHELLY2_RELAY_STR : THING_TYPE_SHELLY2_ROLLER_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLY4PRO_STR)) {
+            return THING_TYPE_SHELLY4PRO_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYPLUG_STR)) {
+            // shellyplug-s needs to be mapped to shellyplugs to follow the schema
+            // for the thing types: <thing type>-<mode>
+            if (name.startsWith(THING_TYPE_SHELLYPLUGS_STR) || name.contains("-s")) {
+                return THING_TYPE_SHELLYPLUGS_STR;
+            }
+            return THING_TYPE_SHELLYPLUG_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYDIMMER_STR)) {
+            return THING_TYPE_SHELLYDIMMER_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYDUO_STR)) {
+            return THING_TYPE_SHELLYDUO_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYBULB_STR)) {
+            return THING_TYPE_SHELLYBULB_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYRGBW2_PREFIX)) {
+            return mode.equals(SHELLY_MODE_COLOR) ? THING_TYPE_SHELLYRGBW2_COLOR_STR : THING_TYPE_SHELLYRGBW2_WHITE_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYHT_STR)) {
+            return THING_TYPE_SHELLYHT_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYSMOKE_STR)) {
+            return THING_TYPE_SHELLYSMOKE_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYFLOOD_STR)) {
+            return THING_TYPE_SHELLYFLOOD_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYDOORWIN_STR)) {
+            return THING_TYPE_SHELLYDOORWIN_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYSENSE_STR)) {
+            return THING_TYPE_SHELLYSENSE_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYEYE_STR)) {
+            return THING_TYPE_SHELLYEYE_STR;
+        }
+        if (name.startsWith(THING_TYPE_SHELLYPROTECTED_STR)) {
+            return THING_TYPE_SHELLYPROTECTED_STR;
+        }
+
+        return THING_TYPE_UNKNOWN_STR;
     }
 }

@@ -18,13 +18,12 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * {@link ShellyVersion} compares 2 version strings.
+ * {@link ShellyVersionDTO} compares 2 version strings.
  *
  * @author Markus Michels - Initial contribution
  */
 @NonNullByDefault
-public class ShellyVersion implements Comparator<Object> {
-    // VersionTokenizer.java
+public class ShellyVersionDTO implements Comparator<Object> {
     private class VersionTokenizer {
         private final String _versionString;
         private final int _length;
@@ -32,19 +31,6 @@ public class ShellyVersion implements Comparator<Object> {
         private int _position;
         private int _number;
         private String _suffix = "";
-        private boolean _hasValue = false;
-
-        public int getNumber() {
-            return _number;
-        }
-
-        public String getSuffix() {
-            return _suffix;
-        }
-
-        public boolean hasValue() {
-            return _hasValue;
-        }
 
         public VersionTokenizer(@Nullable String versionString) {
             if (versionString == null) {
@@ -58,14 +44,11 @@ public class ShellyVersion implements Comparator<Object> {
         public boolean MoveNext() {
             _number = 0;
             _suffix = "";
-            _hasValue = false;
 
             // No more characters
             if (_position >= _length) {
                 return false;
             }
-
-            _hasValue = true;
 
             while (_position < _length) {
                 char c = _versionString.charAt(_position);
@@ -93,6 +76,14 @@ public class ShellyVersion implements Comparator<Object> {
             }
 
             return true;
+        }
+
+        public int getNumber() {
+            return _number;
+        }
+
+        public String getSuffix() {
+            return _suffix;
         }
     }
 

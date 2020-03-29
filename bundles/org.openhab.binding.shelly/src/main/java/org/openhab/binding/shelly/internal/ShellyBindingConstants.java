@@ -134,8 +134,8 @@ public class ShellyBindingConstants {
     public static final String PROPERTY_SERVICE_NAME = "serviceName";
     public static final String PROPERTY_DEV_TYPE = "deviceType";
     public static final String PROPERTY_DEV_MODE = "deviceMode";
-    public static final String PROPERTY_HWBATCH = "hardwareBatch";
-    public static final String PROPERTY_HWREV = "devHwRev";
+    public static final String PROPERTY_HWREV = "deviceHwRev";
+    public static final String PROPERTY_HWBATCH = "deviceHwBatch";
     public static final String PROPERTY_NUM_RELAYS = "numberRelays";
     public static final String PROPERTY_NUM_ROLLERS = "numberRollers";
     public static final String PROPERTY_NUM_METER = "numberMeters";
@@ -204,7 +204,6 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_SENSOR_SMOKE = "smoke";
     public static final String CHANNEL_SENSOR_STATE = "state";
     public static final String CHANNEL_SENSOR_MOTION = "motion";
-    public static final String CHANNEL_SENSOR_CHARGER = "charger";
     public static final String CHANNEL_SENSOR_ERROR = "lastError";
     // External sensors for Shelly1/1PM
     public static final String CHANNEL_ESENDOR_TEMP1 = CHANNEL_SENSOR_TEMP + "1";
@@ -251,6 +250,7 @@ public class ShellyBindingConstants {
     public static final String CHANNEL_DEVST_ACCUWATTS = "accumulatedWatts";
     public static final String CHANNEL_DEVST_ACCUTOTAL = "accumulatedWTotal";
     public static final String CHANNEL_DEVST_ACCURETURNED = "accumulatedReturned";
+    public static final String CHANNEL_DEVST_CHARGER = "charger";
 
     // General
     public static final String CHANNEL_LAST_UPDATE = "lastUpdate";
@@ -293,7 +293,7 @@ public class ShellyBindingConstants {
     // Formatting: Number of scaling digits
     public static final int DIGITS_NONE = 0;
     public static final int DIGITS_WATT = 3;
-    public static final int DIGITS_KWH = 5;
+    public static final int DIGITS_KWH = 4;
     public static final int DIGITS_VOLT = 2;
     public static final int DIGITS_TEMP = 2;
     public static final int DIGITS_LUX = 2;

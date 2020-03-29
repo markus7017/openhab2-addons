@@ -78,7 +78,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         super.initialize();
     }
 
-    @SuppressWarnings("null")
     @Override
     public boolean handleDeviceCommand(ChannelUID channelUID, Command command) {
         String groupName = channelUID.getGroupId();
@@ -231,6 +230,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
             }
             return true;
         } catch (ShellyApiException e) {
+            logger.debug("{}: Unable to handle command: {}", thingName, e.toString());
             return false;
         }
     }
@@ -331,7 +331,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         return col;
     }
 
-    @SuppressWarnings("null")
     @Override
     public boolean updateDeviceStatus(ShellySettingsStatus genericStatus) throws ShellyApiException {
         Validate.isTrue(profile.isInitialized(), "updateThingStatus(): profile must not be initialized");

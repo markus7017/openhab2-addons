@@ -121,7 +121,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
                 coapServer.start();
             }
-        } catch (UnknownHostException | IllegalArgumentException | NullPointerException e) {
+        } catch (UnknownHostException e) {
             logger.debug("{}: Coap Exception: {} ({})\n{}", thingName, e.getMessage(), e.getClass(), e.getStackTrace());
         }
     }
@@ -215,7 +215,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 // Observe Status Updates
                 reqStatus = sendRequest(reqStatus, config.deviceIp, COLOIT_URI_DEVSTATUS, Type.NON);
             }
-        } catch (NullPointerException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             logger.debug("{}: Unable to process CoIoT Message: {} ({}); payload={}\n{}", thingName, e.getMessage(),
                     e.getClass(), payload, e.getStackTrace());
             resetSerial();
@@ -282,7 +282,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             } else {
                 sensorMap.replace(sen.id, fixed);
             }
-        } catch (NullPointerException e) {
+        } catch (NullPointerException e) { // depending on firmware release the Coap device description is buggy
             logger.debug("{}:    Unable to decode sensor definition -> skip ({})\n{}", thingName, e.getMessage(),
                     e.getStackTrace());
         }
@@ -508,7 +508,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                                     updatePower(profile, updates, rIndex, sen, s);
                                     break;
                                 case "charger": // Sense
-                                    updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER,
+                                    updateChannel(updates, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_CHARGER,
                                             s.value == 1 ? OnOffType.ON : OnOffType.OFF);
                                     break;
 
@@ -554,7 +554,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                     logger.debug("{}: Update for unknown sensor[{}]: Dev={}, Index={}, Value={}", thingName, i, devId,
                             s.index, s.value);
                 }
-            } catch (NullPointerException | ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
+            } catch (IllegalArgumentException | NullPointerException | ArrayIndexOutOfBoundsException e) {
+                // even the processing of one value failed we continue with the next one (sometimes this is caused by
+                // buggy formats provided by the device
                 logger.debug("{}: Unable to process data from sensor[{}]: Dev={}\n{}", thingName, i, devId,
                         e.getStackTrace());
             }
@@ -628,7 +630,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
             // Sensor state
             if (profile.isDW) { // Door Window has item type Contact
                 updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
-                        s.value == 1 ? OpenClosedType.OPEN : OpenClosedType.CLOSED);
+                        s.value != 0 ? OpenClosedType.OPEN : OpenClosedType.CLOSED);
             } else {
                 updateChannel(updates, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
                         s.value == 1 ? OnOffType.ON : OnOffType.OFF);
@@ -833,6 +835,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      * @param sensorId The id from the sensor update
      * @return Index of found entry (+1 will be the suffix for the channel name) or null if sensorId is not found
      */
+    @SuppressWarnings("null")
     @Nullable
     private Integer getSensorNumber(String sensorName, String sensorId) {
         Integer idx = 0;

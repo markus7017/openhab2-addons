@@ -37,13 +37,13 @@ import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
 
 /**
- * The {@link ShellyChannelDefinitions} defines channel information for dynamically created channels. Those will be
+ * The {@link ShellyChannelDefinitionsDTO} defines channel information for dynamically created channels. Those will be
  * added on the first thing status update
  *
  * @author Markus Michels - Initial contribution
  */
 @NonNullByDefault
-public class ShellyChannelDefinitions {
+public class ShellyChannelDefinitionsDTO {
 
     private static final ChannelMap channelDefinitions = new ChannelMap();
 
@@ -51,7 +51,7 @@ public class ShellyChannelDefinitions {
     private static String CHGR_SENSOR = CHANNEL_GROUP_SENSOR;
     private static String CHGR_BAT = CHANNEL_GROUP_BATTERY;
 
-    public ShellyChannelDefinitions(ShellyTranslationProvider m) {
+    public ShellyChannelDefinitionsDTO(ShellyTranslationProvider m) {
         // Device: Internal Temp
         channelDefinitions
                 // Device
@@ -64,6 +64,7 @@ public class ShellyChannelDefinitions {
                         ITEM_TYPE_POWER))
                 .add(new ShellyChannel(m, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_ACCURETURNED, "meterAccuReturned",
                         ITEM_TYPE_POWER))
+                .add(new ShellyChannel(m, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_CHARGER, "charger", ITEM_TYPE_SWITCH))
 
                 // Power Meter
                 .add(new ShellyChannel(m, CHGR_METER, CHANNEL_METER_CURRENTWATTS, "meterWatts", ITEM_TYPE_POWER))
@@ -89,7 +90,6 @@ public class ShellyChannelDefinitions {
                 .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_FLOOD, "sensorFlood", ITEM_TYPE_SWITCH))
                 .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_SMOKE, "sensorSmoke", ITEM_TYPE_SWITCH))
                 .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_STATE, "sensorState", ITEM_TYPE_CONTACT))
-                .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_CHARGER, "sensorCharger", ITEM_TYPE_SWITCH))
                 .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_MOTION, "sensorMotion", ITEM_TYPE_SWITCH))
                 .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_SENSOR_ERROR, "sensorError", ITEM_TYPE_STRING))
                 .add(new ShellyChannel(m, CHGR_SENSOR, CHANNEL_LAST_UPDATE, "lastUpdate", ITEM_TYPE_DATETIME))
@@ -180,64 +180,56 @@ public class ShellyChannelDefinitions {
 
     public static Map<String, Channel> createMeterChannels(Thing thing, final ShellySettingsMeter meter, String group) {
         Map<String, Channel> newChannels = new LinkedHashMap<>();
-        if (meter != null) {
-            addChannel(thing, newChannels, meter.power != null, group, CHANNEL_METER_CURRENTWATTS);
-            addChannel(thing, newChannels, meter.total != null, group, CHANNEL_METER_TOTALKWH);
-            if (meter.counters != null) {
-                addChannel(thing, newChannels, meter.counters[0] != null, group, CHANNEL_METER_LASTMIN1);
-                addChannel(thing, newChannels, meter.counters[1] != null, group, CHANNEL_METER_LASTMIN2);
-                addChannel(thing, newChannels, meter.counters[2] != null, group, CHANNEL_METER_LASTMIN3);
-            }
-            addChannel(thing, newChannels, meter.timestamp != null, group, CHANNEL_LAST_UPDATE);
+        addChannel(thing, newChannels, meter.power != null, group, CHANNEL_METER_CURRENTWATTS);
+        addChannel(thing, newChannels, meter.total != null, group, CHANNEL_METER_TOTALKWH);
+        if (meter.counters != null) {
+            addChannel(thing, newChannels, meter.counters[0] != null, group, CHANNEL_METER_LASTMIN1);
+            addChannel(thing, newChannels, meter.counters[1] != null, group, CHANNEL_METER_LASTMIN2);
+            addChannel(thing, newChannels, meter.counters[2] != null, group, CHANNEL_METER_LASTMIN3);
         }
+        addChannel(thing, newChannels, meter.timestamp != null, group, CHANNEL_LAST_UPDATE);
         return newChannels;
     }
 
     public static Map<String, Channel> createEMeterChannels(final Thing thing, final ShellySettingsEMeter emeter,
             String group) {
         Map<String, Channel> newChannels = new LinkedHashMap<>();
-        if (emeter != null) {
-            addChannel(thing, newChannels, emeter.power != null, group, CHANNEL_METER_CURRENTWATTS);
-            addChannel(thing, newChannels, emeter.total != null, group, CHANNEL_METER_TOTALKWH);
-            addChannel(thing, newChannels, emeter.totalReturned != null, group, CHANNEL_EMETER_TOTALRET);
-            addChannel(thing, newChannels, emeter.reactive != null, group, CHANNEL_EMETER_REACTWATTS);
-            addChannel(thing, newChannels, emeter.voltage != null, group, CHANNEL_EMETER_VOLTAGE);
-            addChannel(thing, newChannels, emeter.current != null, group, CHANNEL_EMETER_CURRENT);
-            addChannel(thing, newChannels, emeter.pf != null, group, CHANNEL_EMETER_PFACTOR);
-            addChannel(thing, newChannels, true, group, CHANNEL_LAST_UPDATE);
-        }
+        addChannel(thing, newChannels, emeter.power != null, group, CHANNEL_METER_CURRENTWATTS);
+        addChannel(thing, newChannels, emeter.total != null, group, CHANNEL_METER_TOTALKWH);
+        addChannel(thing, newChannels, emeter.totalReturned != null, group, CHANNEL_EMETER_TOTALRET);
+        addChannel(thing, newChannels, emeter.reactive != null, group, CHANNEL_EMETER_REACTWATTS);
+        addChannel(thing, newChannels, emeter.voltage != null, group, CHANNEL_EMETER_VOLTAGE);
+        addChannel(thing, newChannels, emeter.current != null, group, CHANNEL_EMETER_CURRENT);
+        addChannel(thing, newChannels, emeter.pf != null, group, CHANNEL_EMETER_PFACTOR);
+        addChannel(thing, newChannels, true, group, CHANNEL_LAST_UPDATE);
         return newChannels;
     }
 
     public static Map<String, Channel> createSensorChannels(final Thing thing, final ShellyStatusSensor sdata) {
         Map<String, Channel> newChannels = new LinkedHashMap<>();
-        if (sdata != null) {
-            // Sensor data
-            addChannel(thing, newChannels, sdata.tmp != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP);
-            addChannel(thing, newChannels, sdata.hum != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM);
-            addChannel(thing, newChannels, sdata.lux != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX);
-            addChannel(thing, newChannels, sdata.accel != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_VIBRATION);
-            addChannel(thing, newChannels, sdata.flood != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD);
-            addChannel(thing, newChannels, sdata.smoke != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD);
-            addChannel(thing, newChannels, sdata.lux != null && sdata.lux.illumination != null, CHANNEL_GROUP_SENSOR,
-                    CHANNEL_SENSOR_ILLUM);
-            addChannel(thing, newChannels, sdata.contact != null && sdata.contact.state != null, CHANNEL_GROUP_SENSOR,
-                    CHANNEL_SENSOR_STATE);
-            addChannel(thing, newChannels, sdata.motion != null && sdata.contact.state != null, CHANNEL_GROUP_SENSOR,
-                    CHANNEL_SENSOR_MOTION);
-            addChannel(thing, newChannels, sdata.charger != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER);
-            addChannel(thing, newChannels, sdata.sensorError != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR);
-            addChannel(thing, newChannels, true, CHANNEL_GROUP_SENSOR, CHANNEL_LAST_UPDATE);
-            addChannel(thing, newChannels, sdata.actReasons != null, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP);
+        // Sensor data
+        addChannel(thing, newChannels, sdata.tmp != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP);
+        addChannel(thing, newChannels, sdata.hum != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM);
+        addChannel(thing, newChannels, sdata.lux != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX);
+        addChannel(thing, newChannels, sdata.accel != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_VIBRATION);
+        addChannel(thing, newChannels, sdata.flood != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD);
+        addChannel(thing, newChannels, sdata.smoke != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD);
+        addChannel(thing, newChannels, sdata.lux != null && sdata.lux.illumination != null, CHANNEL_GROUP_SENSOR,
+                CHANNEL_SENSOR_ILLUM);
+        addChannel(thing, newChannels, sdata.contact != null && sdata.contact.state != null, CHANNEL_GROUP_SENSOR,
+                CHANNEL_SENSOR_STATE);
+        addChannel(thing, newChannels, sdata.motion != null && sdata.contact.state != null, CHANNEL_GROUP_SENSOR,
+                CHANNEL_SENSOR_MOTION);
+        addChannel(thing, newChannels, sdata.charger != null, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_CHARGER);
+        addChannel(thing, newChannels, sdata.sensorError != null, CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR);
+        addChannel(thing, newChannels, true, CHANNEL_GROUP_SENSOR, CHANNEL_LAST_UPDATE);
+        addChannel(thing, newChannels, sdata.actReasons != null, CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP);
 
-            // Battery
-            if (sdata.bat != null) {
-                addChannel(thing, newChannels, sdata.bat.value != null, CHANNEL_GROUP_BATTERY,
-                        CHANNEL_SENSOR_BAT_LEVEL);
-                addChannel(thing, newChannels, sdata.bat.value != null, CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW);
-                addChannel(thing, newChannels, sdata.bat.voltage != null, CHANNEL_GROUP_BATTERY,
-                        CHANNEL_SENSOR_BAT_VOLT);
-            }
+        // Battery
+        if (sdata.bat != null) {
+            addChannel(thing, newChannels, sdata.bat.value != null, CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL);
+            addChannel(thing, newChannels, sdata.bat.value != null, CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW);
+            addChannel(thing, newChannels, sdata.bat.voltage != null, CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_VOLT);
         }
         return newChannels;
     }

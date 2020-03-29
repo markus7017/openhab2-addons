@@ -40,6 +40,7 @@ import org.openhab.binding.shelly.internal.handler.ShellyLightHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyProtectedHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyRelayHandler;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
+import org.openhab.binding.shelly.internal.util.ShellyUtils;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -163,8 +164,8 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
                 }
             } catch (IllegalArgumentException | NullPointerException e) {
                 logger.debug("Unable to process callback: {} ({}), deviceName={}, type={}, index={}, parameters={}\n{}",
-                        e.getMessage(), e.getClass(), deviceName, eventType, componentIndex, parameters.toString(),
-                        e.getStackTrace());
+                        ShellyUtils.getString(e), e.getClass().toString(), deviceName, eventType, componentIndex,
+                        parameters.toString(), e.getStackTrace());
                 // continue with next listener
             }
         }

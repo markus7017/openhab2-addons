@@ -50,6 +50,52 @@ public class ShellyApiJsonDTO {
 
     public static final String SHELLY_URL_SETTINGS_DIMMER = "/settings/light";
 
+    public static final String SHELLY_API_EVENTURL_BTN_ON = "btn_on_url";
+    public static final String SHELLY_API_EVENTURL_BTN_OFF = "btn_off_url";
+    public static final String SHELLY_API_EVENTURL_BTN1_ON = "btn1_on_url";
+    public static final String SHELLY_API_EVENTURL_BTN1_OFF = "btn1_off_url";
+    public static final String SHELLY_API_EVENTURL_BTN2_ON = "btn2_on_url";
+    public static final String SHELLY_API_EVENTURL_BTN2_OFF = "btn2_off_url";
+    public static final String SHELLY_API_EVENTURL_OUT_ON = "out_on_url";
+    public static final String SHELLY_API_EVENTURL_OUT_OFF = "out_off_url";
+    public static final String SHELLY_API_EVENTURL_SHORT_PUSH = "shortpush_url";
+    public static final String SHELLY_API_EVENTURL_LONG_PUSH = "longpush_url";
+    public static final String SHELLY_API_EVENTURL_ROLLER_OPEN = "roller_open_url";
+    public static final String SHELLY_API_EVENTURL_ROLLER_CLOSE = "roller_close_url";
+    public static final String SHELLY_API_EVENTURL_ROLLER_STOP = "roller_stop_url";
+    public static final String SHELLY_API_EVENTURL_REPORT = "report_url";
+    public static final String SHELLY_API_EVENTURL_DARK = "dark_url";
+    public static final String SHELLY_API_EVENTURL_TWILIGHT = "twilight_url";
+
+    public static final String SHELLY_EVENT_BTN_ON = "btn_on";
+    public static final String SHELLY_EVENT_BTN_OFF = "btn_off";
+    public static final String SHELLY_EVENT_BTN1_OFF = "btn1_on";
+    public static final String SHELLY_EVENT_BTN1_ON = "btn1_off";
+    public static final String SHELLY_EVENT_BTN2_ON = "btn2_on";
+    public static final String SHELLY_EVENT_BTN2_OFF = "btn2_off";
+    public static final String SHELLY_EVENT_SHORTPUSH = "shortpush";
+    public static final String SHELLY_EVENT_LONGPUSH = "longpush";
+    public static final String SHELLY_EVENT_OUT_ON = "out_on";
+    public static final String SHELLY_EVENT_OUT_OFF = "out_off";
+    public static final String SHELLY_EVENT_ROLLER_OPEN = "roller_open";
+    public static final String SHELLY_EVENT_ROLLER_CLOSE = "roller_close";
+    public static final String SHELLY_EVENT_ROLLER_STOP = "roller_stop";
+    public static final String SHELLY_EVENT_SENSORDATA = "sensordata";
+
+    public static final String SHELLY_BTNT_MOMENTARY = "momentary";
+    public static final String SHELLY_BTNT_TOGGLE = "toggle";
+    public static final String SHELLY_BTNT_EDGE = "edge";
+    public static final String SHELLY_BTNT_DETACHED = "detached";
+    public static final String SHELLY_STATE_LAST = "last";
+    public static final String SHELLY_STATE_STOP = "stop";
+    public static final String SHELLY_INP_MODE_OPENCLOSE = "openclose";
+    public static final String SHELLY_OBSTMODE_DISABLED = "disabled";
+    public static final String SHELLY_SAFETYM_WHILEOPENING = "while_opening";
+    public static final String SHELLY_ALWD_TRIGGER_NONE = "none";
+    public static final String SHELLY_ALWD_ROLLER_TURN_OPEN = "open";
+    public static final String SHELLY_ALWD_ROLLER_TURN_CLOSE = "close";
+    public static final String SHELLY_ALWD_ROLLER_TURN_STOP = "stop";
+
     public static final String SHELLY_CALLBACK_URI = "/shelly/event";
     public static final String EVENT_TYPE_RELAY = "relay";
     public static final String EVENT_TYPE_ROLLER = "roller";
@@ -81,6 +127,10 @@ public class ShellyApiJsonDTO {
 
     public static final String SHELLY_LED_STATUS_DISABLE = "led_status_disable";
     public static final String SHELLY_LED_POWER_DISABLE = "led_power_disable";
+
+    public static final String SHELLY_API_STOPR_NORMAL = "normal";
+    public static final String SHELLY_API_STOPR_SAFETYSW = "safety_switch";
+    public static final String SHELLY_API_STOPR_OBSTACLE = "obstacle";
 
     public static final String SHELLY_TIMER_AUTOON = "auto_on";
     public static final String SHELLY_TIMER_AUTOOFF = "auto_off";
@@ -302,52 +352,6 @@ public class ShellyApiJsonDTO {
         @SerializedName("swap_inputs")
         public Integer swapInputs; // 0=no
     }
-
-    public static final String SHELLY_API_EVENTURL_BTN_ON = "btn_on_url";
-    public static final String SHELLY_API_EVENTURL_BTN_OFF = "btn_off_url";
-    public static final String SHELLY_API_EVENTURL_BTN1_ON = "btn1_on_url";
-    public static final String SHELLY_API_EVENTURL_BTN1_OFF = "btn1_off_url";
-    public static final String SHELLY_API_EVENTURL_BTN2_ON = "btn2_on_url";
-    public static final String SHELLY_API_EVENTURL_BTN2_OFF = "btn2_off_url";
-    public static final String SHELLY_API_EVENTURL_OUT_ON = "out_on_url";
-    public static final String SHELLY_API_EVENTURL_OUT_OFF = "out_off_url";
-    public static final String SHELLY_API_EVENTURL_SHORT_PUSH = "shortpush_url";
-    public static final String SHELLY_API_EVENTURL_LONG_PUSH = "longpush_url";
-    public static final String SHELLY_API_EVENTURL_ROLLER_OPEN = "roller_open_url";
-    public static final String SHELLY_API_EVENTURL_ROLLER_CLOSE = "roller_close_url";
-    public static final String SHELLY_API_EVENTURL_ROLLER_STOP = "roller_stop_url";
-    public static final String SHELLY_API_EVENTURL_REPORT = "report_url";
-    public static final String SHELLY_API_EVENTURL_DARK = "dark_url";
-    public static final String SHELLY_API_EVENTURL_TWILIGHT = "twilight_url";
-
-    public static final String SHELLY_EVENT_BTN_ON = "btn_on";
-    public static final String SHELLY_EVENT_BTN_OFF = "btn_off";
-    public static final String SHELLY_EVENT_BTN1_OFF = "btn1_on";
-    public static final String SHELLY_EVENT_BTN1_ON = "btn1_off";
-    public static final String SHELLY_EVENT_BTN2_ON = "btn2_on";
-    public static final String SHELLY_EVENT_BTN2_OFF = "btn2_off";
-    public static final String SHELLY_EVENT_SHORTPUSH = "shortpush";
-    public static final String SHELLY_EVENT_LONGPUSH = "longpush";
-    public static final String SHELLY_EVENT_OUT_ON = "out_on";
-    public static final String SHELLY_EVENT_OUT_OFF = "out_off";
-    public static final String SHELLY_EVENT_ROLLER_OPEN = "roller_open";
-    public static final String SHELLY_EVENT_ROLLER_CLOSE = "roller_close";
-    public static final String SHELLY_EVENT_ROLLER_STOP = "roller_stop";
-    public static final String SHELLY_EVENT_SENSORDATA = "sensordata";
-
-    public static final String SHELLY_BTNT_MOMENTARY = "momentary";
-    public static final String SHELLY_BTNT_TOGGLE = "toggle";
-    public static final String SHELLY_BTNT_EDGE = "edge";
-    public static final String SHELLY_BTNT_DETACHED = "detached";
-    public static final String SHELLY_STATE_LAST = "last";
-    public static final String SHELLY_STATE_STOP = "stop";
-    public static final String SHELLY_INP_MODE_OPENCLOSE = "openclose";
-    public static final String SHELLY_OBSTMODE_DISABLED = "disabled";
-    public static final String SHELLY_SAFETYM_WHILEOPENING = "while_opening";
-    public static final String SHELLY_ALWD_TRIGGER_NONE = "none";
-    public static final String SHELLY_ALWD_ROLLER_TURN_OPEN = "open";
-    public static final String SHELLY_ALWD_ROLLER_TURN_CLOSE = "close";
-    public static final String SHELLY_ALWD_ROLLER_TURN_STOP = "stop";
 
     public static class ShellySettingsRoller {
         public Double maxtime;
@@ -699,10 +703,6 @@ public class ShellyApiJsonDTO {
         public Integer currentPos; // current position 0..100, 100=open
     }
 
-    public static final String SHELLY_API_STOPR_NORMAL = "normal";
-    public static final String SHELLY_API_STOPR_SAFETYSW = "safety_switch";
-    public static final String SHELLY_API_STOPR_OBSTACLE = "obstacle";
-
     public class ShellySensorSleepMode {
         public Integer period;
         public String unit;
@@ -927,8 +927,6 @@ public class ShellyApiJsonDTO {
      * @return Modified Json
      */
     public static String fixDimmerJson(String json) {
-        //
-        //
         return !json.contains("\"lights\":[") ? json
                 : json.replaceFirst(java.util.regex.Pattern.quote("\"lights\":["), "\"dimmers\":[");
     }

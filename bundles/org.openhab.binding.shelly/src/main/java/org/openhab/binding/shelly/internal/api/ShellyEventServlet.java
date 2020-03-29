@@ -63,16 +63,14 @@ public class ShellyEventServlet extends HttpServlet {
         try {
             httpService.registerServlet(SHELLY_CALLBACK_URI, this, null, httpService.createDefaultHttpContext());
             logger.debug("Shelly: CallbackServlet started at '{}'", SHELLY_CALLBACK_URI);
-        } catch (NamespaceException | ServletException e) {
+        } catch (NamespaceException | ServletException | IllegalArgumentException e) {
             logger.warn("Could not start CallbackServlet: {} ({})", e.getMessage(), e.getClass());
         }
     }
 
     @Deactivate
     protected void deactivate() {
-        if (httpService != null) {
-            httpService.unregister(SHELLY_CALLBACK_URI);
-        }
+        httpService.unregister(SHELLY_CALLBACK_URI);
         logger.debug("Shelly: CallbackServlet stopped");
     }
 
@@ -121,7 +119,7 @@ public class ShellyEventServlet extends HttpServlet {
 
             }
             handlerFactory.onEvent(deviceName, index, type, parms);
-        } catch (IllegalArgumentException | NullPointerException e) {
+        } catch (IllegalArgumentException e) {
             logger.debug(
                     "Exception processing callback: {} ({}), path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}\n{}",
                     e.getMessage(), e.getClass(), path, data, deviceName, index, type,

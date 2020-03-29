@@ -15,7 +15,6 @@ package org.openhab.binding.shelly.internal.handler;
 import static org.eclipse.smarthome.core.thing.Thing.*;
 import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
-import static org.openhab.binding.shelly.internal.discovery.ShellyThingCreator.getThingTypeUID;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.util.List;
@@ -57,7 +56,7 @@ import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.util.ShellyChannelCache;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
-import org.openhab.binding.shelly.internal.util.ShellyVersion;
+import org.openhab.binding.shelly.internal.util.ShellyVersionDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +69,7 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceListener {
     protected final Logger logger = LoggerFactory.getLogger(ShellyBaseHandler.class);
-    protected final ShellyChannelDefinitions channelDefinitions;
+    protected final ShellyChannelDefinitionsDTO channelDefinitions;
 
     public String thingName = "";
     protected ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
@@ -121,7 +120,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         super(thing);
 
         this.messages.initFrom(translationProvider);
-        this.channelDefinitions = new ShellyChannelDefinitions(messages);
+        this.channelDefinitions = new ShellyChannelDefinitionsDTO(messages);
         this.bindingConfig = bindingConfig;
         this.httpClient = httpClient;
         this.coapServer = coapServer;
@@ -139,7 +138,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             boolean start = true;
             try {
                 initializeThingConfig();
-                Validate.notNull(config);
                 logger.debug("{}: Device config: ipAddress={}, http user/password={}/{}, update interval={}",
                         getThing().getLabel(), config.deviceIp, config.userId.isEmpty() ? "<non>" : config.userId,
                         config.password.isEmpty() ? "<none>" : "***", config.updateInterval);
@@ -243,10 +241,10 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         logger.debug("{}: Shelly settings info for {}: {}", thingName, tmpPrf.hostname, tmpPrf.settingsJson);
         logger.debug("{}: Device "
                 + "hasRelays:{} (numRelays={},isRoller:{} (numRoller={}),isDimmer:{},isPlugS:{},numMeter={},isEMeter:{})"
-                + ",isSensor:{},hasBattery:{}{},isSense:{},isLight:{},isBulb:{},isDuo:{},isRGBW2:{},inColor:{},hasLEDs:{}"
+                + ",isSensor:{},isDS:{},hasBattery:{}{},isSense:{},isLight:{},isBulb:{},isDuo:{},isRGBW2:{},inColor:{},hasLEDs:{}"
                 + ",supports urls: btn:{},out:{},push{},roller:{},sensor:{}", thingName, tmpPrf.hasRelays,
                 tmpPrf.numRelays, tmpPrf.isRoller, tmpPrf.numRollers, tmpPrf.isDimmer, tmpPrf.isPlugS, tmpPrf.numMeters,
-                tmpPrf.isEMeter, tmpPrf.isSensor, tmpPrf.hasBattery,
+                tmpPrf.isEMeter, tmpPrf.isSensor, tmpPrf.isDW, tmpPrf.hasBattery,
                 tmpPrf.hasBattery ? " (low battery threshold=" + config.lowBattery + "%)" : "", tmpPrf.isSense,
                 tmpPrf.isLight, profile.isBulb, tmpPrf.isDuo, tmpPrf.isRGBW2, tmpPrf.inColor, tmpPrf.hasLed,
                 tmpPrf.supportsButtonUrls, tmpPrf.supportsOutUrls, tmpPrf.supportsPushUrls, tmpPrf.supportsRollerUrls,
@@ -317,7 +315,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             switch (channelUID.getIdWithoutGroup()) {
                 case CHANNEL_SENSE_KEY: // Shelly Sense: Send Key
                     logger.debug("{}: Send key {}", thingName, command.toString());
-                    Validate.notNull(api);
                     api.sendIRKey(command.toString());
                     update = true;
                     break;
@@ -643,7 +640,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
     private void checkVersion(ShellyDeviceProfile prf, ShellySettingsStatus status) {
         try {
-            ShellyVersion version = new ShellyVersion();
+            ShellyVersionDTO version = new ShellyVersionDTO();
             if (version.checkBeta(getString(prf.fwVersion))) {
                 logger.info("{}: {}", prf.hostname, messages.get("versioncheck.beta", prf.fwVersion, prf.fwDate,
                         prf.fwId, SHELLY_API_MIN_FWVERSION));
@@ -657,7 +654,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                 logger.info("{}: {}", thingName, messages.get("versioncheck.autocoiot", SHELLY_API_MIN_FWCOIOT));
                 autoCoIoT = true;
             }
-        } catch (IllegalArgumentException | NullPointerException e) {
+        } catch (IllegalArgumentException | NullPointerException e) { // could be inconsistant format of beta version
+                                                                      // strings
             logger.debug("{}: {}", thingName, messages.get("versioncheck.failed", prf.fwVersion));
         }
         if (status.update.hasUpdate) {
@@ -675,7 +673,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @return true if the authorization failed
      */
     private boolean isAuthorizationFailed(ShellyApiResult result) {
-        Validate.notNull(result);
         if (result.isHttpAccessUnauthorized()) {
             // If the device is password protected the API doesn't provide settings to the device settings
             logger.warn("{}: {}", getThing().getLabel(), messages.get("init.protected"));
@@ -694,7 +691,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param mode Device mode (e.g. relay, roller)
      */
     private void changeThingType(String thingType, String mode) {
-        ThingTypeUID thingTypeUID = getThingTypeUID(thingType, mode);
+        ThingTypeUID thingTypeUID = ShellyDeviceProfile.getThingTypeUID(thingType, mode);
         if (!thingTypeUID.equals(THING_TYPE_SHELLYUNKNOWN)) {
             logger.debug("{}: Changing thing type to {}", getThing().getLabel(), thingTypeUID.toString());
             Map<String, String> properties = editProperties();
@@ -719,7 +716,6 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         if ((statusJob == null) || statusJob.isCancelled()) {
             statusJob = scheduler.scheduleWithFixedDelay(this::updateStatus, 2, UPDATE_STATUS_INTERVAL_SECONDS,
                     TimeUnit.SECONDS);
-            Validate.notNull(statusJob, "statusJob must not be null");
             logger.debug("{}: Update status job started, interval={}*{}={}sec.", thingName, skipCount,
                     UPDATE_STATUS_INTERVAL_SECONDS, skipCount * UPDATE_STATUS_INTERVAL_SECONDS);
         }
@@ -909,6 +905,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param key property name
      * @return property value or "" if property is not set
      */
+    @SuppressWarnings("null")
     public String getProperty(String key) {
         Map<String, String> thingProperties = getThing().getProperties();
         String value = thingProperties.get(key);
@@ -930,12 +927,14 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             properties.put(PROPERTY_MAC_ADDRESS, profile.mac);
             properties.put(PROPERTY_FIRMWARE_VERSION,
                     profile.fwVersion + "/" + profile.fwDate + "(" + profile.fwId + ")");
-            properties.put(PROPERTY_HWREV, profile.hwRev);
-            properties.put(PROPERTY_HWBATCH, profile.hwBatchId);
             properties.put(PROPERTY_DEV_MODE, profile.mode);
             properties.put(PROPERTY_NUM_RELAYS, profile.numRelays.toString());
             properties.put(PROPERTY_NUM_ROLLERS, profile.numRollers.toString());
             properties.put(PROPERTY_NUM_METER, profile.numMeters.toString());
+            if (!profile.hwRev.isEmpty()) {
+                properties.put(PROPERTY_HWREV, profile.hwRev);
+                properties.put(PROPERTY_HWBATCH, profile.hwBatchId);
+            }
         }
         return properties;
     }
@@ -952,10 +951,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         try {
             refreshSettings |= forceRefresh;
             if (refreshSettings) {
-                logger.debug("{}: Refresh settings", thingName);
                 profile = api.getDeviceProfile(getThing().getThingTypeUID().getId());
-                Validate.notNull(profile.settings);
-                Validate.notNull(profile.settings.device);
             }
         } finally {
             refreshSettings = false;
@@ -985,21 +981,16 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     @Override
     public void dispose() {
         logger.debug("{}: Shutdown thing", thingName);
-        try {
-            if (coap != null) {
-                coap.stop();
-                coap = null;
-            }
-            if (statusJob != null) {
-                statusJob.cancel(true);
-                statusJob = null;
-            }
-            logger.debug("{}: Shelly statusJob stopped", thingName);
-        } catch (Exception e) {
-            logger.debug("Exception on dispose(): {} ({})", e.getMessage(), e.getClass());
-        } finally {
-            super.dispose();
+        if (coap != null) {
+            coap.stop();
+            coap = null;
         }
+        if (statusJob != null) {
+            statusJob.cancel(true);
+            statusJob = null;
+        }
+        logger.debug("{}: Shelly statusJob stopped", thingName);
+        super.dispose();
     }
 
     /**

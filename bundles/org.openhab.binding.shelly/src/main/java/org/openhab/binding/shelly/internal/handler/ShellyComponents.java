@@ -50,7 +50,7 @@ public class ShellyComponents {
     public static boolean updateDeviceStatus(ShellyBaseHandler th, ShellySettingsStatus status) {
         if (!th.areChannelsCreated()) {
             th.updateChannelDefinitions(
-                    ShellyChannelDefinitions.createDeviceChannels(th.getThing(), th.getProfile(), status));
+                    ShellyChannelDefinitionsDTO.createDeviceChannels(th.getThing(), th.getProfile(), status));
         }
 
         Integer rssi = getInteger(status.wifiSta.rssi);
@@ -105,7 +105,7 @@ public class ShellyComponents {
 
                             if (!th.areChannelsCreated()) {
                                 th.updateChannelDefinitions(
-                                        ShellyChannelDefinitions.createMeterChannels(th.getThing(), meter, groupName));
+                                        ShellyChannelDefinitionsDTO.createMeterChannels(th.getThing(), meter, groupName));
                             }
 
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
@@ -138,7 +138,7 @@ public class ShellyComponents {
                             String groupName = profile.numMeters > 1 ? CHANNEL_GROUP_METER + meterIndex.toString()
                                     : CHANNEL_GROUP_METER;
                             if (!th.areChannelsCreated()) {
-                                th.updateChannelDefinitions(ShellyChannelDefinitions.createEMeterChannels(th.getThing(),
+                                th.updateChannelDefinitions(ShellyChannelDefinitionsDTO.createEMeterChannels(th.getThing(),
                                         emeter, groupName));
                             }
 
@@ -198,7 +198,7 @@ public class ShellyComponents {
                 }
                 // Create channels for 1 Meter
                 if (!th.areChannelsCreated()) {
-                    th.updateChannelDefinitions(ShellyChannelDefinitions.createMeterChannels(th.getThing(),
+                    th.updateChannelDefinitions(ShellyChannelDefinitionsDTO.createMeterChannels(th.getThing(),
                             status.meters.get(0), groupName));
                 }
 
@@ -256,7 +256,7 @@ public class ShellyComponents {
 
             if (sdata != null) {
                 if (!th.areChannelsCreated()) {
-                    th.updateChannelDefinitions(ShellyChannelDefinitions.createSensorChannels(th.getThing(), sdata));
+                    th.updateChannelDefinitions(ShellyChannelDefinitionsDTO.createSensorChannels(th.getThing(), sdata));
                 }
 
                 if (sdata.actReasons != null) {
@@ -336,10 +336,9 @@ public class ShellyComponents {
                     updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_MOTION, getOnOff(sdata.motion));
                 }
                 if (sdata.charger != null) {
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_CHARGER, getOnOff(sdata.charger));
-
+                    updated |= th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_CHARGER,
+                            getOnOff(sdata.charger));
                 }
-
                 if (updated) {
                     th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_LAST_UPDATE, getTimestamp());
                 }

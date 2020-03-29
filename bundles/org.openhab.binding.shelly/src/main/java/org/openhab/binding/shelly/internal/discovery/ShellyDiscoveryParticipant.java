@@ -141,28 +141,28 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                 ShellySettingsDevice devInfo = api.getDevInfo();
 
                 profile = api.getDeviceProfile(thingType);
-                logger.debug("Shelly settings : {}", profile.settingsJson);
+                logger.debug("{}: Shelly settings : {}", getString(devInfo.hostname), profile.settingsJson);
                 model = getString(profile.settings.device.type);
                 mode = profile.mode;
 
                 properties = ShellyBaseHandler.fillDeviceProperties(profile);
-                logger.trace("name={}, thingType={}, deviceType={}, mode={}", name, thingType, profile.deviceType,
+                logger.trace("{}: thingType={}, deviceType={}, mode={}", name, thingType, profile.deviceType,
                         mode.isEmpty() ? "<standard>" : mode);
 
                 // get thing type from device name
-                thingUID = ShellyThingCreator.getThingUID(name, mode, false);
+                thingUID = ShellyDeviceProfile.getThingUID(name, mode, false);
             } catch (ShellyApiException e) {
                 ShellyApiResult result = e.getApiResult();
                 if (result.isHttpAccessUnauthorized()) {
                     logger.info("{}: {}", name, messages.get("discovery.protected", address));
 
                     // create shellyunknown thing - will be changed during thing initialization with valid credentials
-                    thingUID = ShellyThingCreator.getThingUID(name, mode, true);
+                    thingUID = ShellyDeviceProfile.getThingUID(name, mode, true);
                 } else {
                     logger.info("{}: {}", name, messages.get("discovery.failed", address, e.toString()));
                     logger.debug("{}: Exception {}\n{}", name, e.toString(), e.getStackTrace());
                 }
-            } catch (Exception e) { // (IllegalArgumentException | NullPointerException e) {
+            } catch (IllegalArgumentException | NullPointerException e) { // maybe some format description was buggy
                 logger.debug("{}: Unable to initialize - {} ({}), retrying later\n{}", name, getString(e),
                         getString(e.getClass().toString()), e.getStackTrace());
             }
@@ -178,7 +178,7 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                 return DiscoveryResultBuilder.create(thingUID).withProperties(properties)
                         .withLabel(name + " - " + address).withRepresentationProperty(name).build();
             }
-        } catch (Exception e) {
+        } catch (IllegalArgumentException | NullPointerException e) { // maybe some format description was buggy
             logger.info("{}", messages.get("discovery.failed", name, address, getString(e)));
             logger.debug("{}: Exception {}\n{}", name, e.getClass(), e.getStackTrace());
         }
@@ -194,6 +194,6 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     public ThingUID getThingUID(@Nullable ServiceInfo service) {
         logger.debug("ServiceInfo {}", service);
         Validate.notNull(service);
-        return ShellyThingCreator.getThingUID(service.getName().toLowerCase(), "", false);
+        return ShellyDeviceProfile.getThingUID(service.getName().toLowerCase(), "", false);
     }
 }

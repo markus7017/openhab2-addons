@@ -88,9 +88,9 @@ public class ShellyChannelCache {
                         value.getClass());
                 return true;
             }
-        } catch (NullPointerException e) {
-            logger.debug("Unable to update channel {}.{} with {} (type {}): {} ({})", thingName, channelId, value,
-                    value.getClass(), e.getMessage(), e.getClass());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            logger.debug("{}: Unable to update channel {} with {} (type {}): {} ({})", thingName, channelId, value,
+                    value.getClass().toString(), ShellyUtils.getString(e), e.getClass().toString());
         }
         return false;
     }

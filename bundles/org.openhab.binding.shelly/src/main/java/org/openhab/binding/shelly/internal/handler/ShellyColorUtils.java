@@ -174,6 +174,7 @@ public class ShellyColorUtils {
 
     public static PercentType toPercent(Integer _value, Integer min, Integer max) {
         Double range = max.doubleValue() - min.doubleValue();
+        @SuppressWarnings("null")
         Double value = _value != null ? _value.doubleValue() : 0;
         value = value < min ? min.doubleValue() : value;
         value = value > max ? max.doubleValue() : value;

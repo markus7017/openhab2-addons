@@ -42,7 +42,6 @@ import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsSt
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyShortLightStatus;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyShortStatusRelay;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellyStatusRelay;
-import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
 import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
@@ -78,7 +77,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
     @Override
     public void initialize() {
-        logger.debug("Thing is using  {}", this.getClass());
         super.initialize();
     }
 
@@ -187,7 +185,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
         }
 
         ShellyShortLightStatus light = api.getLightStatus(index);
-        Validate.notNull(light, "Unable to get Light status for brightness");
         if (command instanceof IncreaseDecreaseType) {
             if (((IncreaseDecreaseType) command).equals(IncreaseDecreaseType.INCREASE)) {
                 value = Math.min(light.brightness + DIM_STEPSIZE, 100);
@@ -296,13 +293,13 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      */
     private void createRelayChannels(ShellyStatusRelay relays) {
         if (!areChannelsCreated()) {
-            updateChannelDefinitions(ShellyChannelDefinitions.createRelayChannels(getThing(), relays));
+            updateChannelDefinitions(ShellyChannelDefinitionsDTO.createRelayChannels(getThing(), relays));
         }
     }
 
     private void createRollerChannels(ShellyControlRoller roller) {
         if (!areChannelsCreated()) {
-            updateChannelDefinitions(ShellyChannelDefinitions.createRollerChannels(getThing(), roller));
+            updateChannelDefinitions(ShellyChannelDefinitionsDTO.createRollerChannels(getThing(), roller));
         }
     }
 
@@ -317,9 +314,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      */
     @SuppressWarnings("null")
     public boolean updateRelays(ShellySettingsStatus status) throws ShellyApiException {
-        Validate.notNull(status, "status must not be null!");
-        ShellyDeviceProfile profile = getProfile();
-
         boolean updated = false;
         // Check for Relay in Standard Mode
         if (profile.hasRelays && !profile.isRoller && !profile.isDimmer) {
@@ -344,7 +338,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                         if (rstatus.extTemperature != null) {
                             // Shelly 1/1PM support up to 3 external sensors
                             // for whatever reason those are not represented as an array, but 3 elements
-                            logger.debug("{}: Updating external sensors", thingName);
                             if (rstatus.extTemperature.sensor1 != null) {
                                 updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP1,
                                         toQuantityType(getDouble(rstatus.extTemperature.sensor1.tC), SIUnits.CELSIUS));
@@ -359,7 +352,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                             }
                         }
                         if ((rstatus.extHumidity != null) && (rstatus.extHumidity.sensor1 != null)) {
-                            logger.trace("{}: Updating humidity", thingName);
                             updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM,
                                     toQuantityType(getDouble(rstatus.extHumidity.sensor1.hum), DIGITS_PERCENT,
                                             SmartHomeUnits.PERCENT));
@@ -384,9 +376,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
         }
 
         // Check for Relay in Roller Mode
-        if (profile.hasRelays && profile.isRoller && (status.rollers != null))
-
-        {
+        if (profile.hasRelays && profile.isRoller && (status.rollers != null)) {
             logger.trace("{}: Updating {} rollers", thingName, profile.numRollers.toString());
             int i = 0;
 
@@ -428,14 +418,9 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      *
      * @throws ShellyApiException
      */
-    @SuppressWarnings("null")
     public boolean updateDimmers(ShellySettingsStatus orgStatus) throws ShellyApiException {
-        ShellyDeviceProfile profile = getProfile();
-
         boolean updated = false;
         if (profile.isDimmer) {
-            Validate.notNull(orgStatus, "orgStatus must not be null!");
-
             // We need to fixup the returned Json: The dimmer returns light[] element, which is ok, but it doesn't have
             // the same structure as lights[] from Bulb,RGBW2 and Duo. The tag gets replaced by dimmers[] so that Gson
             // maps to a different structure (ShellyShortLight).
@@ -443,12 +428,9 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
             ShellySettingsStatus dstatus = gson.fromJson(ShellyApiJsonDTO.fixDimmerJson(orgStatus.json),
                     ShellySettingsStatus.class);
             Validate.notNull(dstatus.dimmers, "dstatus.dimmers must not be null!");
-            Validate.notNull(dstatus.tmp, "dstatus.tmp must not be null!");
 
             logger.trace("{}: Updating {} dimmers(s)", thingName, dstatus.dimmers.size());
-
             int l = 0;
-            logger.trace("{}: Updating dimmers {}", thingName, dstatus.dimmers.size());
             for (ShellyShortLightStatus dimmer : dstatus.dimmers) {
                 Integer r = l + 1;
                 String groupName = profile.numRelays <= 1 ? CHANNEL_GROUP_DIMMER_CONTROL
@@ -489,14 +471,9 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      * @param profile ShellyDeviceProfile
      * @param status Last ShellySettingsStatus
      */
-    @SuppressWarnings("null")
     public boolean updateLed(ShellySettingsStatus status) {
         boolean updated = false;
         if (profile.hasLed) {
-            Validate.notNull(profile.settings.ledStatusDisable, "LED update: led_status_disable must not be null!");
-            Validate.notNull(profile.settings.ledPowerDisable, "LED update: led_power_disable must not be null!");
-            logger.debug("{}: LED disabled status: powerLed: {}, : statusLed{}", thingName,
-                    getBool(profile.settings.ledPowerDisable), getBool(profile.settings.ledStatusDisable));
             updated |= updateChannel(CHANNEL_GROUP_LED_CONTROL, CHANNEL_LED_STATUS_DISABLE,
                     getOnOff(profile.settings.ledStatusDisable));
             updated |= updateChannel(CHANNEL_GROUP_LED_CONTROL, CHANNEL_LED_POWER_DISABLE,

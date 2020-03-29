@@ -35,7 +35,6 @@ public class ShellyApiResult {
     public String httpReason = "";
 
     public ShellyApiResult() {
-
     }
 
     public ShellyApiResult(String method, String url) {
