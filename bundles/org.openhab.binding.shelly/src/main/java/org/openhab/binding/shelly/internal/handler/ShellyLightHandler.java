@@ -21,7 +21,6 @@ import java.util.TreeMap;
 
 import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.HSBType;
@@ -66,8 +65,8 @@ public class ShellyLightHandler extends ShellyBaseHandler {
      * @param httpPort port of the openHAB HTTP API
      */
     public ShellyLightHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
-            final ShellyBindingConfiguration bindingConfig, final @Nullable ShellyCoapServer coapServer,
-            final String localIP, int httpPort, final HttpClient httpClient) {
+            final ShellyBindingConfiguration bindingConfig, final ShellyCoapServer coapServer, final String localIP,
+            int httpPort, final HttpClient httpClient) {
         super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort, httpClient);
         channelColors = new TreeMap<>();
     }

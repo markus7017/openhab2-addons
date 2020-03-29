@@ -13,7 +13,6 @@
 package org.openhab.binding.shelly.internal.handler;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapServer;
@@ -41,8 +40,8 @@ public class ShellyProtectedHandler extends ShellyBaseHandler {
      * @param httpPort port of the openHAB HTTP API
      */
     public ShellyProtectedHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
-            final ShellyBindingConfiguration bindingConfig, final @Nullable ShellyCoapServer coapServer,
-            final String localIP, int httpPort, final HttpClient httpClient) {
+            final ShellyBindingConfiguration bindingConfig, final ShellyCoapServer coapServer, final String localIP,
+            int httpPort, final HttpClient httpClient) {
         super(thing, translationProvider, bindingConfig, coapServer, localIP, httpPort, httpClient);
     }
 

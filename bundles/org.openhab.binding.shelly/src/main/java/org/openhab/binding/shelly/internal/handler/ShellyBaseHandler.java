@@ -77,9 +77,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
     private final HttpClient httpClient;
     protected ShellyHttpApi api = new ShellyHttpApi();
-    private @Nullable ShellyCoapHandler coap;
     protected ShellyDeviceProfile profile = new ShellyDeviceProfile(); // init empty profile to avoid NPE
-    private final @Nullable ShellyCoapServer coapServer;
+    private final ShellyCoapHandler coap;
     private boolean autoCoIoT = false;
     protected boolean lockUpdates = false;
     private boolean channelsCreated = false;
@@ -115,17 +114,18 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
      * @param httpPort from httpService
      */
     public ShellyBaseHandler(final Thing thing, final ShellyTranslationProvider translationProvider,
-            final ShellyBindingConfiguration bindingConfig, @Nullable final ShellyCoapServer coapServer,
-            final String localIP, int httpPort, final HttpClient httpClient) {
+            final ShellyBindingConfiguration bindingConfig, final ShellyCoapServer coapServer, final String localIP,
+            int httpPort, final HttpClient httpClient) {
         super(thing);
 
         this.messages.initFrom(translationProvider);
         this.channelDefinitions = new ShellyChannelDefinitionsDTO(messages);
         this.bindingConfig = bindingConfig;
         this.httpClient = httpClient;
-        this.coapServer = coapServer;
         this.localIP = localIP;
         this.httpPort = httpPort;
+
+        coap = new ShellyCoapHandler(this, translationProvider, coapServer);
     }
 
     /**
@@ -274,12 +274,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             return false;
         }
 
-        if ((coap == null) && (config.eventsCoIoT || autoCoIoT)) {
-            Validate.notNull(coapServer, "coapServer must not be null!");
-            coap = new ShellyCoapHandler(config, this, coapServer, messages);
-        }
-        if (coap != null) {
-            coap.start();
+        if (config.eventsCoIoT || autoCoIoT) {
+            coap.start(config);
         }
 
         fillDeviceStatus(status, false);
@@ -981,10 +977,7 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     @Override
     public void dispose() {
         logger.debug("{}: Shutdown thing", thingName);
-        if (coap != null) {
-            coap.stop();
-            coap = null;
-        }
+        coap.stop();
         if (statusJob != null) {
             statusJob.cancel(true);
             statusJob = null;

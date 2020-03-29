@@ -262,10 +262,10 @@
 			<channel id="powerLed" typeId="ledPowerDisable" />
 		</channels>
 	</channel-group-type>
-    <channel-group-type id="externalSensors">
-        <label>External Sensors</label>
-        <description>Temperatures from external sensors (if extension is installed and sensor connected)</description>
-    </channel-group-type>
+	<channel-group-type id="externalSensors">
+		<label>External Sensors</label>
+		<description>Temperatures from external sensors (if extension is installed and sensor connected)</description>
+	</channel-group-type>
 	<channel-type id="timerAutoOn" advanced="true">
 		<item-type>Number:Time</item-type>
 		<label>Auto-ON Timer</label>

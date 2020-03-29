@@ -72,7 +72,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
 
     private final ShellyBaseHandler th;
-    private final ShellyThingConfiguration config;
+    private ShellyThingConfiguration config = new ShellyThingConfiguration();
     private final GsonBuilder gsonBuilder;
     private final Gson gson;
     private String thingName;
@@ -82,6 +82,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private @Nullable Request reqDescription;
     private @Nullable Request reqStatus;
 
+    private boolean started = false;
     private int lastSerial = -1;
     private Double lastBrightness = -1.0;
     private String lastPayload = "";
@@ -90,13 +91,11 @@ public class ShellyCoapHandler implements ShellyCoapListener {
 
     private static final byte[] EMPTY_BYTE = new byte[0];
 
-    public ShellyCoapHandler(ShellyThingConfiguration config, ShellyBaseHandler th,
-            @Nullable ShellyCoapServer coapServer, ShellyTranslationProvider messages) {
+    public ShellyCoapHandler(ShellyBaseHandler th, ShellyTranslationProvider messages, ShellyCoapServer coapServer) {
         Validate.notNull(coapServer);
         this.messages.initFrom(messages);
         this.th = th;
         this.coapServer = coapServer;
-        this.config = config;
         this.thingName = th.thingName;
 
         gsonBuilder = new GsonBuilder();
@@ -108,8 +107,13 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     /*
      * Initialize Coap access, send discovery packet and start Status server
      */
-    public void start() {
+    public void start(ShellyThingConfiguration config) {
+        if (started) {
+            logger.trace("{}: Coap handler is already started", thingName);
+            return;
+        }
         try {
+            this.config = config;
             reqDescription = sendRequest(reqDescription, config.deviceIp, COLOIT_URI_DEVDESC, Type.CON);
 
             if (statusClient == null) {
@@ -879,20 +883,23 @@ public class ShellyCoapHandler implements ShellyCoapListener {
      */
     @SuppressWarnings("null")
     public void stop() {
-        logger.debug("{}: Stop CoapHandler instance", thingName);
-        if ((reqDescription != null) && !reqDescription.isCanceled()) {
-            reqDescription.cancel();
-            reqDescription = null;
+        if (started) {
+            logger.debug("{}: Stop CoapHandler instance", thingName);
+            if ((reqDescription != null) && !reqDescription.isCanceled()) {
+                reqDescription.cancel();
+                reqDescription = null;
+            }
+            if ((reqStatus != null) && !reqStatus.isCanceled()) {
+                reqStatus.cancel();
+                reqStatus = null;
+            }
+            if (statusClient != null) {
+                statusClient.shutdown();
+                statusClient = null;
+            }
+            coapServer.removeListener(this);
         }
-        if ((reqStatus != null) && !reqStatus.isCanceled()) {
-            reqStatus.cancel();
-            reqStatus = null;
-        }
-        if (statusClient != null) {
-            statusClient.shutdown();
-            statusClient = null;
-        }
-        coapServer.removeListener(this);
+        started = false;
     }
 
     public void dispose() {
