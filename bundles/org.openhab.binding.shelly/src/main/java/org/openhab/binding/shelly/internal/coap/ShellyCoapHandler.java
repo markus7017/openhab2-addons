@@ -77,6 +77,7 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     private final Gson gson;
     private String thingName;
 
+    private boolean coapTriggersRefresh = false;
     private final ShellyCoapServer coapServer;
     private @Nullable CoapClient statusClient;
     private @Nullable Request reqDescription;
@@ -107,13 +108,14 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     /*
      * Initialize Coap access, send discovery packet and start Status server
      */
-    public void start(ShellyThingConfiguration config) {
+    public void start(ShellyThingConfiguration config, boolean coapTriggersRefresh) {
         if (started) {
             logger.trace("{}: Coap handler is already started", thingName);
             return;
         }
         try {
             this.config = config;
+            this.coapTriggersRefresh = coapTriggersRefresh;
             reqDescription = sendRequest(reqDescription, config.deviceIp, COLOIT_URI_DEVDESC, Type.CON);
 
             if (statusClient == null) {
@@ -578,13 +580,11 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 i++;
             }
 
-            if (!profile.isSensor) {
-                // For now the Coap interface is not providing all updates, e.g. currentWatts yes, but not the average
-                // values for the 3 mins. To prevent confusing the user we schedule a regular REST update shortly
-                // This will be removed once Coap returns all values, which have changed since the last update
-                if (th.scheduledUpdates == 0) {
-                    th.requestUpdates(1, false);
-                }
+            // Old firmware release are lacking various status values, which are not updated using CoIoT.
+            // In this case we keep a refresh so it gets polled using REST. Beginning with Firmware 1.6 most
+            // of the values are available so in thise case we could skip an extra poll to reduce load.
+            if (coapTriggersRefresh && (th.scheduledUpdates == 0)) {
+                th.requestUpdates(1, false);
             }
         }
 

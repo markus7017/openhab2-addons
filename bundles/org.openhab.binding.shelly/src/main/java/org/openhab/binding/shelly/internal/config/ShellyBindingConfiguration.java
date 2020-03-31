@@ -36,7 +36,7 @@ public class ShellyBindingConfiguration {
 
     public String defaultUserId = ""; // default for http basic user id
     public String defaultPassword = ""; // default for http basic auth password
-    public Boolean autoCoIoT = false;
+    public Boolean autoCoIoT = true;
 
     @SuppressWarnings("null")
     public void updateFromProperties(Map<String, Object> properties) {

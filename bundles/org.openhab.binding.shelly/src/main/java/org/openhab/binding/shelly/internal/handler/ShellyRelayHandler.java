@@ -120,7 +120,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                         channelUID.getIdWithoutGroup().equals(CHANNEL_ROL_CONTROL_CONTROL));
 
                 // request updates the next 30sec to update roller position after it stopped
-                requestUpdates(45 / UPDATE_STATUS_INTERVAL_SECONDS, false);
+                requestUpdates(coiotTriggersRefresh ? 45 / UPDATE_STATUS_INTERVAL_SECONDS : 1, false);
                 break;
 
             case CHANNEL_TIMER_AUTOON:
@@ -171,7 +171,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
         if (command instanceof OnOffType) { // Switch
             logger.debug("Switch output {}", command.toString());
             api.setRelayTurn(index, (OnOffType) command == OnOffType.ON ? SHELLY_API_ON : SHELLY_API_OFF);
-            requestUpdates(2, false);
+            requestUpdates(1, false);
             return;
         }
 

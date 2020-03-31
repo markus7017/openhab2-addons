@@ -30,13 +30,18 @@ This Binding integrated Shelly devices.
 
 ## Firmware
 
-To utilize all features the binding requires firmware version 1.5.7 or newer, version 1.6 is recommended.
+To utilize all features the binding requires firmware version 1.5.7 or newer, version 1.6 is strongly recommended.
 This should be available for all devices.
 Older versions work in general, but have impacts to functionality (e.g. no events for battery powered devices).
 
 The binding displays a WARNING in the log if the firmware is older.
 It also informs you when an update is available.
 Use the device' web ui or the Shelly App to perform the update.
+
+## Other resources
+
+Check the following resources for additional information
+
 
 ## Discovery
 

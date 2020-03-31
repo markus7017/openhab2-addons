@@ -162,7 +162,7 @@ public class ShellyChannelDefinitionsDTO {
         if (relays.extTemperature != null) {
             addChannel(thing, add, relays.extTemperature.sensor1 != null, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP1);
             addChannel(thing, add, relays.extTemperature.sensor2 != null, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP2);
-            addChannel(thing, add, relays.extTemperature.sensor3 != null, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP2);
+            addChannel(thing, add, relays.extTemperature.sensor3 != null, CHGR_SENSOR, CHANNEL_ESENDOR_TEMP3);
         }
         if (relays.extHumidity != null) {
             addChannel(thing, add, relays.extHumidity.sensor1 != null, CHGR_SENSOR, CHANNEL_ESENDOR_HUMIDITY);

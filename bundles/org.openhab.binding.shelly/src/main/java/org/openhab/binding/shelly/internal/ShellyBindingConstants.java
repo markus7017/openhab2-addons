@@ -149,6 +149,8 @@ public class ShellyBindingConstants {
     public static final String PROPERTY_COAP_DESCR = "coapDeviceDescr";
     public static final String PROPERTY_STATS_TIMEOUTS = "statsTimeoutErrors";
     public static final String PROPERTY_STATS_TRECOVERED = "statsTimeoutsRecovered";
+    public static final String PROPERTY_COIOTAUTO = "coiotAutoEnable";
+    public static final String PROPERTY_COIOTREFRESH = "coiotAutoRefresh";
 
     // Relay
     public static final String CHANNEL_GROUP_RELAY_CONTROL = "relay";
@@ -259,7 +261,8 @@ public class ShellyBindingConstants {
 
     public static final String SERVICE_TYPE = "_http._tcp.local.";
     public static final String SHELLY_API_MIN_FWVERSION = "v1.5.7";// v1.5.2
-    public static final String SHELLY_API_MIN_FWCOIOT = "v1.6";// v1.5.2
+    public static final String SHELLY_API_MIN_FWCOIOT_STD = "v1.6";// v1.5.2
+    public static final String SHELLY_API_MIN_FWCOIOT_SENSOR = "v1.7";// v1.5.2
     public static final int SHELLY_API_TIMEOUT_MS = 3000;
 
     // Alarm types/messages

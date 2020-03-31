@@ -79,10 +79,11 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
     protected ShellyHttpApi api = new ShellyHttpApi();
     protected ShellyDeviceProfile profile = new ShellyDeviceProfile(); // init empty profile to avoid NPE
     private final ShellyCoapHandler coap;
-    private boolean autoCoIoT = false;
+    private Boolean autoCoIoT = false;
+    protected Boolean coiotTriggersRefresh = false;
+
     protected boolean lockUpdates = false;
     private boolean channelsCreated = false;
-
     private long lastUptime = 0;
     private long lastAlarmTs = 0;
     private Integer lastTimeoutErros = -1;
@@ -194,8 +195,12 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
 
         final @Nullable Map<String, String> properties = getThing().getProperties();
         final String thingType = getThing().getThingTypeUID().getId();
-        thingName = properties.get(PROPERTY_SERVICE_NAME) != null ? properties.get(PROPERTY_SERVICE_NAME).toLowerCase()
-                : thingType;
+        thingName = getString(properties.get(PROPERTY_SERVICE_NAME));
+        if (thingName.isEmpty()) {
+            thingName = getString(getThing().getUID().getThingTypeId() + "-" + getString(getThing().getUID().getId()))
+                    .toLowerCase();
+            logger.debug("{}: Thing name derived from UID {}", thingName, getString(getThing().getUID().toString()));
+        }
         logger.debug("{}: Start initializing thing {}, type {}, ip address {}, CoIoT: {}", thingName,
                 getThing().getLabel(), thingType, config.deviceIp, config.eventsCoIoT);
         if (config.deviceIp.isEmpty()) {
@@ -275,7 +280,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
         }
 
         if (config.eventsCoIoT || autoCoIoT) {
-            coap.start(config);
+            coiotTriggersRefresh = !autoCoIoT && !profile.isSensor;
+            coap.start(config, coiotTriggersRefresh);
         }
 
         fillDeviceStatus(status, false);
@@ -646,8 +652,9 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
                             prf.fwId, SHELLY_API_MIN_FWVERSION));
                 }
             }
-            if (bindingConfig.autoCoIoT && version.compare(prf.fwVersion, SHELLY_API_MIN_FWCOIOT) >= 0) {
-                logger.info("{}: {}", thingName, messages.get("versioncheck.autocoiot", SHELLY_API_MIN_FWCOIOT));
+            if (bindingConfig.autoCoIoT && (version.compare(prf.fwVersion, SHELLY_API_MIN_FWCOIOT_STD) >= 0)
+                    || (version.compare(prf.fwVersion, SHELLY_API_MIN_FWCOIOT_SENSOR) >= 0)) {
+                logger.info("{}: {}", thingName, messages.get("versioncheck.autocoiot"));
                 autoCoIoT = true;
             }
         } catch (IllegalArgumentException | NullPointerException e) { // could be inconsistant format of beta version
@@ -857,6 +864,8 @@ public class ShellyBaseHandler extends BaseThingHandler implements ShellyDeviceL
             properties.put(PROPERTY_UPDATE_CURR_VERS, getString(status.update.oldVersion));
             properties.put(PROPERTY_UPDATE_NEW_VERS, getString(status.update.newVersion));
         }
+        properties.put(PROPERTY_COIOTAUTO, autoCoIoT.toString());
+        properties.put(PROPERTY_COIOTREFRESH, autoCoIoT.toString());
 
         Map<String, String> thingProperties = new TreeMap<>();
         for (Map.Entry<String, Object> property : properties.entrySet()) {
