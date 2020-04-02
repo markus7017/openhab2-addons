@@ -43,6 +43,7 @@ import org.eclipse.smarthome.core.library.types.QuantityType;
 import org.eclipse.smarthome.core.library.unit.SIUnits;
 import org.eclipse.smarthome.core.library.unit.SmartHomeUnits;
 import org.eclipse.smarthome.core.types.State;
+import org.openhab.binding.shelly.internal.api.ShellyApiException;
 import org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.ShellySettingsRelay;
 import org.openhab.binding.shelly.internal.api.ShellyDeviceProfile;
 import org.openhab.binding.shelly.internal.coap.ShellyCoapJSonDTO.CoIotDescrBlk;
@@ -108,12 +109,14 @@ public class ShellyCoapHandler implements ShellyCoapListener {
     /*
      * Initialize Coap access, send discovery packet and start Status server
      */
-    public void start(ShellyThingConfiguration config, boolean coapTriggersRefresh) {
-        if (started) {
+    public void start(String thingName, ShellyThingConfiguration config, boolean coapTriggersRefresh)
+            throws ShellyApiException {
+        if (isStarted()) {
             logger.trace("{}: Coap handler is already started", thingName);
             return;
         }
         try {
+            this.thingName = thingName;
             this.config = config;
             this.coapTriggersRefresh = coapTriggersRefresh;
             reqDescription = sendRequest(reqDescription, config.deviceIp, COLOIT_URI_DEVDESC, Type.CON);
@@ -128,8 +131,14 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                 coapServer.start();
             }
         } catch (UnknownHostException e) {
-            logger.debug("{}: Coap Exception: {} ({})\n{}", thingName, e.getMessage(), e.getClass(), e.getStackTrace());
+            ShellyApiException ea = new ShellyApiException(e);
+            logger.debug("{}: CoAP Exception: {}\n{}", thingName, e.toString(), e.getStackTrace());
+            throw ea;
         }
+    }
+
+    public boolean isStarted() {
+        return started;
     }
 
     /**
@@ -204,6 +213,9 @@ public class ShellyCoapHandler implements ShellyCoapListener {
                     }
                     i++;
                 }
+
+                // If we received a CoAP message successful the thing must be online
+                th.setThingOnline();
 
                 if (uri.equalsIgnoreCase(COLOIT_URI_DEVDESC) || (uri.isEmpty() && payload.contains(COIOT_TAG_BLK))) {
                     handleDeviceDescription(devId, payload);

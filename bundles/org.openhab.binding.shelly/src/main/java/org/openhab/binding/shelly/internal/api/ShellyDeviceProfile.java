@@ -86,6 +86,8 @@ public class ShellyDeviceProfile {
     public Integer minTemp = 0; // Bulb/Duo: Min Light Temp
     public Integer maxTemp = 0; // Bulb/Duo: Max Light Temp
 
+    public Integer updatePeriod = -1;
+
     public Map<String, String> irCodes = new HashMap<>(); // Sense: list of stored IR codes
 
     public Boolean supportsButtonUrls = false; // true if the btn_xxx urls are supported
@@ -141,6 +143,14 @@ public class ShellyDeviceProfile {
         }
         isDimmer = deviceType.equalsIgnoreCase(SHELLYDT_DIMMER);
         isRoller = mode.equalsIgnoreCase(SHELLY_MODE_ROLLER);
+
+        if (settings.sleepMode != null) {
+            updatePeriod = getString(settings.sleepMode.unit).equalsIgnoreCase("m")
+                    ? settings.sleepMode.period * 60 + 15 // minutes + 15s
+                    : settings.sleepMode.period * 3600 + 60; // hours + 60s
+        } else if ((settings.coiot != null) && (settings.coiot.updatePeriod != null)) {
+            updatePeriod = settings.coiot.updatePeriod + 15; // usually 15+15s
+        }
 
         supportsButtonUrls = settingsJson.contains(SHELLY_API_EVENTURL_BTN_ON)
                 || settingsJson.contains(SHELLY_API_EVENTURL_BTN1_ON)

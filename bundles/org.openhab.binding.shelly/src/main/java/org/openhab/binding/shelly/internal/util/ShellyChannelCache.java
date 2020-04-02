@@ -35,14 +35,18 @@ import org.slf4j.LoggerFactory;
 public class ShellyChannelCache {
     private final Logger logger = LoggerFactory.getLogger(ShellyChannelCache.class);
 
-    private final String thingName;
     private final ShellyBaseHandler thingHandler;
+    private String thingName = "";
     private Map<String, Object> channelData = new HashMap<>();
     private boolean enabled = false;
 
     public ShellyChannelCache(ShellyBaseHandler thingHandler) {
         this.thingHandler = thingHandler;
         this.thingName = thingHandler.thingName;
+    }
+
+    public void setThingName(String thingName) {
+        this.thingName = thingName;
     }
 
     public boolean isEnabled() {

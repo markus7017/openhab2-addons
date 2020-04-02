@@ -26,7 +26,7 @@ public class ShellyThingConfiguration {
     public String password = ""; // password for http basic auth
 
     public int updateInterval = 60; // schedule interval for the update job
-    public int lowBattery = 20; // threshold for battery value
+    public int lowBattery = 15; // threshold for battery value
     public boolean brightnessAutoOn = true; // true: turn on device if brightness > 0 is set
 
     public boolean eventsButton = false; // true: register for Relay btn_xxx events

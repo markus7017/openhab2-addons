@@ -243,7 +243,7 @@ public class ShellyApiJsonDTO {
 
     public static class ShellySettingsCoiot { // FW 1.6+
         @SerializedName("update_period")
-        public String updatePeriod;
+        public Integer updatePeriod;
     }
 
     public static class ShellySettingsSntp {
@@ -445,7 +445,7 @@ public class ShellyApiJsonDTO {
         public ShellySettingsWiFiNetwork wifiSta1;
         // public ShellySettingsMqtt mqtt; // not used for now
         // public ShellySettingsSntp sntp; // not used for now
-        // public ShellySettingsCoiot coiot; // Firmware 1.6+
+        public ShellySettingsCoiot coiot; // Firmware 1.6+
         public ShellySettingsLogin login;
         @SerializedName("pin_code")
         public String pinCode;
@@ -457,8 +457,8 @@ public class ShellyApiJsonDTO {
         @SerializedName("build_info")
         ShellySettingsBuildInfo buildInfo;
         ShellyStatusCloud cloud;
-        // @SerializedName("sleep_mode")
-        // ShellySensorSleepMode sleepMode; // FW 1.6
+        @SerializedName("sleep_mode")
+        public ShellySensorSleepMode sleepMode; // FW 1.6
 
         public String timezone;
         public Double lat;
@@ -515,8 +515,6 @@ public class ShellyApiJsonDTO {
         public Boolean vibrationEnabled; // Whether vibration monitoring is activated
         @SerializedName("reverse_open_close")
         public Boolean reverseOpenClose; // Whether to reverse which position the sensor consideres "open"
-        @SerializedName("sleep_mode_period")
-        public Boolean sleepModePeriod; // Periodic update period in hours, 1..24
     }
 
     public static class ShellySettingsAttributes {
@@ -706,30 +704,6 @@ public class ShellyApiJsonDTO {
     public class ShellySensorSleepMode {
         public Integer period;
         public String unit;
-    }
-
-    public static class ShellySettingsSensor {
-        @SerializedName("temperature_units")
-        public String temperatureUnits; // Either'C'or'F'
-        @SerializedName("temperature_threshold")
-        public Integer temperatureThreshold; // Temperature delta (in configured degree units) which triggers an update
-        @SerializedName("humidity_threshold")
-        public Integer humidityThreshold; // RH delta in % which triggers an update
-        @SerializedName("sleep_mode_period")
-        public Integer sleepModePeriod; // Periodic update period in hours, between 1 and 24
-        // @SerializedName("sleep_mode")
-        // ShellySensorSleepMode sleepMode;
-        @SerializedName("report_url")
-        public String reportUrl; // URL gets posted on updates with sensor data
-
-        @SerializedName("led_status_disable")
-        public Boolean ledStatusDisabled;
-        public Integer dark_threshold;
-        public Integer twilight_threshold;
-        @SerializedName("dark_url")
-        public String darkUrl; // URL gets posted on updates with sensor data
-        @SerializedName("twilight_url")
-        public String twilightUrl; // URL gets posted on updates with sensor data
     }
 
     public static class ShellyStatusSensor {

@@ -116,15 +116,6 @@ public class ShellyBindingConstants {
                     THING_TYPE_SHELLYSENSE, THING_TYPE_SHELLYEYE, THING_TYPE_SHELLYSMOKE, THING_TYPE_SHELLYFLOOD,
                     THING_TYPE_SHELLYDOORWIN, THING_TYPE_SHELLYUNKNOWN).collect(Collectors.toSet()));
 
-    // check for updates every x sec
-    public static final int UPDATE_STATUS_INTERVAL_SECONDS = 3;
-    // update every x triggers or when a key was pressed
-    public static final int UPDATE_SKIP_COUNT = 20;
-    // update every x triggers or when a key was pressed
-    public static final int UPDATE_MIN_DELAY = 15;
-    // check for updates every x sec
-    public static final int UPDATE_SETTINGS_INTERVAL_SECONDS = 60;
-
     // Thing Configuration Properties
     public static final String CONFIG_DEVICEIP = "deviceIp";
     public static final String CONFIG_HTTP_USERID = "userId";
@@ -136,6 +127,7 @@ public class ShellyBindingConstants {
     public static final String PROPERTY_DEV_MODE = "deviceMode";
     public static final String PROPERTY_HWREV = "deviceHwRev";
     public static final String PROPERTY_HWBATCH = "deviceHwBatch";
+    public static final String PROPERTY_UPDATE_PERIOD = "devUpdatePeriod";
     public static final String PROPERTY_NUM_RELAYS = "numberRelays";
     public static final String PROPERTY_NUM_ROLLERS = "numberRollers";
     public static final String PROPERTY_NUM_METER = "numberMeters";
@@ -263,7 +255,6 @@ public class ShellyBindingConstants {
     public static final String SHELLY_API_MIN_FWVERSION = "v1.5.7";// v1.5.2
     public static final String SHELLY_API_MIN_FWCOIOT_STD = "v1.6";// v1.5.2
     public static final String SHELLY_API_MIN_FWCOIOT_SENSOR = "v1.7";// v1.5.2
-    public static final int SHELLY_API_TIMEOUT_MS = 3000;
 
     // Alarm types/messages
     public static final String ALARM_TYPE_NONE = "NONE";
@@ -288,9 +279,6 @@ public class ShellyBindingConstants {
     public static final String SHELLY_IR_CODET_PRONTO = "pronto";
     public static final String SHELLY_IR_CODET_PRONTO_HEX = "pronto_hex";
 
-    // Minimum signal strength for basic connectivity. Packet delivery may be unreliable.
-    public static final int HEALTH_CHECK_INTERVAL_SEC = 300;
-
     public static final int DIM_STEPSIZE = 5;
 
     // Formatting: Number of scaling digits
@@ -301,4 +289,12 @@ public class ShellyBindingConstants {
     public static final int DIGITS_TEMP = 2;
     public static final int DIGITS_LUX = 2;
     public static final int DIGITS_PERCENT = 2;
+
+    public static final int SHELLY_API_TIMEOUT_MS = 3000;
+    public static final int UPDATE_STATUS_INTERVAL_SECONDS = 3; // check for updates every x sec
+    public static final int UPDATE_SKIP_COUNT = 20; // update every x triggers or when a key was pressed
+    public static final int UPDATE_MIN_DELAY = 15;// update every x triggers or when a key was pressed
+    public static final int UPDATE_SETTINGS_INTERVAL_SECONDS = 60; // check for updates every x sec
+    public static final int HEALTH_CHECK_INTERVAL_SEC = 300; // Health check interval, 5min
+
 }

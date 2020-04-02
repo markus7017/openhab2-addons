@@ -118,7 +118,7 @@ public class ShellyEventServlet extends HttpServlet {
                 parms.put(p.getKey(), p.getValue()[0]);
 
             }
-            handlerFactory.onEvent(deviceName, index, type, parms);
+            handlerFactory.onEvent(ipAddress, deviceName, index, type, parms);
         } catch (IllegalArgumentException e) {
             logger.debug(
                     "Exception processing callback: {} ({}), path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}\n{}",

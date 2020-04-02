@@ -142,6 +142,7 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     @Override
     protected synchronized void removeHandler(@NonNull ThingHandler thingHandler) {
         if (thingHandler instanceof ShellyBaseHandler) {
+            ((ShellyBaseHandler) thingHandler).stop();
             deviceListeners.remove(thingHandler);
         }
     }
@@ -154,11 +155,12 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
      * @param eventType Type of event, e.g. light
      * @param parameters Input parameters from URL, e.g. on sensor reports
      */
-    public void onEvent(String deviceName, String componentIndex, String eventType, Map<String, String> parameters) {
+    public void onEvent(String ipAddress, String deviceName, String componentIndex, String eventType,
+            Map<String, String> parameters) {
         logger.trace("Dispatch event to device handler {}", deviceName);
         for (ShellyDeviceListener listener : deviceListeners) {
             try {
-                if (listener.onEvent(deviceName, componentIndex, eventType, parameters)) {
+                if (listener.onEvent(ipAddress, deviceName, componentIndex, eventType, parameters)) {
                     // event processed
                     break;
                 }
