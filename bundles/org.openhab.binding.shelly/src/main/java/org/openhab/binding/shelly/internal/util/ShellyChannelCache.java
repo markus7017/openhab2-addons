@@ -15,10 +15,9 @@ package org.openhab.binding.shelly.internal.util;
 
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.mkChannelId;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.types.State;
@@ -36,13 +35,13 @@ public class ShellyChannelCache {
     private final Logger logger = LoggerFactory.getLogger(ShellyChannelCache.class);
 
     private final ShellyBaseHandler thingHandler;
+    private final Map<String, Object> channelData = new ConcurrentHashMap<>();
     private String thingName = "";
-    private Map<String, Object> channelData = new HashMap<>();
     private boolean enabled = false;
 
     public ShellyChannelCache(ShellyBaseHandler thingHandler) {
         this.thingHandler = thingHandler;
-        this.thingName = thingHandler.thingName;
+        setThingName(thingHandler.thingName);
     }
 
     public void setThingName(String thingName) {
@@ -70,31 +69,32 @@ public class ShellyChannelCache {
      * @param forceUpdate true: ignore cached data, force update; false check cache of changed data
      * @return true, if successful
      */
-    @SuppressWarnings("null")
     public boolean updateChannel(String channelId, State value, Boolean forceUpdate) {
-        Validate.notNull(channelData);
-        Validate.notNull(channelId);
-        Validate.notNull(value, "updateChannel(): value must not be null!");
         try {
-            Object current = channelData.get(channelId);
+            Object current = null;
+            if (channelData.containsKey(channelId)) {
+                current = channelData.get(channelId);
+            }
             if (!enabled || forceUpdate || (current == null) || !current.equals(value)) {
                 // For channels that support multiple types (like brightness) a suffix is added
                 // this gets removed to get the channelId for updateState
                 thingHandler.publishState(channelId, value);
-                synchronized (channelData) {
-                    if (current == null) {
-                        channelData.put(channelId, value);
-                    } else {
-                        channelData.replace(channelId, value);
-                    }
-                }
+                /*
+                 * if (current == null) {
+                 * channelData.put(channelId, value);
+                 * } else {
+                 * channelData.replace(channelId, value);
+                 * }
+                 */
+                channelData.replace(channelId, value);
+
                 logger.trace("{}: Channel {} updated with {} (type {}).", thingName, channelId, value,
                         value.getClass());
                 return true;
             }
-        } catch (IllegalArgumentException | NullPointerException e) {
+        } catch (IllegalArgumentException e) {
             logger.debug("{}: Unable to update channel {} with {} (type {}): {} ({})", thingName, channelId, value,
-                    value.getClass().toString(), ShellyUtils.getString(e), e.getClass().toString());
+                    value.getClass().toString(), ShellyUtils.getMessage(e), e.getClass().toString());
         }
         return false;
     }
@@ -121,22 +121,19 @@ public class ShellyChannelCache {
 
     @Nullable
     public Object getValue(String channelId) {
-        synchronized (channelData) {
-            return channelData.get(channelId);
-        }
+        return channelData.get(channelId);
     }
 
     public void resetChannel(String channelId) {
-        Validate.notNull(channelId);
-        synchronized (channelData) {
-            if (channelData.containsKey(channelId)) {
-                channelData.remove(channelId);
-            }
-        }
-
+        /*
+         * if (channelData.containsKey(channelId)) {
+         * channelData.remove(channelId);
+         * }
+         */
+        channelData.remove(channelId);
     }
 
     public void clear() {
-        channelData = new HashMap<>();
+        channelData.clear();
     }
 }

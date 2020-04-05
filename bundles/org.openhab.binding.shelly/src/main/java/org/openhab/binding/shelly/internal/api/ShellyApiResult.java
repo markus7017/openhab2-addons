@@ -31,7 +31,7 @@ public class ShellyApiResult {
     public String url = "";
     public String method = "";
     public String response = "";
-    public Integer httpCode = -1;
+    public int httpCode = -1;
     public String httpReason = "";
 
     public ShellyApiResult() {
@@ -53,12 +53,12 @@ public class ShellyApiResult {
         fillFromResponse(contentResponse);
     }
 
-    public ShellyApiResult(ContentResponse contentResponse, Throwable e) {
+    public ShellyApiResult(ContentResponse contentResponse, Exception e) {
         fillFromResponse(contentResponse);
         response = response + "(" + e.toString() + ")";
     }
 
-    public ShellyApiResult(@Nullable Request request, Throwable e) {
+    public ShellyApiResult(@Nullable Request request, Exception e) {
         response = e.toString();
         if (request != null) {
             url = request.getURI().toString();
@@ -67,7 +67,7 @@ public class ShellyApiResult {
     }
 
     public String getHttpResponse() {
-        return httpCode.toString() + ": " + response;
+        return String.valueOf(httpCode).toString() + ": " + response;
     }
 
     public boolean isHttpOk() {
@@ -79,7 +79,7 @@ public class ShellyApiResult {
     }
 
     public boolean isHttpTimeout() {
-        return httpCode == -1 || response.toUpperCase().contains(SHELLY_APIERR_TIMEOUT);
+        return httpCode == -1 || response.toUpperCase().contains(SHELLY_APIERR_TIMEOUT.toLowerCase());
     }
 
     public boolean isNotCalibrtated() {

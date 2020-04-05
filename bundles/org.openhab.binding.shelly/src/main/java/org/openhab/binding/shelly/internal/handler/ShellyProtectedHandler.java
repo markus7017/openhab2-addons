@@ -47,7 +47,6 @@ public class ShellyProtectedHandler extends ShellyBaseHandler {
 
     @Override
     public void initialize() {
-        logger.debug("Thing is using  {}", this.getClass());
         super.initialize();
     }
 }

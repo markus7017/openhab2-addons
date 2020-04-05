@@ -18,7 +18,6 @@ import java.text.MessageFormat;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
@@ -32,29 +31,27 @@ import org.eclipse.jdt.annotation.Nullable;
 public class ShellyApiException extends Exception {
     private static final long serialVersionUID = -5809459454769761821L;
 
-    private @Nullable Exception e = null;
     private ShellyApiResult apiResult = new ShellyApiResult();
-
-    public ShellyApiException() {
-        super();
-    }
-
-    public ShellyApiException(String message) {
-        super(message);
-    }
+    private static String EX_NONE = "none";
+    private Exception e = new Exception(EX_NONE);
 
     public ShellyApiException(Exception exception) {
         super(exception);
         e = exception;
     }
 
+    public ShellyApiException(String message) {
+        super(message);
+    }
+
+    public ShellyApiException(ShellyApiResult res) {
+        super(EX_NONE);
+        apiResult = res;
+    }
+
     public ShellyApiException(Exception exception, String message) {
         super(message, exception);
         e = exception;
-    }
-
-    public ShellyApiException(ShellyApiResult result) {
-        apiResult = result;
     }
 
     public ShellyApiException(ShellyApiResult result, Exception exception) {
@@ -65,20 +62,17 @@ public class ShellyApiException extends Exception {
 
     @Override
     public String getMessage() {
-        return getString(super.getMessage());
+        return isEmpty() ? "" : nonNullString(super.getMessage());
     }
 
-    @SuppressWarnings("null")
     @Override
     public String toString() {
         String message = super.getMessage();
         String url = !apiResult.url.isEmpty() ? MessageFormat.format("{0} {1} HTTP {2} {3}", apiResult.method,
                 apiResult.url, apiResult.httpCode, apiResult.httpReason) : "";
-        String resultString = !apiResult.response.isEmpty()
-                ? MessageFormat.format(", result = '{0}'", apiResult.response)
-                : "";
+        String resultString = !apiResult.response.isEmpty() ? ", result =" + apiResult.response : "";
 
-        if (e != null) {
+        if (!isEmpty()) {
             if (isUnknownHost()) {
                 String[] string = message.split(": "); // java.net.UnknownHostException: api.rach.io
                 return MessageFormat.format("Unable to connect to {0} (Unknown host / Network down / Low signal)",
@@ -86,16 +80,15 @@ public class ShellyApiException extends Exception {
             } else if (isMalformedURL()) {
                 return MessageFormat.format("Invalid URL: {0}", url);
             } else if (isTimeout()) {
-                return MessageFormat.format("API Timeout or device unreachable ({0})", url);
+                return MessageFormat.format("Device unreachable or API Timeout ({0})", url);
             } else {
                 return MessageFormat.format("{0} ({1})", e.toString(), message);
             }
         } else {
             if (isApiException()) {
-                message = MessageFormat.format("{0} {1}", getString(super.getClass().toString()),
-                        getString(super.getMessage()));
+                message = nonNullString(super.getClass().toString()) + " - " + getMessage();
             } else {
-                message = getString(super.getMessage());
+                message = getMessage();
             }
         }
 
@@ -103,47 +96,37 @@ public class ShellyApiException extends Exception {
     }
 
     public boolean isApiException() {
-        return (e != null) && (e.getClass() == ShellyApiException.class);
+        return e.getClass() == ShellyApiException.class;
     }
 
     public boolean isTimeout() {
-        Class<?> extype = e != null ? e.getClass() : null;
-        return (apiResult.httpCode == -1) || (e != null) && (extype != null)
-                && ((extype == TimeoutException.class) || (extype == ExecutionException.class)
+        Class<?> extype = !isEmpty() ? e.getClass() : null;
+        return (apiResult.httpCode == -1)
+                || (extype != null) && ((extype == TimeoutException.class) || (extype == ExecutionException.class)
                         || (extype == InterruptedException.class) || getMessage().toLowerCase().contains("timeout"));
     }
 
-    @SuppressWarnings("null")
     public boolean isHttpAccessUnauthorized() {
-        return apiResult != null ? apiResult.isHttpAccessUnauthorized() : false;
+        return apiResult.isHttpAccessUnauthorized();
     }
 
     public boolean isUnknownHost() {
-        return (e != null) && (e.getClass() == MalformedURLException.class);
+        return e.getClass() == MalformedURLException.class;
     }
 
     public boolean isMalformedURL() {
-        return (e != null) && (e.getClass() == UnknownHostException.class);
+        return e.getClass() == UnknownHostException.class;
     }
 
-    @SuppressWarnings("null")
     public ShellyApiResult getApiResult() {
-        return apiResult != null ? apiResult : new ShellyApiResult();
+        return apiResult;
     }
 
-    public static String getExceptionType(@Nullable ShellyApiException e) {
-        if ((e == null) || e.getClass().toString().isEmpty()) {
-            return "";
-        }
-
-        String msg = StringUtils.substringAfterLast(e.getClass().toString(), ".");
-        if (msg != null) {
-            return msg;
-        }
-        return e.getCause().toString();
+    private boolean isEmpty() {
+        return nonNullString(e.getMessage()).equals(EX_NONE);
     }
 
-    private static String getString(@Nullable String s) {
+    private static String nonNullString(@Nullable String s) {
         return s != null ? s : "";
     }
 }

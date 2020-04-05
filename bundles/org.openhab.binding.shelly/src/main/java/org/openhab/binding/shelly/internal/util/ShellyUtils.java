@@ -26,7 +26,6 @@ import java.time.ZonedDateTime;
 import javax.measure.Unit;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DateTimeType;
@@ -55,7 +54,7 @@ public class ShellyUtils {
         return value != null ? value : "";
     }
 
-    public static String getString(Exception e) {
+    public static String getMessage(Exception e) {
         String message = e.getMessage();
         return message != null ? message : "";
     }
@@ -102,10 +101,12 @@ public class ShellyUtils {
         return value == 0 ? OnOffType.OFF : OnOffType.ON;
     }
 
-    @SuppressWarnings("null")
     public static State toQuantityType(@Nullable Double value, int digits, Unit<?> unit) {
+        if (value == null) {
+            return UnDefType.NULL;
+        }
         BigDecimal bd = new BigDecimal(value.doubleValue());
-        return value == null ? UnDefType.NULL : toQuantityType(bd.setScale(digits, BigDecimal.ROUND_HALF_UP), unit);
+        return toQuantityType(bd.setScale(digits, BigDecimal.ROUND_HALF_UP), unit);
     }
 
     public static State toQuantityType(@Nullable Number value, Unit<?> unit) {
@@ -117,15 +118,17 @@ public class ShellyUtils {
     }
 
     public static void validateRange(String name, Integer value, Integer min, Integer max) {
-        Validate.isTrue((value >= min) && (value <= max),
-                "Value " + name + " is out of range (" + min.toString() + "-" + max.toString() + ")");
+        if ((value >= min) && (value <= max)) {
+            throw new IllegalArgumentException(
+                    "Value " + name + " is out of range (" + min.toString() + "-" + max.toString() + ")");
+        }
     }
 
     public static String urlEncode(String input) throws ShellyApiException {
         try {
             return URLEncoder.encode(input, StandardCharsets.UTF_8.toString());
         } catch (UnsupportedEncodingException e) {
-            throw new ShellyApiException(
+            throw new ShellyApiException(e,
                     "Unsupported encoding format: " + StandardCharsets.UTF_8.toString() + ", input=" + input);
         }
     }
@@ -145,22 +148,19 @@ public class ShellyUtils {
         return new DateTimeType(ZonedDateTime.ofInstant(Instant.ofEpochSecond(timestamp - delta), zoneId));
     }
 
-    public static Integer getLightIdFromGroup(@Nullable String groupName) {
-        Validate.notNull(groupName);
+    public static Integer getLightIdFromGroup(String groupName) {
         if (groupName.startsWith(CHANNEL_GROUP_LIGHT_CHANNEL)) {
             return Integer.parseInt(StringUtils.substringAfter(groupName, CHANNEL_GROUP_LIGHT_CHANNEL)) - 1;
         }
         return 0; // only 1 light, e.g. bulb or rgbw2 in color mode
     }
 
-    public static String buildControlGroupName(@Nullable ShellyDeviceProfile profile, Integer channelId) {
-        Validate.notNull(profile);
+    public static String buildControlGroupName(ShellyDeviceProfile profile, Integer channelId) {
         return profile.isBulb || profile.isDuo || profile.inColor ? CHANNEL_GROUP_LIGHT_CONTROL
                 : CHANNEL_GROUP_LIGHT_CHANNEL + channelId.toString();
     }
 
-    public static String buildWhiteGroupName(@Nullable ShellyDeviceProfile profile, Integer channelId) {
-        Validate.notNull(profile);
+    public static String buildWhiteGroupName(ShellyDeviceProfile profile, Integer channelId) {
         return profile.isBulb || profile.isDuo && !profile.inColor ? CHANNEL_GROUP_WHITE_CONTROL
                 : CHANNEL_GROUP_LIGHT_CHANNEL + channelId.toString();
     }

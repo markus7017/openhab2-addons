@@ -15,8 +15,6 @@ package org.openhab.binding.shelly.internal.coap;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.commons.lang.Validate;
-
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
@@ -100,7 +98,8 @@ public class ShellyCoapJSonDTO {
     }
 
     public static class CoIotSensor {
-        public String index; // id
+        @SerializedName("index")
+        public String id; // id
         public double value; // value
     }
 
@@ -120,14 +119,13 @@ public class ShellyCoapJSonDTO {
 
             in.beginObject();
             String generic = in.nextName();
-            Validate.notNull(generic, "Invalid JSon format for CoIotSensorList");
             if (generic.equals(COIOT_TAG_GENERIC)) {
                 in.beginArray();
                 while (in.hasNext()) {
                     in.beginArray();
                     final CoIotSensor sensor = new CoIotSensor();
                     in.nextInt(); // alway 0
-                    sensor.index = new Integer(in.nextInt()).toString();
+                    sensor.id = new Integer(in.nextInt()).toString();
                     sensor.value = in.nextDouble();
                     in.endArray();
                     list.generic.add(sensor);
@@ -148,7 +146,7 @@ public class ShellyCoapJSonDTO {
                 for (int i = 0; i < sensors.generic.size(); i++) {
                     out.beginArray();
                     out.value(0);
-                    out.value(sensors.generic.get(i).index);
+                    out.value(sensors.generic.get(i).id);
                     out.value(sensors.generic.get(i).value);
                     out.endArray();
                 }

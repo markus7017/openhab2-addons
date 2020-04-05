@@ -17,7 +17,6 @@ import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.TreeMap;
 
 import javax.servlet.ServletException;
@@ -25,6 +24,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -62,7 +62,7 @@ public class ShellyEventServlet extends HttpServlet {
         this.handlerFactory = handlerFactory;
         try {
             httpService.registerServlet(SHELLY_CALLBACK_URI, this, null, httpService.createDefaultHttpContext());
-            logger.debug("Shelly: CallbackServlet started at '{}'", SHELLY_CALLBACK_URI);
+            logger.debug("ShellyEventServlet started at '{}'", SHELLY_CALLBACK_URI);
         } catch (NamespaceException | ServletException | IllegalArgumentException e) {
             logger.warn("Could not start CallbackServlet: {} ({})", e.getMessage(), e.getClass());
         }
@@ -71,22 +71,25 @@ public class ShellyEventServlet extends HttpServlet {
     @Deactivate
     protected void deactivate() {
         httpService.unregister(SHELLY_CALLBACK_URI);
-        logger.debug("Shelly: CallbackServlet stopped");
+        logger.debug("ShellyEventServlet stopped");
     }
 
-    @SuppressWarnings("null")
     @Override
     protected void service(@Nullable HttpServletRequest request, @Nullable HttpServletResponse resp)
-            throws ServletException, IOException {
+            throws ServletException, IOException, IllegalArgumentException {
         String data = "";
         String path = "";
         String deviceName = "";
         String index = "";
         String type = "";
 
+        if ((request == null) || (resp == null)) {
+            throw new IllegalArgumentException("Servlet: request or resp must not be null!");
+        }
+
         try {
             path = request.getRequestURI().toLowerCase();
-            data = inputStreamToString(request);
+            data = IOUtils.toString(request.getInputStream());
             String ipAddress = request.getHeader("HTTP_X_FORWARDED_FOR");
             if (ipAddress == null) {
                 ipAddress = request.getRemoteAddr();
@@ -121,18 +124,11 @@ public class ShellyEventServlet extends HttpServlet {
             handlerFactory.onEvent(ipAddress, deviceName, index, type, parms);
         } catch (IllegalArgumentException e) {
             logger.debug(
-                    "Exception processing callback: {} ({}), path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}\n{}",
-                    e.getMessage(), e.getClass(), path, data, deviceName, index, type,
-                    request.getParameterMap().toString(), e.getStackTrace());
+                    "Exception processing callback: {path={}, data='{}'; deviceName={}, index={}, type={}, parameters={}{}",
+                    path, data, deviceName, index, type, request.getParameterMap().toString(), e.toString());
         } finally {
             resp.setCharacterEncoding(StandardCharsets.UTF_8.toString());
             resp.getWriter().write("");
         }
-    }
-
-    @SuppressWarnings({ "resource", "null" })
-    private String inputStreamToString(@Nullable HttpServletRequest request) throws IOException {
-        final Scanner scanner = new Scanner(request.getInputStream()).useDelimiter("\\A");
-        return scanner.hasNext() ? scanner.next() : "";
     }
 }

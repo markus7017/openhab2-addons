@@ -31,20 +31,20 @@ public class ShellyColorUtils {
     OnOffType power = OnOffType.OFF;
     String mode = "";
 
-    Integer red = 0;
-    Integer green = 0;
-    Integer blue = 0;
-    Integer white = 0;
+    int red = 0;
+    int green = 0;
+    int blue = 0;
+    int white = 0;
     PercentType percentRed = new PercentType(0);
     PercentType percentGreen = new PercentType(0);
     PercentType percentBlue = new PercentType(0);
     PercentType percentWhite = new PercentType(0);
 
-    Integer gain = 0;
-    Integer brightness = 0;
-    Integer temp = 0;
-    Integer minTemp = 0;
-    Integer maxTemp = 0;
+    int gain = 0;
+    int brightness = 0;
+    int temp = 0;
+    int minTemp = 0;
+    int maxTemp = 0;
     PercentType percentGain = new PercentType(0);
     PercentType percentBrightness = new PercentType(0);
     PercentType percentTemp = new PercentType(0);
@@ -149,7 +149,7 @@ public class ShellyColorUtils {
             for (int i = 0; i < rgbw.length; i++) {
                 values[i] = Integer.parseInt(rgbw[i]);
             }
-        } catch (NullPointerException e) {
+        } catch (NullPointerException e) { // might be a format problem
             throw new IllegalArgumentException(
                     "Unable to convert fullColor value: " + rgbwString + ", " + e.getMessage());
         }
@@ -174,8 +174,7 @@ public class ShellyColorUtils {
 
     public static PercentType toPercent(Integer _value, Integer min, Integer max) {
         Double range = max.doubleValue() - min.doubleValue();
-        @SuppressWarnings("null")
-        Double value = _value != null ? _value.doubleValue() : 0;
+        Double value = _value.doubleValue();
         value = value < min ? min.doubleValue() : value;
         value = value > max ? max.doubleValue() : value;
         Double percent = 0.0;

@@ -32,9 +32,10 @@ public class ShellyThingConfiguration {
     public boolean eventsButton = false; // true: register for Relay btn_xxx events
     public boolean eventsSwitch = true; // true: register for device out_xxx events
     public boolean eventsPush = true; // true: register for short/long push events
+    public boolean eventsRoller = true; // true: register for short/long push events
     public boolean eventsSensorReport = true; // true: register for sensor events
     public boolean eventsCoIoT = false; // true: use CoIoT events (based on COAP)
 
     public String localIp = ""; // local ip addresses used to create callback url
-    public Integer httpPort = 0;
+    public String localPort = "8080";
 }

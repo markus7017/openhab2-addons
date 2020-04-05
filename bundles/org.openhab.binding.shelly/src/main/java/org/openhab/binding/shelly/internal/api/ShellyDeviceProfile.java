@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
@@ -41,7 +40,7 @@ import com.google.gson.JsonSyntaxException;
  */
 @NonNullByDefault
 public class ShellyDeviceProfile {
-    public Boolean initialized = false; // true when initialized
+    public boolean initialized = false; // true when initialized
 
     public String thingName = "";
     public String deviceType = "";
@@ -90,13 +89,6 @@ public class ShellyDeviceProfile {
 
     public Map<String, String> irCodes = new HashMap<>(); // Sense: list of stored IR codes
 
-    public Boolean supportsButtonUrls = false; // true if the btn_xxx urls are supported
-    public Boolean supportsOutUrls = false; // true if the out_xxx urls are supported
-    public Boolean supportsPushUrls = false; // true if sensor report_url is supported
-    public Boolean supportsRollerUrls = false; // true if the roller_xxx urls are supported
-    public Boolean supportsSensorUrls = false; // true if sensor report_url is supported
-
-    @SuppressWarnings("null")
     public ShellyDeviceProfile initialize(String thingType, String json) throws ShellyApiException {
         Gson gson = new Gson();
 
@@ -106,10 +98,9 @@ public class ShellyDeviceProfile {
             initFromThingType(thingType);
             settingsJson = json;
             settings = gson.fromJson(json, ShellySettingsGlobal.class);
-            Validate.notNull(settings, "Converted device settings must not be null!\nsettings=" + json);
         } catch (IllegalArgumentException | JsonSyntaxException e) {
-            throw new ShellyApiException(
-                    thingName + ": Unable to transform settings JSON e.toString, json='" + json + "'");
+            throw new ShellyApiException(e,
+                    thingName + ": Unable to transform settings JSON " + e.toString() + ", json='" + json + "'");
         }
 
         // General settings
@@ -118,7 +109,7 @@ public class ShellyDeviceProfile {
         hostname = settings.device.hostname != null && !settings.device.hostname.isEmpty()
                 ? settings.device.hostname.toLowerCase()
                 : "shelly-" + mac.toUpperCase().substring(6, 11);
-        mode = getString(settings.mode) != null ? getString(settings.mode).toLowerCase() : "";
+        mode = !getString(settings.mode).isEmpty() ? getString(settings.mode).toLowerCase() : "";
         hwRev = settings.hwinfo != null ? getString(settings.hwinfo.hwRevision) : "";
         hwBatchId = settings.hwinfo != null ? getString(settings.hwinfo.batchId.toString()) : "";
         fwDate = getString(StringUtils.substringBefore(settings.fw, "/"));
@@ -149,19 +140,20 @@ public class ShellyDeviceProfile {
                     ? settings.sleepMode.period * 60 + 15 // minutes + 15s
                     : settings.sleepMode.period * 3600 + 60; // hours + 60s
         } else if ((settings.coiot != null) && (settings.coiot.updatePeriod != null)) {
-            updatePeriod = settings.coiot.updatePeriod + 15; // usually 15+15s
+            updatePeriod = 2 * getInteger(settings.coiot.updatePeriod) + 5; // usually 2*15+5s=50sec
         }
-
-        supportsButtonUrls = settingsJson.contains(SHELLY_API_EVENTURL_BTN_ON)
-                || settingsJson.contains(SHELLY_API_EVENTURL_BTN1_ON)
-                || settingsJson.contains(SHELLY_API_EVENTURL_BTN2_ON);
-        supportsOutUrls = settingsJson.contains(SHELLY_API_EVENTURL_OUT_ON);
-        supportsPushUrls = settingsJson.contains(SHELLY_API_EVENTURL_SHORT_PUSH);
-        supportsRollerUrls = settingsJson.contains(SHELLY_API_EVENTURL_ROLLER_OPEN);
-        supportsSensorUrls = settingsJson.contains(SHELLY_API_EVENTURL_REPORT);
 
         initialized = true;
         return this;
+    }
+
+    public boolean containsEventUrl(String eventType) {
+        return containsEventUrl(settingsJson, eventType);
+    }
+
+    public boolean containsEventUrl(String json, String eventType) {
+        String settings = json.toLowerCase();
+        return settings.contains((eventType + SHELLY_EVENTURL_SUFFIX).toLowerCase());
     }
 
     public Boolean isInitialized() {
@@ -189,7 +181,7 @@ public class ShellyDeviceProfile {
         boolean isSmoke = thingType.equals(THING_TYPE_SHELLYSMOKE_STR);
         isDW = thingType.equals(THING_TYPE_SHELLYDOORWIN_STR);
         isSense = thingType.equals(THING_TYPE_SHELLYSENSE_STR);
-        isSensor = isHT | isFlood | isDW | isSmoke | isSense;
+        isSensor = isHT || isFlood || isDW || isSmoke || isSense;
         hasBattery = isHT || isFlood || isDW || isSmoke; // we assume that Sense is connected to the charger
     }
 

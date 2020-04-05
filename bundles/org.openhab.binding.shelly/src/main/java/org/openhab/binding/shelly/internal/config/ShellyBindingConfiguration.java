@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
@@ -36,25 +35,19 @@ public class ShellyBindingConfiguration {
 
     public String defaultUserId = ""; // default for http basic user id
     public String defaultPassword = ""; // default for http basic auth password
-    public Boolean autoCoIoT = false;
+    public boolean autoCoIoT = false;
 
-    @SuppressWarnings("null")
     public void updateFromProperties(Map<String, Object> properties) {
-        Validate.notNull(properties);
-
         for (Map.Entry<String, Object> e : properties.entrySet()) {
             switch (e.getKey()) {
                 case CONFIG_DEF_HTTP_USER:
-                    String v = (String) e.getValue();
-                    defaultUserId = v != null ? v : "";
+                    defaultUserId = (String) e.getValue();
                     break;
                 case CONFIG_DEF_HTTP_PWD:
-                    v = (String) e.getValue();
-                    defaultPassword = v != null ? v : "";
+                    defaultPassword = (String) e.getValue();
                     break;
                 case CONFIG_AutoCoIoT:
-                    Boolean b = (Boolean) e.getValue();
-                    autoCoIoT = b != null ? b : false;
+                    autoCoIoT = (boolean) e.getValue();
                     break;
             }
 
@@ -62,7 +55,6 @@ public class ShellyBindingConfiguration {
     }
 
     public void updateFromProperties(Dictionary<String, Object> properties) {
-        Validate.notNull(properties);
         List<String> keys = Collections.list(properties.keys());
         Map<String, Object> dictCopy = keys.stream().collect(Collectors.toMap(Function.identity(), properties::get));
         updateFromProperties(dictCopy);

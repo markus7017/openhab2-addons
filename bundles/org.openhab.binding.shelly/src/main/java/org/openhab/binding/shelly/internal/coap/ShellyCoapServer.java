@@ -20,7 +20,6 @@ import java.net.UnknownHostException;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.apache.commons.lang.Validate;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapServer;
 import org.eclipse.californium.core.coap.CoAP;
@@ -46,14 +45,12 @@ import org.slf4j.LoggerFactory;
 public class ShellyCoapServer {
     private final Logger logger = LoggerFactory.getLogger(ShellyCoapServer.class);
 
-    private @Nullable CoapEndpoint statusEndpoint;
-    private @Nullable UdpMulticastConnector statusConnector;
-    private @Nullable CoapServer server;
     boolean started = false;
+    private CoapEndpoint statusEndpoint = new CoapEndpoint.Builder().build();
+    private @Nullable UdpMulticastConnector statusConnector;
+    private final CoapServer server = new CoapServer(NetworkConfig.getStandard(), COIOT_PORT);;
     private final Set<ShellyCoapListener> coapListeners = new CopyOnWriteArraySet<>();
 
-    @SuppressWarnings("null")
-    @NonNullByDefault
     protected class ShellyStatusListener extends CoapResource {
 
         private ShellyCoapServer listener;
@@ -88,33 +85,20 @@ public class ShellyCoapServer {
         coapListeners.remove(listener);
     }
 
-    @SuppressWarnings("null")
     synchronized void init(String localIp) throws UnknownHostException {
-        if (server == null) {
-            logger.debug("Initializing CoIoT listener (local IP={}", localIp);
-            NetworkConfig nc = NetworkConfig.getStandard();
-            InetAddress localAddr = InetAddress.getByName(localIp);
-            InetSocketAddress localPort = new InetSocketAddress(COIOT_PORT);
+        logger.debug("Initializing CoIoT listener (local IP={}:{})", localIp, COIOT_PORT);
+        NetworkConfig nc = NetworkConfig.getStandard();
+        InetAddress localAddr = InetAddress.getByName(localIp);
+        InetSocketAddress localPort = new InetSocketAddress(COIOT_PORT);
 
-            // Join the multicast group on the selected network interface
-            statusConnector = new UdpMulticastConnector(localAddr, localPort, CoAP.MULTICAST_IPV4); // bind UDP listener
-            statusEndpoint = new CoapEndpoint.Builder().setNetworkConfig(nc).setConnector(statusConnector).build();
-
-            server = new CoapServer(NetworkConfig.getStandard(), COIOT_PORT);
-            Validate.notNull(server);
-            server.addEndpoint(statusEndpoint);
-            CoapResource cit = new ShellyStatusListener("cit", this);
-            CoapResource s = new ShellyStatusListener("s", this);
-            cit.add(s);
-            server.add(cit);
-        }
-    }
-
-    public void start() {
-        if (!started) {
-            logger.debug("Start CoIoT Listener");
-            started = true;
-        }
+        // Join the multicast group on the selected network interface
+        statusConnector = new UdpMulticastConnector(localAddr, localPort, CoAP.MULTICAST_IPV4); // bind UDP listener
+        statusEndpoint = new CoapEndpoint.Builder().setNetworkConfig(nc).setConnector(statusConnector).build();
+        server.addEndpoint(statusEndpoint);
+        CoapResource cit = new ShellyStatusListener("cit", this);
+        CoapResource s = new ShellyStatusListener("s", this);
+        cit.add(s);
+        server.add(cit);
     }
 
     protected void processResponse(Response response) {
@@ -141,12 +125,9 @@ public class ShellyCoapServer {
      */
     public void stop() {
         if (started) {
-            if (server != null) {
-                server.stop();
-            }
-            if (statusEndpoint != null) {
-                statusEndpoint.stop();
-            }
+            server.stop();
+            statusEndpoint.stop();
+            logger.debug("CoAP Listener stopped");
         }
     }
 

@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
@@ -40,7 +39,6 @@ import org.openhab.binding.shelly.internal.handler.ShellyLightHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyProtectedHandler;
 import org.openhab.binding.shelly.internal.handler.ShellyRelayHandler;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
-import org.openhab.binding.shelly.internal.util.ShellyUtils;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -60,7 +58,7 @@ import io.reactivex.annotations.NonNull;
 public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(ShellyHandlerFactory.class);
     private final HttpClient httpClient;
-    private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
+    private final ShellyTranslationProvider messages;
     private final ShellyCoapServer coapServer;
     private final Set<ShellyDeviceListener> deviceListeners = new CopyOnWriteArraySet<>();
 
@@ -85,16 +83,14 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
         super.activate(componentContext);
 
         this.httpClient = httpClientFactory.getCommonHttpClient();
-        this.messages.initFrom(new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider, localeProvider));
+        messages = new ShellyTranslationProvider(bundleContext.getBundle(), i18nProvider, localeProvider);
         this.coapServer = new ShellyCoapServer();
-        Validate.notNull(coapServer, "Unable to created coapServer!");
 
         bindingConfig.updateFromProperties(configProperties);
         httpPort = HttpServiceUtil.getHttpServicePort(componentContext.getBundleContext());
         if (httpPort == -1) {
             httpPort = 8080;
         }
-        Validate.isTrue(httpPort > 0, "Unable to get OH HTTP port");
         logger.debug("Using OH HTTP port {}", httpPort);
 
         String lip = networkAddressService.getPrimaryIpv4HostAddress();
@@ -113,16 +109,19 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
         ShellyBaseHandler handler = null;
 
         if (thingType.equals(THING_TYPE_SHELLYPROTECTED_STR)) {
-            logger.debug("Create new thing of type {} using ShellyRelayHandler", thingTypeUID.getId());
+            logger.debug("{}: Create new thing of type {} using ShellyProtectedHandler", thing.getLabel(),
+                    thingTypeUID.toString());
             handler = new ShellyProtectedHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort,
                     httpClient);
         } else if (thingType.equals(THING_TYPE_SHELLYBULB.getId()) || thingType.equals(THING_TYPE_SHELLYDUO.getId())
                 || thingType.equals(THING_TYPE_SHELLYRGBW2_COLOR.getId())
                 || thingType.equals(THING_TYPE_SHELLYRGBW2_WHITE.getId())) {
-            logger.debug("Create new thing of type {} using ShellyLightHandler", thingTypeUID.getId());
+            logger.debug("{}: Create new thing of type {} using ShellyLightHandler", thing.getLabel(),
+                    thingTypeUID.toString());
             handler = new ShellyLightHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort, httpClient);
         } else if (SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID)) {
-            logger.debug("Create new thing of type {} using ShellyRelayHandler", thingTypeUID.getId());
+            logger.debug("{}: Create new thing of type {} using ShellyRelayHandler", thing.getLabel(),
+                    thingTypeUID.toString());
             handler = new ShellyRelayHandler(thing, messages, bindingConfig, coapServer, localIP, httpPort, httpClient);
         }
 
@@ -138,11 +137,9 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
     /**
      * Remove handler of things.
      */
-    @SuppressWarnings("unlikely-arg-type")
     @Override
     protected synchronized void removeHandler(@NonNull ThingHandler thingHandler) {
         if (thingHandler instanceof ShellyBaseHandler) {
-            ((ShellyBaseHandler) thingHandler).stop();
             deviceListeners.remove(thingHandler);
         }
     }
@@ -165,9 +162,8 @@ public class ShellyHandlerFactory extends BaseThingHandlerFactory {
                     break;
                 }
             } catch (IllegalArgumentException | NullPointerException e) {
-                logger.debug("Unable to process callback: {} ({}), deviceName={}, type={}, index={}, parameters={}\n{}",
-                        ShellyUtils.getString(e), e.getClass().toString(), deviceName, eventType, componentIndex,
-                        parameters.toString(), e.getStackTrace());
+                logger.debug("{}: Unable to process callback: type={}, index={}, parameters={}{}", deviceName,
+                        eventType, componentIndex, parameters.toString(), e.toString());
                 // continue with next listener
             }
         }

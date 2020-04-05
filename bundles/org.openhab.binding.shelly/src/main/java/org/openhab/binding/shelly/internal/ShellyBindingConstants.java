@@ -167,9 +167,6 @@ public class ShellyBindingConstants {
     // Dimmer
     public static final String CHANNEL_GROUP_DIMMER_CONTROL = CHANNEL_GROUP_RELAY_CONTROL;
 
-    public static final String CHANNEL_GROUP_DIMMER_STATUS = "status";
-    public static final String CHANNEL_DIMMER_LOAD_ERROR = "loaderror";
-
     // Power meter
     public static final String CHANNEL_GROUP_METER = "meter";
     public static final String CHANNEL_METER_CURRENTWATTS = "currentWatts";
@@ -266,18 +263,15 @@ public class ShellyBindingConstants {
     public static final String ALARM_TYPE_LOW_BATTERY = "LOW_BATTERY";
 
     // Event types
-    public static final String EVENT_TYPE_SHORTPUSH = "SHOTRTPUSH";
-    public static final String EVENT_TYPE_LONGPUSH = "LONGPUSH";
-
-    public static final String SHELLY_CALLBACK_URI = "/shelly/event";
     public static final String EVENT_TYPE_RELAY = "relay";
     public static final String EVENT_TYPE_ROLLER = "roller";
-    public static final String EVENT_TYPE_SENSORDATA = "sensordata";
     public static final String EVENT_TYPE_LIGHT = "light";
+    public static final String EVENT_TYPE_SHORTPUSH = "SHOTRTPUSH";
+    public static final String EVENT_TYPE_LONGPUSH = "LONGPUSH";
+    public static final String EVENT_TYPE_SENSORDATA = "sensordata";
 
-    public static final String SHELLY_IR_CODET_STORED = "stored";
-    public static final String SHELLY_IR_CODET_PRONTO = "pronto";
-    public static final String SHELLY_IR_CODET_PRONTO_HEX = "pronto_hex";
+    // URI for the EventServlet
+    public static final String SHELLY_CALLBACK_URI = "/shelly/event";
 
     public static final int DIM_STEPSIZE = 5;
 
@@ -296,5 +290,4 @@ public class ShellyBindingConstants {
     public static final int UPDATE_MIN_DELAY = 15;// update every x triggers or when a key was pressed
     public static final int UPDATE_SETTINGS_INTERVAL_SECONDS = 60; // check for updates every x sec
     public static final int HEALTH_CHECK_INTERVAL_SEC = 300; // Health check interval, 5min
-
 }

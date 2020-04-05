@@ -109,7 +109,6 @@ public class ShellyChannelDefinitionsDTO {
         ;
     }
 
-    @SuppressWarnings({ "null", "unused" })
     public static ShellyChannel getDefinition(String channelName) throws IllegalArgumentException {
         String group = StringUtils.substringBefore(channelName, "#");
         String channel = StringUtils.substringAfter(channelName, "#");
@@ -119,11 +118,7 @@ public class ShellyChannelDefinitionsDTO {
             group = CHANNEL_GROUP_RELAY_CONTROL; // map meter1..n to meter
         }
         String channelId = group + "#" + channel;
-        ShellyChannel chan = channelDefinitions.get(channelId);
-        if (chan == null) {
-            throw new IllegalArgumentException("Unable to find definition for channel " + channelId);
-        }
-        return chan;
+        return channelDefinitions.get(channelId);
     }
 
     /**

@@ -28,12 +28,9 @@ import org.osgi.framework.Bundle;
 @NonNullByDefault
 public class ShellyTranslationProvider {
 
-    private @Nullable Bundle bundle;
-    private @Nullable TranslationProvider i18nProvider;
-    private @Nullable LocaleProvider localeProvider;
-
-    public ShellyTranslationProvider() {
-    }
+    private final Bundle bundle;
+    private final TranslationProvider i18nProvider;
+    private final LocaleProvider localeProvider;
 
     public ShellyTranslationProvider(Bundle bundle, TranslationProvider i18nProvider, LocaleProvider localeProvider) {
         this.bundle = bundle;
@@ -42,14 +39,9 @@ public class ShellyTranslationProvider {
     }
 
     public ShellyTranslationProvider(final ShellyTranslationProvider other) {
-        initFrom(other);
-    }
-
-    public ShellyTranslationProvider initFrom(final ShellyTranslationProvider other) {
         this.bundle = other.bundle;
         this.i18nProvider = other.i18nProvider;
         this.localeProvider = other.localeProvider;
-        return this;
     }
 
     public @Nullable String get(String key, @Nullable Object... arguments) {
@@ -57,11 +49,11 @@ public class ShellyTranslationProvider {
     }
 
     public @Nullable String getText(String key, @Nullable Object... arguments) {
-        Locale locale = localeProvider != null ? localeProvider.getLocale() : Locale.ENGLISH;
-        return i18nProvider != null ? i18nProvider.getText(bundle, key, getDefaultText(key), locale, arguments) : key;
+        Locale locale = localeProvider.getLocale();
+        return i18nProvider.getText(bundle, key, getDefaultText(key), locale, arguments);
     }
 
     public @Nullable String getDefaultText(String key) {
-        return i18nProvider != null ? i18nProvider.getText(bundle, key, key, Locale.ENGLISH) : key;
+        return i18nProvider.getText(bundle, key, key, Locale.ENGLISH);
     }
 }

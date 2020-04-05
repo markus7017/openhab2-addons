@@ -50,38 +50,44 @@ public class ShellyApiJsonDTO {
 
     public static final String SHELLY_URL_SETTINGS_DIMMER = "/settings/light";
 
-    public static final String SHELLY_API_EVENTURL_BTN_ON = "btn_on_url";
-    public static final String SHELLY_API_EVENTURL_BTN_OFF = "btn_off_url";
-    public static final String SHELLY_API_EVENTURL_BTN1_ON = "btn1_on_url";
-    public static final String SHELLY_API_EVENTURL_BTN1_OFF = "btn1_off_url";
-    public static final String SHELLY_API_EVENTURL_BTN2_ON = "btn2_on_url";
-    public static final String SHELLY_API_EVENTURL_BTN2_OFF = "btn2_off_url";
-    public static final String SHELLY_API_EVENTURL_OUT_ON = "out_on_url";
-    public static final String SHELLY_API_EVENTURL_OUT_OFF = "out_off_url";
-    public static final String SHELLY_API_EVENTURL_SHORT_PUSH = "shortpush_url";
-    public static final String SHELLY_API_EVENTURL_LONG_PUSH = "longpush_url";
-    public static final String SHELLY_API_EVENTURL_ROLLER_OPEN = "roller_open_url";
-    public static final String SHELLY_API_EVENTURL_ROLLER_CLOSE = "roller_close_url";
-    public static final String SHELLY_API_EVENTURL_ROLLER_STOP = "roller_stop_url";
-    public static final String SHELLY_API_EVENTURL_REPORT = "report_url";
-    public static final String SHELLY_API_EVENTURL_DARK = "dark_url";
-    public static final String SHELLY_API_EVENTURL_TWILIGHT = "twilight_url";
+    //
+    // Action URLs according to the device type
+    //
+    public static final String SHELLY_EVENTURL_SUFFIX = "_url";
 
+    // Relay
     public static final String SHELLY_EVENT_BTN_ON = "btn_on";
     public static final String SHELLY_EVENT_BTN_OFF = "btn_off";
-    public static final String SHELLY_EVENT_BTN1_OFF = "btn1_on";
-    public static final String SHELLY_EVENT_BTN1_ON = "btn1_off";
-    public static final String SHELLY_EVENT_BTN2_ON = "btn2_on";
-    public static final String SHELLY_EVENT_BTN2_OFF = "btn2_off";
-    public static final String SHELLY_EVENT_SHORTPUSH = "shortpush";
-    public static final String SHELLY_EVENT_LONGPUSH = "longpush";
     public static final String SHELLY_EVENT_OUT_ON = "out_on";
     public static final String SHELLY_EVENT_OUT_OFF = "out_off";
+    public static final String SHELLY_EVENT_SHORTPUSH = "shortpush";
+    public static final String SHELLY_EVENT_LONGPUSH = "longpush";
+
+    // Dimmer
+    public static final String SHELLY_EVENT_BTN1_ON = "btn1_on";
+    public static final String SHELLY_EVENT_BTN1_OFF = "btn1_off";
+    public static final String SHELLY_EVENT_BTN2_ON = "btn2_on";
+    public static final String SHELLY_EVENT_BTN2_OFF = "btn2_off";
+    public static final String SHELLY_EVENT_SHORTPUSH1 = "btn1_shortpush";
+    public static final String SHELLY_EVENT_LONGPUSH1 = "btn1_longpush";
+    public static final String SHELLY_EVENT_SHORTPUSH2 = "btn2_shortpush";
+    public static final String SHELLY_EVENT_LONGPUSH2 = "btn2_longpush";
+
+    // Roller
     public static final String SHELLY_EVENT_ROLLER_OPEN = "roller_open";
     public static final String SHELLY_EVENT_ROLLER_CLOSE = "roller_close";
     public static final String SHELLY_EVENT_ROLLER_STOP = "roller_stop";
-    public static final String SHELLY_EVENT_SENSORDATA = "sensordata";
 
+    // Sensors
+    public static final String SHELLY_EVENT_SENSORREPORT = "report";
+    public static final String SHELLY_EVENT_DARK = "dark";
+    public static final String SHELLY_EVENT_TWILIGHT = "twilight";
+    public static final String SHELLY_EVENT_FLOOD_DETECTED = "flood_detected";
+    public static final String SHELLY_EVENT_FLOOD_GONE = "flood_gone";
+
+    //
+    // API values
+    //
     public static final String SHELLY_BTNT_MOMENTARY = "momentary";
     public static final String SHELLY_BTNT_TOGGLE = "toggle";
     public static final String SHELLY_BTNT_EDGE = "edge";
@@ -96,28 +102,20 @@ public class ShellyApiJsonDTO {
     public static final String SHELLY_ALWD_ROLLER_TURN_CLOSE = "close";
     public static final String SHELLY_ALWD_ROLLER_TURN_STOP = "stop";
 
-    public static final String SHELLY_CALLBACK_URI = "/shelly/event";
-    public static final String EVENT_TYPE_RELAY = "relay";
-    public static final String EVENT_TYPE_ROLLER = "roller";
-    public static final String EVENT_TYPE_SENSORDATA = "sensordata";
-    public static final String EVENT_TYPE_LIGHT = "light";
-
-    public static final String SHELLY_IR_CODET_STORED = "stored";
-    public static final String SHELLY_IR_CODET_PRONTO = "pronto";
-    public static final String SHELLY_IR_CODET_PRONTO_HEX = "pronto_hex";
-
+    // API Error Codes
     public static final String SHELLY_APIERR_UNAUTHORIZED = "Unauthorized";
     public static final String SHELLY_APIERR_TIMEOUT = "Timeout";
     public static final String SHELLY_APIERR_NOT_CALIBRATED = "Not calibrated!";
+
+    // API device types / properties
+    public static final String SHELLY_CLASS_RELAY = "relay"; // Relay: relay mode
+    public static final String SHELLY_CLASS_ROLLER = "roller"; // Relay: roller mode
+    public static final String SHELLY_CLASS_LIGHT = "light"; // Bulb: color mode
 
     public static final String SHELLY_API_ON = "on";
     public static final String SHELLY_API_OFF = "off";
     public static final String SHELLY_API_TRUE = "true";
     public static final String SHELLY_API_FALSE = "false";
-
-    public static final String SHELLY_CLASS_RELAY = "relay"; // Relay: relay mode
-    public static final String SHELLY_CLASS_ROLLER = "roller"; // Relay: roller mode
-    public static final String SHELLY_CLASS_LIGHT = "light"; // Bulb: color mode
 
     public static final String SHELLY_API_MODE = "mode";
     public static final String SHELLY_MODE_RELAY = "relay"; // Relay: relay mode
@@ -179,6 +177,11 @@ public class ShellyApiJsonDTO {
     public final static String SHELLY_API_ILLUM_BRIGHT = "bright";
     public final static String SHELLY_API_DWSTATE_OPEN = "open";
     public final static String SHELLY_API_DWSTATE_CLOSE = "close";
+
+    // Shelly Sense
+    public static final String SHELLY_IR_CODET_STORED = "stored";
+    public static final String SHELLY_IR_CODET_PRONTO = "pronto";
+    public static final String SHELLY_IR_CODET_PRONTO_HEX = "pronto_hex";
 
     public static class ShellySettingsDevice {
         public String type;

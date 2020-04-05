@@ -18,7 +18,6 @@ import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import java.io.IOException;
 
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
@@ -76,7 +75,6 @@ public class ShellyComponents {
      * @param status Last ShellySettingsStatus
      */
     public static boolean updateMeters(ShellyBaseHandler th, ShellySettingsStatus status) {
-        Validate.notNull(th);
         ShellyDeviceProfile profile = th.getProfile();
 
         Double accumulatedWatts = 0.0;
@@ -104,8 +102,8 @@ public class ShellyComponents {
                             }
 
                             if (!th.areChannelsCreated()) {
-                                th.updateChannelDefinitions(
-                                        ShellyChannelDefinitionsDTO.createMeterChannels(th.getThing(), meter, groupName));
+                                th.updateChannelDefinitions(ShellyChannelDefinitionsDTO
+                                        .createMeterChannels(th.getThing(), meter, groupName));
                             }
 
                             updated |= th.updateChannel(groupName, CHANNEL_METER_CURRENTWATTS,
@@ -138,8 +136,8 @@ public class ShellyComponents {
                             String groupName = profile.numMeters > 1 ? CHANNEL_GROUP_METER + meterIndex.toString()
                                     : CHANNEL_GROUP_METER;
                             if (!th.areChannelsCreated()) {
-                                th.updateChannelDefinitions(ShellyChannelDefinitionsDTO.createEMeterChannels(th.getThing(),
-                                        emeter, groupName));
+                                th.updateChannelDefinitions(ShellyChannelDefinitionsDTO
+                                        .createEMeterChannels(th.getThing(), emeter, groupName));
                             }
 
                             // convert Watt/Hour tok w/h
@@ -244,9 +242,7 @@ public class ShellyComponents {
      *
      * @throws IOException
      */
-    @SuppressWarnings("null")
     public static boolean updateSensors(ShellyBaseHandler th, ShellySettingsStatus status) throws ShellyApiException {
-        Validate.notNull(th);
         ShellyDeviceProfile profile = th.getProfile();
 
         boolean updated = false;
@@ -254,94 +250,90 @@ public class ShellyComponents {
             th.logger.debug("{}: Updating sensor", th.thingName);
             ShellyStatusSensor sdata = th.api.getSensorStatus();
 
-            if (sdata != null) {
-                if (!th.areChannelsCreated()) {
-                    th.updateChannelDefinitions(ShellyChannelDefinitionsDTO.createSensorChannels(th.getThing(), sdata));
+            if (!th.areChannelsCreated()) {
+                th.updateChannelDefinitions(ShellyChannelDefinitionsDTO.createSensorChannels(th.getThing(), sdata));
+            }
+
+            if (sdata.actReasons != null) {
+                boolean changed = th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP,
+                        getStringType(sdata.actReasons[0]));
+                updated |= changed;
+                if (changed) {
+                    th.postEvent(getString(sdata.actReasons[0]).toUpperCase(), true);
                 }
 
-                if (sdata.actReasons != null) {
-                    boolean changed = th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_WAKEUP,
-                            getStringType(sdata.actReasons[0]));
-                    updated |= changed;
-                    if (changed) {
-                        th.postEvent(getString(sdata.actReasons[0]).toUpperCase(), true);
-                    }
-
+            }
+            if ((sdata.contact != null) && sdata.contact.isValid) {
+                // Shelly DW: “sensor”:{“state”:“open”, “is_valid”:true},
+                th.logger.debug("{}: Updating DW state with {}", th.thingName, getString(sdata.contact.state));
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
+                        getString(sdata.contact.state).equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN) ? OpenClosedType.OPEN
+                                : OpenClosedType.CLOSED);
+                boolean changed = th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR,
+                        getStringType(sdata.sensorError));
+                if (changed) {
+                    th.postEvent(sdata.sensorError, true);
                 }
-                if ((sdata.contact != null) && sdata.contact.isValid) {
-                    // Shelly DW: “sensor”:{“state”:“open”, “is_valid”:true},
-                    th.logger.debug("{}: Updating DW state with {}", th.thingName, getString(sdata.contact.state));
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_STATE,
-                            getString(sdata.contact.state).equalsIgnoreCase(SHELLY_API_DWSTATE_OPEN)
-                                    ? OpenClosedType.OPEN
-                                    : OpenClosedType.CLOSED);
-                    boolean changed = th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ERROR,
-                            getStringType(sdata.sensorError));
-                    if (changed) {
-                        th.postEvent(sdata.sensorError, true);
-                    }
-                    updated |= changed;
+                updated |= changed;
+            }
+            if ((sdata.tmp != null) && getBool(sdata.tmp.isValid)) {
+                th.logger.trace("{}: Updating temperature", th.thingName);
+                DecimalType temp = getString(sdata.tmp.units).toUpperCase().equals(SHELLY_TEMP_CELSIUS)
+                        ? getDecimal(sdata.tmp.tC)
+                        : getDecimal(sdata.tmp.tF);
+                if (getString(sdata.tmp.units).toUpperCase().equals(SHELLY_TEMP_FAHRENHEIT)) {
+                    // convert Fahrenheit to Celsius
+                    temp = new DecimalType((temp.floatValue() - 32) * 5 / 9.0);
                 }
-                if ((sdata.tmp != null) && getBool(sdata.tmp.isValid)) {
-                    th.logger.trace("{}: Updating temperature", th.thingName);
-                    DecimalType temp = getString(sdata.tmp.units).toUpperCase().equals(SHELLY_TEMP_CELSIUS)
-                            ? getDecimal(sdata.tmp.tC)
-                            : getDecimal(sdata.tmp.tF);
-                    if (getString(sdata.tmp.units).toUpperCase().equals(SHELLY_TEMP_FAHRENHEIT)) {
-                        // convert Fahrenheit to Celsius
-                        temp = new DecimalType((temp.floatValue() - 32) * 5 / 9.0);
-                    }
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
-                            toQuantityType(temp.doubleValue(), DIGITS_TEMP, SIUnits.CELSIUS));
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_TEMP,
+                        toQuantityType(temp.doubleValue(), DIGITS_TEMP, SIUnits.CELSIUS));
+            }
+            if (sdata.hum != null) {
+                th.logger.trace("{}: Updating humidity", th.thingName);
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM,
+                        toQuantityType(getDouble(sdata.hum.value), DIGITS_PERCENT, SmartHomeUnits.PERCENT));
+            }
+            if ((sdata.lux != null) && getBool(sdata.lux.isValid)) {
+                // “lux”:{“value”:30, “illumination”: “dark”, “is_valid”:true},
+                th.logger.trace("{}: Updating lux", th.thingName);
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX,
+                        toQuantityType(getDouble(sdata.lux.value), DIGITS_LUX, SmartHomeUnits.LUX));
+                if (sdata.lux.illumination != null) {
+                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ILLUM,
+                            getStringType(sdata.lux.illumination));
                 }
-                if (sdata.hum != null) {
-                    th.logger.trace("{}: Updating humidity", th.thingName);
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM,
-                            toQuantityType(getDouble(sdata.hum.value), DIGITS_PERCENT, SmartHomeUnits.PERCENT));
+            }
+            if (sdata.accel != null) {
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_VIBRATION,
+                        getBool(sdata.accel.vibration) ? OnOffType.ON : OnOffType.OFF);
+            }
+            if (sdata.flood != null) {
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD, getOnOff(sdata.flood));
+            }
+            if (sdata.smoke != null) {
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_SMOKE, getOnOff(sdata.smoke));
+            }
+            if (sdata.bat != null) { // no update for Sense
+                th.logger.trace("{}: Updating battery", th.thingName);
+                updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
+                        toQuantityType(getDouble(sdata.bat.value), DIGITS_PERCENT, SmartHomeUnits.PERCENT));
+                updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_VOLT,
+                        toQuantityType(getDouble(sdata.bat.voltage), DIGITS_VOLT, SmartHomeUnits.VOLT));
+                boolean changed = th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW,
+                        getDouble(sdata.bat.value) < th.config.lowBattery ? OnOffType.ON : OnOffType.OFF);
+                updated |= changed;
+                if (changed && getDouble(sdata.bat.value) < th.config.lowBattery) {
+                    th.postEvent(ALARM_TYPE_LOW_BATTERY, false);
                 }
-                if ((sdata.lux != null) && getBool(sdata.lux.isValid)) {
-                    // “lux”:{“value”:30, “illumination”: “dark”, “is_valid”:true},
-                    th.logger.trace("{}: Updating lux", th.thingName);
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_LUX,
-                            toQuantityType(getDouble(sdata.lux.value), DIGITS_LUX, SmartHomeUnits.LUX));
-                    if (sdata.lux.illumination != null) {
-                        updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_ILLUM,
-                                getStringType(sdata.lux.illumination));
-                    }
-                }
-                if (sdata.accel != null) {
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_VIBRATION,
-                            getBool(sdata.accel.vibration) ? OnOffType.ON : OnOffType.OFF);
-                }
-                if (sdata.flood != null) {
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_FLOOD, getOnOff(sdata.flood));
-                }
-                if (sdata.smoke != null) {
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_SMOKE, getOnOff(sdata.smoke));
-                }
-                if (sdata.bat != null) { // no update for Sense
-                    th.logger.trace("{}: Updating battery", th.thingName);
-                    updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LEVEL,
-                            toQuantityType(getDouble(sdata.bat.value), DIGITS_PERCENT, SmartHomeUnits.PERCENT));
-                    updated |= th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_VOLT,
-                            toQuantityType(getDouble(sdata.bat.voltage), DIGITS_VOLT, SmartHomeUnits.VOLT));
-                    boolean changed = th.updateChannel(CHANNEL_GROUP_BATTERY, CHANNEL_SENSOR_BAT_LOW,
-                            getDouble(sdata.bat.value) < th.config.lowBattery ? OnOffType.ON : OnOffType.OFF);
-                    updated |= changed;
-                    if (changed && getDouble(sdata.bat.value) < th.config.lowBattery) {
-                        th.postEvent(ALARM_TYPE_LOW_BATTERY, false);
-                    }
-                }
-                if (sdata.motion != null) {
-                    updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_MOTION, getOnOff(sdata.motion));
-                }
-                if (sdata.charger != null) {
-                    updated |= th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_CHARGER,
-                            getOnOff(sdata.charger));
-                }
-                if (updated) {
-                    th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_LAST_UPDATE, getTimestamp());
-                }
+            }
+            if (sdata.motion != null) {
+                updated |= th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_MOTION, getOnOff(sdata.motion));
+            }
+            if (sdata.charger != null) {
+                updated |= th.updateChannel(CHANNEL_GROUP_DEV_STATUS, CHANNEL_DEVST_CHARGER, getOnOff(sdata.charger));
+            }
+            if (updated) {
+                th.updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_LAST_UPDATE, getTimestamp());
             }
         }
         return updated;

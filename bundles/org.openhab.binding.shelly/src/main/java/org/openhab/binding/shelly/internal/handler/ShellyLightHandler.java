@@ -19,7 +19,6 @@ import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.library.types.DecimalType;
@@ -78,21 +77,21 @@ public class ShellyLightHandler extends ShellyBaseHandler {
     }
 
     @Override
-    public boolean handleDeviceCommand(ChannelUID channelUID, Command command) {
-        String groupName = channelUID.getGroupId();
+    public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws IllegalArgumentException {
+        String groupName = getString(channelUID.getGroupId());
+        if (groupName.isEmpty()) {
+            throw new IllegalArgumentException("Empty groupName");
+        }
+
         Integer lightId = getLightIdFromGroup(groupName);
         logger.trace("{}: Execute command {} on channel {}, lightId={}", thingName, command.toString(),
                 channelUID.getAsString(), lightId);
 
-        Validate.notNull(profile, "DeviceProfile must not be null, thing not initialized");
-        Validate.notNull(api, "handleCommand(): api must not be null!");
-        ShellyColorUtils oldCol = getCurrentColors(lightId);
-        Validate.notNull(oldCol, "oldCol must not be null");
-        oldCol.mode = profile.mode;
-        ShellyColorUtils col = new ShellyColorUtils(oldCol);
-        Validate.notNull(oldCol, "copy of oldCol must not be null");
-
         try {
+            ShellyColorUtils oldCol = getCurrentColors(lightId);
+            oldCol.mode = profile.mode;
+            ShellyColorUtils col = new ShellyColorUtils(oldCol);
+
             boolean update = true;
             switch (channelUID.getIdWithoutGroup()) {
                 default: // non-bulb commands will be handled by the generic handler
@@ -100,8 +99,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
 
                 case CHANNEL_LIGHT_POWER:
                     logger.debug("{}: Switch light {}", thingName, command.toString());
-                    Validate.isTrue(command instanceof OnOffType, "Invalid value for power (ON or OFF): {}",
-                            command.toString());
+                    verifyType(getString(channelUID.getIdWithoutGroup()), command, OnOffType.class);
                     api.setLightParm(lightId, SHELLY_LIGHT_TURN,
                             (OnOffType) command == OnOffType.ON ? SHELLY_API_ON : SHELLY_API_OFF);
                     col.power = (OnOffType) command;
@@ -110,8 +108,7 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                     break;
                 case CHANNEL_LIGHT_COLOR_MODE:
                     logger.debug("{}: Select color mode {}", thingName, command.toString());
-                    Validate.isTrue(command instanceof OnOffType,
-                            "Invalid value for color mode (ON or OFF): " + command.toString());
+                    verifyType(getString(channelUID.getIdWithoutGroup()), command, OnOffType.class);
                     col.setMode((OnOffType) command == OnOffType.ON ? SHELLY_MODE_COLOR : SHELLY_MODE_WHITE);
                     break;
                 case CHANNEL_COLOR_PICKER:
@@ -174,8 +171,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
 
                         if (command instanceof IncreaseDecreaseType) {
                             ShellyShortLightStatus light = api.getLightStatus(lightId);
-                            Validate.notNull(light, "Unable to get Light status for brightness");
-
                             if (((IncreaseDecreaseType) command).equals(IncreaseDecreaseType.INCREASE)) {
                                 value = Math.min(light.brightness + DIM_STEPSIZE, 100);
                             } else {
@@ -228,17 +223,14 @@ public class ShellyLightHandler extends ShellyBaseHandler {
                 sendColors(profile, lightId, oldCol, col, config.brightnessAutoOn);
             }
             return true;
-        } catch (ShellyApiException e) {
+        } catch (ShellyApiException | IllegalArgumentException e) {
             logger.debug("{}: Unable to handle command: {}", thingName, e.toString());
             return false;
         }
     }
 
-    @SuppressWarnings("null")
     private boolean handleColorPicker(ShellyDeviceProfile profile, Integer lightId, ShellyColorUtils col,
             Command command) throws ShellyApiException {
-        Validate.notNull(profile);
-
         boolean updated = false;
         if (command instanceof HSBType) {
             HSBType hsb = (HSBType) command;
@@ -275,17 +267,19 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         } else if (command instanceof IncreaseDecreaseType) {
             if (!profile.inColor || profile.isBulb) {
                 logger.debug("{}: {} brightness by {}", thingName, command.toString(), SHELLY_DIM_STEPSIZE);
-                Double percent = ((PercentType) super.getChannelValue(CHANNEL_GROUP_COLOR_CONTROL, CHANNEL_BRIGHTNESS))
-                        .doubleValue();
-                Integer currentBrightness = percent.intValue() * SHELLY_MAX_BRIGHTNESS;
-                Integer newBrightness;
-                if (command == IncreaseDecreaseType.DECREASE) {
-                    newBrightness = Math.max(currentBrightness - SHELLY_DIM_STEPSIZE, 0);
-                } else {
-                    newBrightness = Math.min(currentBrightness + SHELLY_DIM_STEPSIZE, SHELLY_MAX_BRIGHTNESS);
+                PercentType percent = (PercentType) super.getChannelValue(CHANNEL_GROUP_COLOR_CONTROL,
+                        CHANNEL_BRIGHTNESS);
+                if (percent != null) {
+                    int currentBrightness = percent.intValue() * SHELLY_MAX_BRIGHTNESS;
+                    int newBrightness = currentBrightness;
+                    if (command == IncreaseDecreaseType.DECREASE) {
+                        newBrightness = Math.max(currentBrightness - SHELLY_DIM_STEPSIZE, 0);
+                    } else {
+                        newBrightness = Math.min(currentBrightness + SHELLY_DIM_STEPSIZE, SHELLY_MAX_BRIGHTNESS);
+                    }
+                    col.brightness = newBrightness;
+                    updated = currentBrightness != newBrightness;
                 }
-                col.brightness = newBrightness;
-                updated = true;
             }
         }
         return updated;
@@ -313,15 +307,15 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         return true;
     }
 
-    @SuppressWarnings({ "null", "unused" })
     private ShellyColorUtils getCurrentColors(Integer lightId) {
-        Validate.notNull(channelColors);
-        ShellyColorUtils col = channelColors.get(lightId);
-        if (col == null) {
+        ShellyColorUtils col;
+        if (!channelColors.containsKey(lightId)) {
             col = new ShellyColorUtils(); // create a new entry
             col.setMinMaxTemp(profile.minTemp, profile.maxTemp);
+            channelColors.put(lightId, col);
             logger.trace("Colors entry created for lightId {}", lightId.toString());
         } else {
+            col = channelColors.get(lightId);
             logger.trace(
                     "Colors loaded for lightId {}: RGBW={}/{}/{}/{}, gain={}, brightness={}, color temp={} (min={}, max={}",
                     lightId.toString(), col.red, col.green, col.blue, col.white, col.gain, col.brightness, col.temp,
@@ -332,11 +326,15 @@ public class ShellyLightHandler extends ShellyBaseHandler {
 
     @Override
     public boolean updateDeviceStatus(ShellySettingsStatus genericStatus) throws ShellyApiException {
-        Validate.isTrue(profile.isInitialized(), "updateThingStatus(): profile must not be initialized");
-        Validate.isTrue(profile.isLight,
-                "ERROR: Device " + profile.hostname + " is not a light. but class ShellyHandlerLight is called!");
+        if (!profile.isInitialized()) {
+            logger.debug("{}: Device not yet initialized!", thingName);
+            return false;
+        }
+        if (!profile.isLight) {
+            logger.debug("{}: ERROR: Device is not a light. but class ShellyHandlerLight is called!", thingName);
+        }
+
         ShellyStatusLight status = api.getLightStatus();
-        Validate.notNull(status, "updateThingStatus(): status must not be null!");
         logger.trace("Updating light status for {}, in {} mode, {} channel(s)", profile.hostname, profile.mode,
                 status.lights.size());
 
@@ -353,7 +351,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
             }
 
             ShellyColorUtils col = getCurrentColors(lightId);
-            Validate.notNull(col);
             col.power = getBool(light.ison) ? OnOffType.ON : OnOffType.OFF;
 
             // Channel control/timer
@@ -460,8 +457,6 @@ public class ShellyLightHandler extends ShellyBaseHandler {
 
     private void sendColors(ShellyDeviceProfile profile, Integer lightId, ShellyColorUtils oldCol,
             ShellyColorUtils newCol, boolean autoOn) throws ShellyApiException {
-        Validate.notNull(profile);
-
         // boolean updated = false;
         Integer channelId = lightId + 1;
         Map<String, String> parms = new TreeMap<>();
@@ -474,28 +469,28 @@ public class ShellyLightHandler extends ShellyBaseHandler {
             parms.put(SHELLY_LIGHT_TURN, profile.inColor || newCol.brightness > 0 ? SHELLY_API_ON : SHELLY_API_OFF);
         }
         if (profile.inColor) {
-            if (!oldCol.red.equals(newCol.red) || !oldCol.green.equals(newCol.green) || !oldCol.blue.equals(newCol.blue)
-                    || !oldCol.white.equals(newCol.white)) {
+            if (oldCol.red != newCol.red || oldCol.green != newCol.green || oldCol.blue != newCol.blue
+                    || oldCol.white != newCol.white) {
                 logger.debug("{}: Setting RGBW to {}/{}/{}/{}", thingName, newCol.red, newCol.green, newCol.blue,
                         newCol.white);
-                parms.put(SHELLY_COLOR_RED, newCol.red.toString());
-                parms.put(SHELLY_COLOR_GREEN, newCol.green.toString());
-                parms.put(SHELLY_COLOR_BLUE, newCol.blue.toString());
-                parms.put(SHELLY_COLOR_WHITE, newCol.white.toString());
+                parms.put(SHELLY_COLOR_RED, String.valueOf(newCol.red));
+                parms.put(SHELLY_COLOR_GREEN, String.valueOf(newCol.green));
+                parms.put(SHELLY_COLOR_BLUE, String.valueOf(newCol.blue));
+                parms.put(SHELLY_COLOR_WHITE, String.valueOf(newCol.white));
             }
         }
-        if ((!profile.inColor) && !oldCol.temp.equals(newCol.temp)) {
+        if ((!profile.inColor) && oldCol.temp != newCol.temp) {
             logger.debug("Setting color temp to {}", newCol.temp);
-            parms.put(SHELLY_COLOR_TEMP, newCol.temp.toString());
+            parms.put(SHELLY_COLOR_TEMP, String.valueOf(newCol.temp));
         }
-        if (!oldCol.gain.equals(newCol.gain)) {
+        if (oldCol.gain != newCol.gain) {
             logger.debug("Setting gain to {}", newCol.gain);
-            parms.put(SHELLY_COLOR_GAIN, newCol.gain.toString());
+            parms.put(SHELLY_COLOR_GAIN, String.valueOf(newCol.gain));
         }
         if ((newCol.brightness >= 0) && (!profile.inColor || profile.isBulb)
-                && !oldCol.brightness.equals(newCol.brightness)) {
+                && oldCol.brightness != newCol.brightness) {
             logger.debug("Setting brightness to {}", newCol.brightness);
-            parms.put(SHELLY_COLOR_BRIGHTNESS, newCol.brightness.toString());
+            parms.put(SHELLY_COLOR_BRIGHTNESS, String.valueOf(newCol.brightness));
         }
         if (!oldCol.effect.equals(newCol.effect)) {
             logger.debug("Setting effect to {}", newCol.effect);
@@ -503,19 +498,13 @@ public class ShellyLightHandler extends ShellyBaseHandler {
         }
         if (parms.size() > 0) {
             logger.debug("Send color settings: {}", parms.toString());
-            Validate.notNull(api);
             api.setLightParms(lightId, parms);
             updateCurrentColors(lightId, newCol);
         }
     }
 
-    @SuppressWarnings({ "null", "unused" })
     private void updateCurrentColors(Integer lightId, ShellyColorUtils col) {
-        if (channelColors.get(lightId) == null) {
-            channelColors.put(lightId, col);
-        } else {
-            channelColors.replace(lightId, col);
-        }
+        channelColors.replace(lightId, col);
         logger.debug("Colors updated for lightId {}: RGBW={}/{}/{}/{}, Sat/Gain={}, Bright={}, Temp={} ",
                 lightId.toString(), col.red, col.green, col.blue, col.white, col.gain, col.brightness, col.temp);
     }

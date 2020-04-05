@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import javax.jmdns.ServiceInfo;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
@@ -44,6 +43,7 @@ import org.openhab.binding.shelly.internal.config.ShellyBindingConfiguration;
 import org.openhab.binding.shelly.internal.config.ShellyThingConfiguration;
 import org.openhab.binding.shelly.internal.handler.ShellyBaseHandler;
 import org.openhab.binding.shelly.internal.util.ShellyTranslationProvider;
+import org.openhab.binding.shelly.internal.util.ShellyUtils;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
     private final Logger logger = LoggerFactory.getLogger(ShellyDiscoveryParticipant.class);
     private final ShellyBindingConfiguration bindingConfig = new ShellyBindingConfiguration();
-    private final ShellyTranslationProvider messages = new ShellyTranslationProvider();
+    private final ShellyTranslationProvider messages;
     private final HttpClient httpClient;
 
     /**
@@ -76,8 +76,8 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
             @Reference LocaleProvider localeProvider, @Reference TranslationProvider i18nProvider,
             ComponentContext componentContext) {
         logger.debug("Activating ShellyDiscovery service");
-        this.messages.initFrom(new ShellyTranslationProvider(componentContext.getBundleContext().getBundle(),
-                i18nProvider, localeProvider));
+        this.messages = new ShellyTranslationProvider(componentContext.getBundleContext().getBundle(), i18nProvider,
+                localeProvider);
         this.httpClient = httpClientFactory.getCommonHttpClient();
         bindingConfig.updateFromProperties(componentContext.getProperties());
     }
@@ -121,11 +121,10 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
 
             name = service.getName().toLowerCase();
             String thingType = name.contains("-") ? StringUtils.substringBefore(name, "-") : name;
-            ;
 
             address = StringUtils.substringBetween(service.toString(), "/", ":80");
             if (address == null) {
-                logger.debug("Shelly device {} discovered with empty IP address", name);
+                logger.trace("Shelly device {} discovered with empty IP address", name);
                 return null;
             }
             logger.debug("Shelly device discovered: IP-Adress={}, name={}", address, name);
@@ -159,12 +158,11 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                     // create shellyunknown thing - will be changed during thing initialization with valid credentials
                     thingUID = ShellyDeviceProfile.getThingUID(name, mode, true);
                 } else {
-                    logger.info("{}: {}", name, messages.get("discovery.failed", address, e.toString()));
-                    logger.debug("{}: Exception {}\n{}", name, e.toString(), e.getStackTrace());
+                    logger.info("{}: {}", name, messages.get("discovery.failed", address));
+                    logger.debug("{}: Exception {}", name, e.toString());
                 }
             } catch (IllegalArgumentException | NullPointerException e) { // maybe some format description was buggy
-                logger.debug("{}: Unable to initialize - {} ({}), retrying later\n{}", name, getString(e),
-                        getString(e.getClass().toString()), e.getStackTrace());
+                logger.debug("{}: Unable to initialize, retrying later{}", name, e.toString());
             }
 
             if (thingUID != null) {
@@ -179,8 +177,8 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
                         .withLabel(name + " - " + address).withRepresentationProperty(name).build();
             }
         } catch (IllegalArgumentException | NullPointerException e) { // maybe some format description was buggy
-            logger.info("{}", messages.get("discovery.failed", name, address, getString(e)));
-            logger.debug("{}: Exception {}\n{}", name, e.getClass(), e.getStackTrace());
+            logger.info("{}", messages.get("discovery.failed", name, address, ShellyUtils.getMessage(e)));
+            logger.debug("{}: Exception {}", name, e.toString());
         }
         return null;
     }
@@ -191,9 +189,11 @@ public class ShellyDiscoveryParticipant implements MDNSDiscoveryParticipant {
 
     @Nullable
     @Override
-    public ThingUID getThingUID(@Nullable ServiceInfo service) {
+    public ThingUID getThingUID(@Nullable ServiceInfo service) throws IllegalArgumentException {
         logger.debug("ServiceInfo {}", service);
-        Validate.notNull(service);
+        if (service == null) {
+            throw new IllegalArgumentException("service must not be null!");
+        }
         return ShellyDeviceProfile.getThingUID(service.getName().toLowerCase(), "", false);
     }
 }

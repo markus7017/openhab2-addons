@@ -12,7 +12,7 @@
  */
 package org.openhab.binding.shelly.internal.api;
 
-import static org.openhab.binding.shelly.internal.ShellyBindingConstants.SHELLY_API_TIMEOUT_MS;
+import static org.openhab.binding.shelly.internal.ShellyBindingConstants.*;
 import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.urlEncode;
 
@@ -24,9 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -64,8 +62,8 @@ public class ShellyHttpApi {
     public static final String CONTENT_TYPE_JSON = "application/json";
 
     private final Logger logger = LoggerFactory.getLogger(ShellyHttpApi.class);
-    private @Nullable HttpClient httpClient;
-    private final ShellyThingConfiguration config;
+    private HttpClient httpClient;
+    private ShellyThingConfiguration config = new ShellyThingConfiguration();;
     private final String thingName;
     private final Gson gson = new Gson();
     private int timeoutErrors = 0;
@@ -73,17 +71,15 @@ public class ShellyHttpApi {
 
     private ShellyDeviceProfile profile = new ShellyDeviceProfile();
 
-    public ShellyHttpApi() {
-        thingName = "";
-        config = new ShellyThingConfiguration();
-    }
-
-    public ShellyHttpApi(String thingName, ShellyThingConfiguration config, @Nullable HttpClient httpClient) {
-        Validate.notNull(config, thingName + ": Shelly API: Config must not be null!");
-        this.config = config;
+    public ShellyHttpApi(String thingName, ShellyThingConfiguration config, HttpClient httpClient) {
         this.thingName = thingName;
         this.httpClient = httpClient;
+        setConfig(config);
         profile.initFromThingType(thingName);
+    }
+
+    public void setConfig(ShellyThingConfiguration config) {
+        this.config = config;
     }
 
     public ShellySettingsDevice getDevInfo() throws ShellyApiException {
@@ -105,7 +101,6 @@ public class ShellyHttpApi {
         }
 
         // Map settings to device profile for Light and Sense
-        logger.debug("{}: (Re-)initializing device profile, thingType={}", thingName, thingType);
         profile.initialize(thingType, json);
 
         // 2nd level initialization
@@ -136,7 +131,6 @@ public class ShellyHttpApi {
     public ShellySettingsStatus getStatus() throws ShellyApiException {
         String json = request(SHELLY_URL_STATUS);
         ShellySettingsStatus status = gson.fromJson(json, ShellySettingsStatus.class);
-        Validate.notNull(status);
         status.json = json;
         return status;
     }
@@ -146,7 +140,6 @@ public class ShellyHttpApi {
     }
 
     public void setRelayTurn(Integer id, String turnMode) throws ShellyApiException {
-        Validate.notNull(profile);
         request(getControlUrlPrefix(id) + "?" + SHELLY_LIGHT_TURN + "=" + turnMode.toLowerCase());
     }
 
@@ -179,7 +172,6 @@ public class ShellyHttpApi {
     }
 
     public ShellyStatusSensor getSensorStatus() throws ShellyApiException {
-        Validate.notNull(profile);
         ShellyStatusSensor status = callApi(SHELLY_URL_STATUS, ShellyStatusSensor.class);
         if (profile.isSense) {
             // complete reported data, map C to F or vice versa: C=(F - 32) * 0.5556;
@@ -197,7 +189,6 @@ public class ShellyHttpApi {
     }
 
     public void setTimer(Integer index, String timerName, Double value) throws ShellyApiException {
-        Validate.notNull(profile);
         String type = SHELLY_CLASS_RELAY;
         if (profile.isRoller) {
             type = SHELLY_CLASS_ROLLER;
@@ -250,12 +241,10 @@ public class ShellyHttpApi {
     public void setLightParm(Integer lightIndex, String parm, String value) throws ShellyApiException {
         // Bulb, RGW2: /<color mode>/<light id>?parm?value
         // Dimmer: /light/<light id>?parm=value
-        Validate.notNull(profile);
         request(getControlUrlPrefix(lightIndex) + "?" + parm + "=" + value);
     }
 
     public void setLightParms(Integer lightIndex, Map<String, String> parameters) throws ShellyApiException {
-        Validate.notNull(profile);
         String url = getControlUrlPrefix(lightIndex) + "?";
         int i = 0;
         for (String key : parameters.keySet()) {
@@ -304,7 +293,6 @@ public class ShellyHttpApi {
      * @throws IllegalArgumentException
      */
     public void sendIRKey(String keyCode) throws ShellyApiException, IllegalArgumentException {
-        Validate.notNull(profile);
         String type = "";
         if (profile.irCodes.containsKey(keyCode)) {
             type = SHELLY_IR_CODET_STORED;
@@ -318,7 +306,9 @@ public class ShellyHttpApi {
             url = url + "&" + "id=" + keyCode;
         } else if (type.equals(SHELLY_IR_CODET_PRONTO)) {
             String code = Base64.getEncoder().encodeToString(keyCode.getBytes());
-            Validate.notNull(code, "Unable to BASE64 encode the pronto code: " + keyCode);
+            if (code == null) {
+                throw new IllegalArgumentException("Unable to BASE64 encode the pronto code: " + keyCode);
+            }
             url = url + "&" + SHELLY_IR_CODET_PRONTO + "=" + code;
         } else if (type.equals(SHELLY_IR_CODET_PRONTO_HEX)) {
             url = url + "&" + SHELLY_IR_CODET_PRONTO_HEX + "=" + keyCode;
@@ -344,7 +334,6 @@ public class ShellyHttpApi {
     }
 
     private void setRelayEvents() throws ShellyApiException {
-        Validate.notNull(profile);
         if (profile.settings.relays != null) {
             int num = profile.isRoller ? profile.numRollers : profile.numRelays;
             for (int i = 0; i < num; i++) {
@@ -364,78 +353,86 @@ public class ShellyHttpApi {
     }
 
     /**
-     * Set event URL for HT (report_url)
+     * Set sensor Action URLs
      *
-     * @param deviceName
      * @throws ShellyApiException
      */
     private void setSensorEventUrls() throws ShellyApiException, ShellyApiException {
-        if (profile.supportsSensorUrls && config.eventsSensorReport) {
-            logger.debug("{}: Check/set Sensor Reporting URL", thingName);
-            String eventUrl = "http://" + config.localIp + ":" + config.httpPort.toString() + SHELLY_CALLBACK_URI + "/"
-                    + profile.thingName + "/" + EVENT_TYPE_SENSORDATA;
-            request(SHELLY_URL_SETTINGS + "?" + SHELLY_API_EVENTURL_REPORT + "=" + urlEncode(eventUrl));
-            if (profile.settingsJson.contains(SHELLY_API_EVENTURL_DARK)) {
-                request(SHELLY_URL_SETTINGS + "?" + SHELLY_API_EVENTURL_DARK + "=" + urlEncode(eventUrl));
-            }
-            if (profile.settingsJson.contains(SHELLY_API_EVENTURL_TWILIGHT)) {
-                request(SHELLY_URL_SETTINGS + "?" + SHELLY_API_EVENTURL_TWILIGHT + "=" + urlEncode(eventUrl));
-            }
+        if (profile.isSensor) {
+            logger.debug("{}: Set Sensor Reporting URL", thingName);
+            setEventUrl(SHELLY_EVENT_SENSORREPORT, config.eventsSensorReport);
+            setEventUrl(SHELLY_EVENT_DARK, config.eventsSensorReport);
+            setEventUrl(SHELLY_EVENT_TWILIGHT, config.eventsSensorReport);
+            setEventUrl(SHELLY_EVENT_FLOOD_DETECTED, config.eventsSensorReport);
+            setEventUrl(SHELLY_EVENT_FLOOD_GONE, config.eventsSensorReport);
         }
     }
 
+    /**
+     * Set/delete Relay/Roller/Dimmer Action URLs
+     *
+     * @param index Device Index (0-based)
+     * @throws ShellyApiException
+     */
     private void setEventUrls(Integer index) throws ShellyApiException {
-        Validate.notNull(profile);
-        String lip = config.localIp;
-        String localPort = config.httpPort.toString();
-        String deviceName = profile.thingName;
         if (profile.isRoller) {
-            if (profile.supportsRollerUrls && config.eventsButton) {
+            if (profile.isRoller) {
                 logger.debug("{}: Set Roller event urls", thingName);
-                request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_ROLLER,
-                        SHELLY_API_EVENTURL_ROLLER_OPEN));
-                request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_ROLLER,
-                        SHELLY_API_EVENTURL_ROLLER_CLOSE));
-                request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_ROLLER,
-                        SHELLY_API_EVENTURL_ROLLER_STOP));
+                setEventUrl(SHELLY_EVENT_ROLLER_OPEN, config.eventsRoller);
+                setEventUrl(SHELLY_EVENT_ROLLER_CLOSE, config.eventsRoller);
+                setEventUrl(SHELLY_EVENT_ROLLER_STOP, config.eventsRoller);
             }
-        } else {
-            if (profile.supportsButtonUrls && config.eventsButton) {
-                if (profile.settingsJson.contains(SHELLY_API_EVENTURL_BTN1_ON)) {
-                    // 2 set of URLs, e.g. Dimmer
-                    logger.debug("{}: Set Dimmer event urls", thingName);
+        } else if (profile.isDimmer) {
+            // 2 set of URLs, e.g. Dimmer
+            logger.debug("{}: Set Dimmer event urls", thingName);
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_BTN1_ON, config.eventsButton);
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_BTN1_OFF, config.eventsButton);
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_SHORTPUSH1, config.eventsPush);
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_LONGPUSH1, config.eventsPush);
 
-                    request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_LIGHT,
-                            SHELLY_API_EVENTURL_BTN1_ON));
-                    request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_LIGHT,
-                            SHELLY_API_EVENTURL_BTN1_OFF));
-                    request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_LIGHT,
-                            SHELLY_API_EVENTURL_BTN2_ON));
-                    request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_LIGHT,
-                            SHELLY_API_EVENTURL_BTN2_OFF));
-                } else {
-                    // Standard relays: btn_xxx URLs
-                    logger.debug("{}: Set Relay event urls", thingName);
-                    request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_RELAY,
-                            SHELLY_API_EVENTURL_BTN_ON));
-                    request(buildSetEventUrl(lip, localPort, deviceName, index, EVENT_TYPE_RELAY,
-                            SHELLY_API_EVENTURL_BTN_OFF));
-                }
-            }
-
-            if (profile.supportsOutUrls && config.eventsSwitch) {
-                request(buildSetEventUrl(lip, localPort, deviceName, index,
-                        profile.isLight ? EVENT_TYPE_LIGHT : EVENT_TYPE_RELAY, SHELLY_API_EVENTURL_OUT_ON));
-                request(buildSetEventUrl(lip, localPort, deviceName, index,
-                        profile.isLight ? EVENT_TYPE_LIGHT : EVENT_TYPE_RELAY, SHELLY_API_EVENTURL_OUT_OFF));
-            }
-            if (profile.supportsPushUrls && config.eventsPush) {
-                request(buildSetEventUrl(lip, localPort, deviceName, index,
-                        profile.isLight ? EVENT_TYPE_LIGHT : EVENT_TYPE_RELAY, SHELLY_API_EVENTURL_SHORT_PUSH));
-                request(buildSetEventUrl(lip, localPort, deviceName, index,
-                        profile.isLight ? EVENT_TYPE_LIGHT : EVENT_TYPE_RELAY, SHELLY_API_EVENTURL_LONG_PUSH));
-            }
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_BTN2_ON, config.eventsButton);
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_BTN2_OFF, config.eventsButton);
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_SHORTPUSH2, config.eventsPush);
+            setEventUrl(EVENT_TYPE_LIGHT, index, SHELLY_EVENT_LONGPUSH2, config.eventsPush);
+        } else if (profile.hasRelays) {
+            // Standard relays: btn_xxx URLs
+            logger.debug("{}: Set Relay event urls", thingName);
+            setEventUrl(EVENT_TYPE_RELAY, index, SHELLY_EVENT_BTN_ON, config.eventsButton);
+            setEventUrl(EVENT_TYPE_RELAY, index, SHELLY_EVENT_BTN_OFF, config.eventsButton);
         }
+
+        if (profile.hasRelays) {
+            setEventUrl(EVENT_TYPE_RELAY, index, SHELLY_EVENT_OUT_ON, config.eventsButton);
+            setEventUrl(EVENT_TYPE_RELAY, index, SHELLY_EVENT_OUT_OFF, config.eventsButton);
+        }
+    }
+
+    private void setEventUrl(String eventType, boolean enabled) throws ShellyApiException {
+        if (profile.containsEventUrl(eventType)) {
+            // Sensors add the type=xx to report_url themself, so we need to ommit here
+            String urlParm = !eventType.equalsIgnoreCase(SHELLY_EVENT_SENSORREPORT) ? "?type=" + eventType : "";
+            String callBackUrl = enabled
+                    ? "http://" + config.localIp + ":" + config.localPort + SHELLY_CALLBACK_URI + "/"
+                            + profile.thingName + "/" + eventType + urlParm
+                    : SHELLY_NULL_URL;
+            request(SHELLY_URL_SETTINGS + "?" + mkEventUrl(eventType) + "=" + urlEncode(callBackUrl));
+        }
+    }
+
+    private void setEventUrl(String deviceClass, Integer index, String eventType, boolean enabled)
+            throws ShellyApiException {
+        if (profile.containsEventUrl(eventType)) {
+            String callBackUrl = enabled
+                    ? "http://" + config.localIp + ":" + config.localPort + SHELLY_CALLBACK_URI + "/"
+                            + profile.thingName + "/" + deviceClass + "/" + index + "?type=" + eventType
+                    : SHELLY_NULL_URL;
+            request(SHELLY_URL_SETTINGS + "/" + deviceClass + "/" + index + "?" + mkEventUrl(eventType) + "="
+                    + urlEncode(callBackUrl));
+        }
+    }
+
+    private static String mkEventUrl(String eventType) {
+        return eventType + SHELLY_EVENTURL_SUFFIX;
     }
 
     /**
@@ -449,7 +446,8 @@ public class ShellyHttpApi {
             json = request(uri);
             return gson.fromJson(json, classOfT);
         } catch (JsonSyntaxException e) {
-            throw new ShellyApiException("Unable to convert JSON to class " + classOfT.getClass() + ", JSON=" + json);
+            throw new ShellyApiException(e,
+                    "Unable to convert JSON to class " + classOfT.getClass() + ", JSON=" + json);
         }
     }
 
@@ -458,28 +456,23 @@ public class ShellyHttpApi {
         try {
             apiResult = innerRequest(HttpMethod.GET, uri);
         } catch (ShellyApiException e) {
-            try {
-                if (e.isTimeout() && profile.isSensor) {
-                    // Sensor in sleep mode
-                    throw e;
-                }
-                if (e.isTimeout()) {
-                    timeoutErrors++; // count the retries
-                    logger.debug("{}: {}, #{} retry", thingName, e.toString(), timeoutErrors);
-                    apiResult = innerRequest(HttpMethod.GET, uri);
-                    timeoutsRecovered++; // recoverd
-                    logger.debug("{}: API timeout #{}/{} recovered", thingName, timeoutErrors, timeoutsRecovered);
-                } else {
-                    throw e;
-                }
-            } catch (ShellyApiException e2) {
-                throw e2;
+            if (e.isTimeout() && profile.isSensor) {
+                // Sensor in sleep mode
+                throw e;
+            }
+            if (e.isTimeout()) {
+                timeoutErrors++; // count the retries
+                logger.debug("{}: {}, retry #{}", thingName, e.toString(), timeoutErrors);
+                apiResult = innerRequest(HttpMethod.GET, uri);
+                timeoutsRecovered++;
+                logger.debug("{}: API timeout #{}/{} recovered", thingName, timeoutErrors, timeoutsRecovered);
+            } else {
+                throw e;
             }
         }
         return apiResult.response;
     }
 
-    @SuppressWarnings("null")
     private ShellyApiResult innerRequest(HttpMethod method, String uri) throws ShellyApiException {
         Request request = null;
         String url = "http://" + config.deviceIp + uri;
@@ -517,7 +510,6 @@ public class ShellyHttpApi {
     }
 
     public String getControlUrlPrefix(Integer id) {
-        Validate.notNull(profile);
         String uri = "";
         if (profile.isLight || profile.isDimmer) {
             if (profile.isDuo || profile.isDimmer) {
@@ -534,19 +526,6 @@ public class ShellyHttpApi {
         uri = uri + "/" + id.toString();
         logger.trace("{}: Control URL prefix = {}", thingName, uri);
         return uri;
-    }
-
-    public static String buildSetEventUrl(String localIp, String localPort, String deviceName, Integer index,
-            String deviceType, String urlParm) throws ShellyApiException {
-        return SHELLY_URL_SETTINGS + "/" + deviceType + "/" + index + "?" + urlParm + "="
-                + buildCallbackUrl(localIp, localPort, deviceName, index, deviceType, urlParm);
-    }
-
-    private static String buildCallbackUrl(String localIp, String localPort, String deviceName, Integer index,
-            String type, String parameter) throws ShellyApiException {
-        String url = "http://" + localIp + ":" + localPort + SHELLY_CALLBACK_URI + "/" + deviceName + "/" + type + "/"
-                + index + "?type=" + StringUtils.substringBefore(parameter, "_url");
-        return urlEncode(url);
     }
 
     public int getTimeoutErrors() {

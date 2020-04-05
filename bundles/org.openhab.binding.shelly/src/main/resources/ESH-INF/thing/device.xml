@@ -37,7 +37,7 @@
 	</channel-type>
 	<channel-type id="charger">
 		<item-type>Switch</item-type>
-		<label>Charger connected</label>
+		<label>Charger Connected</label>
 		<description>ON: Device is charging, OFF: No charger connected</description>
 		<state readOnly="true">
 		</state>

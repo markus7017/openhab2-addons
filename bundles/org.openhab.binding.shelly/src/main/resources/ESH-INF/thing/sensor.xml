@@ -117,8 +117,8 @@
 	</channel-type>
 	<channel-type id="sensorWakeup" advanced="true">
 		<item-type>String</item-type>
-		<label>Wakeup reason</label>
-		<description>Reasons which woke up the device: battery, button, periodic, poweron, sensor, alarm</description>
+		<label>Wakeup Reason</label>
+		<description>Last reason, which woke up the device: battery, button, periodic, poweron, sensor, alarm</description>
 		<state readOnly="true">
 		</state>
 	</channel-type>
@@ -206,7 +206,7 @@
 		</state>
 	</channel-type>
 	<channel-type id="sensorError">
-		<item-type>Text</item-type>
+		<item-type>String</item-type>
 		<label>Last Error</label>
 		<description>Only valid in case of error</description>
 		<state readOnly="true">
@@ -215,7 +215,7 @@
 
 	<channel-type id="senseKey">
 		<item-type>String</item-type>
-		<label>IR Key to send</label>
+		<label>IR Key to Send</label>
 		<description>Send a defined key code</description>
 	</channel-type>
 

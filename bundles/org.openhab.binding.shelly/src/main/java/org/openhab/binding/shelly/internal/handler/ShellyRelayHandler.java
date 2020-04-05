@@ -17,7 +17,6 @@ import static org.openhab.binding.shelly.internal.api.ShellyApiJsonDTO.*;
 import static org.openhab.binding.shelly.internal.util.ShellyUtils.*;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.Validate;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.smarthome.core.library.types.DecimalType;
@@ -79,11 +78,10 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
         super.initialize();
     }
 
-    @SuppressWarnings("null")
     @Override
     public boolean handleDeviceCommand(ChannelUID channelUID, Command command) throws ShellyApiException {
         // Process command
-        String groupName = channelUID.getGroupId();
+        String groupName = getString(channelUID.getGroupId());
         Integer rIndex = 0;
         if (groupName.startsWith(CHANNEL_GROUP_RELAY_CONTROL)
                 && groupName.length() > CHANNEL_GROUP_RELAY_CONTROL.length()) {
@@ -103,6 +101,7 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
                 if (!profile.isRoller) {
                     // extract relay number of group name (relay0->0, relay1->1...)
                     logger.debug("{}: Set relay output to {}", thingName, command.toString());
+                    verifyType(getString(channelUID.getIdWithoutGroup()), command, OnOffType.class);
                     api.setRelayTurn(rIndex, (OnOffType) command == OnOffType.ON ? SHELLY_API_ON : SHELLY_API_OFF);
                 } else {
                     logger.debug("{}: Device is in roller mode, channel command {} ignored", thingName,
@@ -125,24 +124,23 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
             case CHANNEL_TIMER_AUTOON:
                 logger.debug("{}: Set Auto-ON timer to {}", thingName, command.toString());
-                Validate.isTrue(command instanceof DecimalType,
-                        "Timer AutoOn: Invalid value type: " + command.getClass());
+                verifyType(getString(channelUID.getIdWithoutGroup()), command, DecimalType.class);
                 api.setTimer(rIndex, SHELLY_TIMER_AUTOON, ((DecimalType) command).doubleValue());
                 break;
             case CHANNEL_TIMER_AUTOOFF:
                 logger.debug("{}: Set Auto-OFF timer to {}", thingName, command.toString());
-                Validate.isTrue(command instanceof DecimalType, "Invalid value type");
+                verifyType(getString(channelUID.getIdWithoutGroup()), command, DecimalType.class);
                 api.setTimer(rIndex, SHELLY_TIMER_AUTOOFF, ((DecimalType) command).doubleValue());
                 break;
 
             case CHANNEL_LED_STATUS_DISABLE:
                 logger.debug("{}: Set STATUS LED disabled to {}", thingName, command.toString());
-                Validate.isTrue(command instanceof OnOffType, "Invalid value type");
+                verifyType(getString(channelUID.getIdWithoutGroup()), command, OnOffType.class);
                 api.setLedStatus(SHELLY_LED_STATUS_DISABLE, (OnOffType) command == OnOffType.ON);
                 break;
             case CHANNEL_LED_POWER_DISABLE:
                 logger.debug("{}: Set POWER LED disabled to {}", thingName, command.toString());
-                Validate.isTrue(command instanceof OnOffType, "Invalid value type");
+                verifyType(getString(channelUID.getIdWithoutGroup()), command, OnOffType.class);
                 api.setLedStatus(SHELLY_LED_POWER_DISABLE, (OnOffType) command == OnOffType.ON);
                 break;
         }
@@ -311,7 +309,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
      *
      * @throws ShellyApiException
      */
-    @SuppressWarnings("null")
     public boolean updateRelays(ShellySettingsStatus status) throws ShellyApiException {
         boolean updated = false;
         // Check for Relay in Standard Mode
@@ -320,57 +317,54 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
 
             int i = 0;
             ShellyStatusRelay rstatus = api.getRelayStatus(i);
-            if (rstatus != null) {
-                createRelayChannels(rstatus);
-                for (ShellyShortStatusRelay relay : rstatus.relays) {
-                    if ((relay.isValid == null) || relay.isValid) {
-                        Integer r = i + 1;
-                        String groupName = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
-                                : CHANNEL_GROUP_RELAY_CONTROL + r.toString();
+            createRelayChannels(rstatus);
+            for (ShellyShortStatusRelay relay : rstatus.relays) {
+                if ((relay.isValid == null) || relay.isValid) {
+                    Integer r = i + 1;
+                    String groupName = profile.numRelays <= 1 ? CHANNEL_GROUP_RELAY_CONTROL
+                            : CHANNEL_GROUP_RELAY_CONTROL + r.toString();
 
-                        if (getBool(relay.overpower)) {
-                            postEvent(ALARM_TYPE_OVERPOWER, false);
-                        }
-
-                        updated |= updateChannel(groupName, CHANNEL_OUTPUT, getOnOff(relay.ison));
-                        updated |= updateChannel(groupName, CHANNEL_TIMER_ACTIVE, getOnOff(relay.hasTimer));
-                        if (rstatus.extTemperature != null) {
-                            // Shelly 1/1PM support up to 3 external sensors
-                            // for whatever reason those are not represented as an array, but 3 elements
-                            if (rstatus.extTemperature.sensor1 != null) {
-                                updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP1,
-                                        toQuantityType(getDouble(rstatus.extTemperature.sensor1.tC), SIUnits.CELSIUS));
-                            }
-                            if (rstatus.extTemperature.sensor2 != null) {
-                                updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP2,
-                                        toQuantityType(getDouble(rstatus.extTemperature.sensor2.tC), SIUnits.CELSIUS));
-                            }
-                            if (rstatus.extTemperature.sensor3 != null) {
-                                updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP3,
-                                        toQuantityType(getDouble(rstatus.extTemperature.sensor3.tC), SIUnits.CELSIUS));
-                            }
-                        }
-                        if ((rstatus.extHumidity != null) && (rstatus.extHumidity.sensor1 != null)) {
-                            updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM,
-                                    toQuantityType(getDouble(rstatus.extHumidity.sensor1.hum), DIGITS_PERCENT,
-                                            SmartHomeUnits.PERCENT));
-                        }
-
-                        // Update Auto-ON/OFF timer
-                        ShellySettingsRelay rsettings = profile.settings.relays.get(i);
-                        if (rsettings != null) {
-                            updated |= updateChannel(groupName, CHANNEL_TIMER_AUTOON,
-                                    toQuantityType(getDouble(rsettings.autoOn), SmartHomeUnits.SECOND));
-                            updated |= updateChannel(groupName, CHANNEL_TIMER_AUTOOFF,
-                                    toQuantityType(getDouble(rsettings.autoOff), SmartHomeUnits.SECOND));
-                        }
-
-                        // Update input(s) state
-                        updated |= updateInputs(groupName, status, i);
-                        i++;
+                    if (getBool(relay.overpower)) {
+                        postEvent(ALARM_TYPE_OVERPOWER, false);
                     }
 
+                    updated |= updateChannel(groupName, CHANNEL_OUTPUT, getOnOff(relay.ison));
+                    updated |= updateChannel(groupName, CHANNEL_TIMER_ACTIVE, getOnOff(relay.hasTimer));
+                    if (rstatus.extTemperature != null) {
+                        // Shelly 1/1PM support up to 3 external sensors
+                        // for whatever reason those are not represented as an array, but 3 elements
+                        if (rstatus.extTemperature.sensor1 != null) {
+                            updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP1,
+                                    toQuantityType(getDouble(rstatus.extTemperature.sensor1.tC), SIUnits.CELSIUS));
+                        }
+                        if (rstatus.extTemperature.sensor2 != null) {
+                            updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP2,
+                                    toQuantityType(getDouble(rstatus.extTemperature.sensor2.tC), SIUnits.CELSIUS));
+                        }
+                        if (rstatus.extTemperature.sensor3 != null) {
+                            updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_ESENDOR_TEMP3,
+                                    toQuantityType(getDouble(rstatus.extTemperature.sensor3.tC), SIUnits.CELSIUS));
+                        }
+                    }
+                    if ((rstatus.extHumidity != null) && (rstatus.extHumidity.sensor1 != null)) {
+                        updated |= updateChannel(CHANNEL_GROUP_SENSOR, CHANNEL_SENSOR_HUM, toQuantityType(
+                                getDouble(rstatus.extHumidity.sensor1.hum), DIGITS_PERCENT, SmartHomeUnits.PERCENT));
+                    }
+
+                    // Update Auto-ON/OFF timer
+                    ShellySettingsRelay rsettings = profile.settings.relays.get(i);
+                    if (rsettings != null) {
+                        updated |= updateChannel(groupName, CHANNEL_TIMER_AUTOON,
+                                toQuantityType(getDouble(rsettings.autoOn), SmartHomeUnits.SECOND));
+                        updated |= updateChannel(groupName, CHANNEL_TIMER_AUTOOFF,
+                                toQuantityType(getDouble(rsettings.autoOff), SmartHomeUnits.SECOND));
+                    }
+
+                    // Update input(s) state
+                    updated |= updateInputs(groupName, status, i);
+                    i++;
                 }
+
             }
         }
 
@@ -426,7 +420,6 @@ public class ShellyRelayHandler extends ShellyBaseHandler {
             Gson gson = new Gson();
             ShellySettingsStatus dstatus = gson.fromJson(ShellyApiJsonDTO.fixDimmerJson(orgStatus.json),
                     ShellySettingsStatus.class);
-            Validate.notNull(dstatus.dimmers, "dstatus.dimmers must not be null!");
 
             logger.trace("{}: Updating {} dimmers(s)", thingName, dstatus.dimmers.size());
             int l = 0;

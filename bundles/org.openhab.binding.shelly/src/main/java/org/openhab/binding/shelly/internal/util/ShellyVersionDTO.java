@@ -25,65 +25,65 @@ import org.eclipse.jdt.annotation.Nullable;
 @NonNullByDefault
 public class ShellyVersionDTO implements Comparator<Object> {
     private class VersionTokenizer {
-        private final String _versionString;
-        private final int _length;
+        private final String versionString;
+        private final int length;
 
-        private int _position;
-        private int _number;
-        private String _suffix = "";
+        private int position;
+        private int number;
+        private String suffix = "";
 
         public VersionTokenizer(@Nullable String versionString) {
             if (versionString == null) {
                 throw new IllegalArgumentException("versionString is null");
             }
 
-            _versionString = versionString;
-            _length = versionString.length();
+            this.versionString = versionString;
+            length = versionString.length();
         }
 
-        public boolean MoveNext() {
-            _number = 0;
-            _suffix = "";
+        private boolean MoveNext() {
+            number = 0;
+            suffix = "";
 
             // No more characters
-            if (_position >= _length) {
+            if (position >= length) {
                 return false;
             }
 
-            while (_position < _length) {
-                char c = _versionString.charAt(_position);
+            while (position < length) {
+                char c = versionString.charAt(position);
                 if (c < '0' || c > '9') {
                     break;
                 }
-                _number = _number * 10 + (c - '0');
-                _position++;
+                number = number * 10 + (c - '0');
+                position++;
             }
 
-            int suffixStart = _position;
+            int suffixStart = position;
 
-            while (_position < _length) {
-                char c = _versionString.charAt(_position);
+            while (position < length) {
+                char c = versionString.charAt(position);
                 if (c == '.') {
                     break;
                 }
-                _position++;
+                position++;
             }
 
-            _suffix = _versionString.substring(suffixStart, _position);
+            suffix = versionString.substring(suffixStart, position);
 
-            if (_position < _length) {
-                _position++;
+            if (position < length) {
+                position++;
             }
 
             return true;
         }
 
-        public int getNumber() {
-            return _number;
+        private int getNumber() {
+            return number;
         }
 
-        public String getSuffix() {
-            return _suffix;
+        private String getSuffix() {
+            return suffix;
         }
     }
 
@@ -167,10 +167,11 @@ public class ShellyVersionDTO implements Comparator<Object> {
         return 0;
     }
 
-    @SuppressWarnings("null")
     public boolean checkBeta(@Nullable String version) {
-        return version != null & (version.isEmpty() || version.contains("???")
-                || version.toLowerCase().contains("master") || (version.toLowerCase().contains("-rc")));
-
+        if (version == null) {
+            return false;
+        }
+        return version.isEmpty() || version.contains("???") || version.toLowerCase().contains("master")
+                || (version.toLowerCase().contains("-rc"));
     }
 }
