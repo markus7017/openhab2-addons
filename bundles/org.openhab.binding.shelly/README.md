@@ -17,14 +17,14 @@ This Binding integrated Shelly devices.
 | shellyplug         | Shelly Plug                                            | SHPLG2-1  |
 | shellyplugs        | Shelly Plug-S                                          | SHPLG-S   |
 | shellyem           | Shelly EM with integrated Power Meters                 | SHEM      |
-| shellyem3          | Shelly EM3 with 3 integrated Power Meter               | SHEM-3    |
-| shellyrgbw2        | Shelly RGB Controller                                  | SHRGBW2   |
+| shellyem3          | Shelly EM3 with 3 integrated Power Meters              | SHEM-3    |
+| shellyrgbw2        | Shelly RGBW Controller                                 | SHRGBW2   |
 | shellybulb         | Shelly Bulb in Color or White Mode                     | SHBLB-1   |
 | shellybulbduo      | Shelly Duo (White Mode)                                | SHBDUO-1  |
 | shellyht           | Shelly Sensor (temp+humidity)                          | SHHT-1    |
 | shellyflood        | Shelly Flood Sensor                                    | SHWT-1    |
 | shellysmoke        | Shelly Smoke Sensor                                    | |
-| shellydw           | Shelly Door/Window                                     | SHDW-1    |
+| shellydw           | Shelly Door/Window                                     | SHDW-1    |
 | shellysense        | Shelly Motion and IR Controller                        | SHSEN-1   |
 | shellydevice       | A password protected Shelly device or an unknown type  |           |
 
@@ -36,7 +36,7 @@ Older versions work in general, but have impacts to functionality (e.g. no event
 
 The binding displays a WARNING in the log if the firmware is older.
 It also informs you when an update is available.
-Use the device' web ui or the Shelly App to perform the update.
+Use the device' web UI or the Shelly App to perform the update.
 
 ## Other resources
 
@@ -265,14 +265,14 @@ end
 |----------|-------------|---------|---------|---------------------------------------------------------------------------------|
 |relay1    |output       |Switch   |r/w      |Relay #1: Controls the relay's output channel (on/off)                           |
 |          |input        |Switch   |yes      |ON: Input/Button is powered, see General Notes on Channels                       |
-|          |autoOn       |Number   |r/w      |Relay #1: Sets a  timer to turn the device ON after every OFF command; in seconds|
-|          |autoOff      |Number   |r/w      |Relay #1: Sets a  timer to turn the device OFF after every ON command; in seconds|
+|          |autoOn       |Number   |r/w      |Relay #1: Sets a timer to turn the device ON after every OFF command; in sec     |
+|          |autoOff      |Number   |r/w      |Relay #1: Sets a timer to turn the device OFF after every ON command; in sec     |
 |          |timerActive  |Switch   |yes      |Relay #1: ON: An auto-on/off timer is active                                     |
 |          |button       |Trigger  |yes      |Event trigger with payload SHORT_PRESSED or LONG_PRESSED (FW 1.5.6+)             |
 |relay2    |output       |Switch   |r/w      |Relay #2: Controls the relay's output channel (on/off)                           |
 |          |input        |Switch   |yes      |ON: Input/Button is powered, see General Notes on Channels                       |
-|          |autoOn       |Number   |r/w      |Relay #2: Sets a  timer to turn the device ON after every OFF command; in seconds|
-|          |autoOff      |Number   |r/w      |Relay #2: Sets a  timer to turn the device OFF after every ON command; in seconds|
+|          |autoOn       |Number   |r/w      |Relay #2: Sets a timer to turn the device ON after every OFF command; in sec     |
+|          |autoOff      |Number   |r/w      |Relay #2: Sets a timer to turn the device OFF after every ON command; in sec     |
 |          |timerActive  |Switch   |yes      |Relay #2: ON: An auto-on/off timer is active                                     |
 |          |button       |Trigger  |yes      |Event trigger with payload SHORT_PRESSED or LONG_PRESSED (FW 1.5.6+)             |
 |meter     |currentWatts |Number   |yes      |Current power consumption in Watts                                               |
@@ -306,15 +306,15 @@ The Shelly 2.5 includes 2 meters, one for each channel.
 |Group     |Channel      |Type     |read-only|Description                                                                      |
 |----------|-------------|---------|---------|---------------------------------------------------------------------------------|
 |relay1    |             |         |         |See group relay1 for Shelly 2                                                    |
-|relay2    |             |         |         |See group relay1 for Shelly 2                                                    |
-|meter1    |             |         |         |See group meter1 for Shelly 2                                                    |
-|meter2    |             |         |         |See group meter1 for Shelly 2                                                    |
+|relay2    |             |         |         |See group relay2 for Shelly 2                                                    |
+|meter1    |             |         |         |See group meter for Shelly 2                                                     |
+|meter2    |             |         |         |See group meter for Shelly 2                                                     |
 
 ### Shelly 2.5 - roller mode (thing-type: shelly25-roller)
 
 The Shelly 2.5 includes 2 meters, one for each channel.
 However, it doesn't make sense to differ power consumption for the roller moving up vs. moving down.
-For this the binding aggregates the power consumption of both relays and includes the values in "meter1".
+For this the binding aggregates the power consumption of both relays and includes the values in "meter".
 
 |Group     |Channel      |Type     |read-only|Description                                                                                |
 |----------|-------------|---------|---------|-------------------------------------------------------------------------------------------|
@@ -326,7 +326,7 @@ For this the binding aggregates the power consumption of both relays and include
 |          |calibrating  |Switch   |yes      |ON: Roller is in calibration mode, OFF: normal mode (no calibration)                       |
 |          |positioning  |Switch   |yes      |ON: Roller is positioning/moving                                                           |
 |          |event        |Trigger  |yes      |Roller event/trigger with payload ROLLER_OPEN / ROLLER_CLOSE / ROLLER_STOP                 |
-|meter     |             |         |         |See group meter1 for Shelly 2                                                              |
+|meter     |             |         |         |See group meter for Shelly 2                                                               |
 
 ### Shelly4 Pro (thing-type: shelly4pro)
 
@@ -359,8 +359,8 @@ The Shelly 4Pro provides 4 relays and 4 power meters.
 |relay     |brightness   |Dimmer   |r/w      |Currently selected brightness.                                                   |
 |          |input1       |Switch   |yes      |State of Input 1 (S1)                                                            |
 |          |input2       |Switch   |yes      |State of Input 2 (S2)                                                            |
-|          |autoOn       |Number   |r/w      |Sets a  timer to turn the device ON after every OFF command; in seconds          |
-|          |autoOff      |Number   |r/w      |Sets a  timer to turn the device OFF after every ON command; in seconds          |
+|          |autoOn       |Number   |r/w      |Sets a timer to turn the device ON after every OFF command; in sec               |
+|          |autoOff      |Number   |r/w      |Sets a timer to turn the device OFF after every ON command; in sec               |
 |          |button       |Trigger  |yes      |Event trigger with payload SHORT_PRESSED or LONG_PRESSED (FW 1.5.6+)             |
 |status    |loaderror    |Switch   |yes      |Last error, "no" if none                                                         |
 |          |overload     |Switch   |yes      |Overload condition detected, switch dimmer off or reduce load!                   |
@@ -378,8 +378,8 @@ The Shelly 4Pro provides 4 relays and 4 power meters.
 |----------|-------------|---------|---------|-----------------------------------------------------------------------|
 |control   |power        |Switch   |r/w      |Switch light ON/OFF                                                    |
 |          |mode         |Switch   |r/w      |Color mode: color or white                                             |
-|          |autoOn       |Number   |r/w      |Sets a  timer to turn the device ON after every OFF; in sec            |
-|          |autoOff      |Number   |r/w      |Sets a  timer to turn the device OFF after every ON: in sec            |
+|          |autoOn       |Number   |r/w      |Sets a timer to turn the device ON after every OFF; in sec             |
+|          |autoOff      |Number   |r/w      |Sets a timer to turn the device OFF after every ON; in sec             |
 |          |timerActive  |Switch   |yes      |ON: An auto-on/off timer is active                                     |
 |color     |             |         |         |Color settings: only valid in COLOR mode                               |
 |          |hsb          |HSB      |r/w      |Represents the color picker (HSBType), control r/g/b, bight not white  |
@@ -393,7 +393,7 @@ The Shelly 4Pro provides 4 relays and 4 power meters.
 |          |effect       |Number   |r/w      |Puts the light into effect mode: 0..6)                                 |
 |          |             |         |         |  0=No effect, 1=Meteor Shows, 2=Gradual Change, 3=Breath              |
 |          |             |         |         |  4=Flash, 5=On/Off Gradual, 6=Red/Green Change                        |
-|white     |             |         |         |Color settings: only valid in WHITE mode                               |
+|white     |             |         |         |White settings: only valid in WHITE mode                               |
 |          |temperature  |Number   |r/w      |color temperature (K): 0..100% or 3000..6500                           |
 |          |brightness   |Dimmer   |         |Brightness: 0..100% or 0..100                                          |
  
@@ -402,8 +402,8 @@ The Shelly 4Pro provides 4 relays and 4 power meters.
 |Group     |Channel      |Type     |read-only|Description                                                            |
 |----------|-------------|---------|---------|-----------------------------------------------------------------------|
 |control   |power        |Switch   |r/w      |Switch light ON/OFF                                                    |
-|          |autoOn       |Number   |r/w      |Sets a  timer to turn the device ON after every OFF; in sec            |
-|          |autoOff      |Number   |r/w      |Sets a  timer to turn the device OFF after every ON: in sec            |
+|          |autoOn       |Number   |r/w      |Sets a timer to turn the device ON after every OFF; in sec             |
+|          |autoOff      |Number   |r/w      |Sets a timer to turn the device OFF after every ON; in sec             |
 |          |timerActive  |Switch   |yes      |ON: An auto-on/off timer is active                                     |
 |white     |             |         |         |Color settings: only valid in WHITE mode                               |
 |          |temperature  |Number   |r/w      |color temperature (K): 0..100% or 2700..6500                           |
@@ -420,16 +420,16 @@ The Shelly 4Pro provides 4 relays and 4 power meters.
 |Group     |Channel      |Type     |read-only|Desciption                                                             |
 |----------|-------------|---------|---------|-----------------------------------------------------------------------|
 |control   |power        |Switch   |r/w      |Switch light ON/OFF                                                    |
-|          |autoOn       |Number   |r/w      |Sets a  timer to turn the device ON after every OFF command; in seconds|
-|          |autoOff      |Number   |r/w      |Sets a  timer to turn the device OFF after every ON command; in seconds|
+|          |autoOn       |Number   |r/w      |Sets a timer to turn the device ON after every OFF command; in sec     |
+|          |autoOff      |Number   |r/w      |Sets a timer to turn the device OFF after every ON command; in sec     |
 |          |timerActive  |Switch   |yes      |ON: An auto-on/off timer is active                                     |
 |light     |color        |Color    |r/w      |Color picker (HSBType)                                                 |
 |          |fullColor    |String   |r/w      |Set Red / Green / Blue / Yellow / White mode and switch mode           | 
 |          |             |         |r/w      |Valid settings: "red", "green", "blue", "yellow", "white" or "r,g,b,w" | 
 |          |red          |Dimmer   |r/w      |Red brightness: 0..100% or 0..255 (control only the red channel)       |
-|          |green        |Dimmer   |r/w      |Green brightness: 0..100% or 0..255 (control only the red channel)     |
-|          |blue         |Dimmer   |r/w      |Blue brightness: 0..100% or 0..255 (control only the red channel)      |
-|          |white        |Dimmer   |r/w      |White brightness: 0..100% or 0..255 (control only the red channel)     |
+|          |green        |Dimmer   |r/w      |Green brightness: 0..100% or 0..255 (control only the green channel)   |
+|          |blue         |Dimmer   |r/w      |Blue brightness: 0..100% or 0..255 (control only the blue channel)     |
+|          |white        |Dimmer   |r/w      |White brightness: 0..100% or 0..255 (control only the white channel)   |
 |          |gain         |Dimmer   |r/w      |Gain setting: 0..100%     or 0..100                                    |
 |          |effect       |Number   |r/w      |Select a special effect                                                | 
 |          |             |         |         |  0=No effect, 1=Meteor Shows, 2=Gradual Change, 3=Flash               |
@@ -439,8 +439,8 @@ The Shelly 4Pro provides 4 relays and 4 power meters.
 
 |Group     |Channel      |Type     |read-only|Desciption                                                             |
 |----------|-------------|---------|---------|-----------------------------------------------------------------------|
-|control   |autoOn       |Number   |r/w      |Sets a  timer to turn the device ON after every OFF command; in seconds|
-|          |autoOff      |Number   |r/w      |Sets a  timer to turn the device OFF after every ON command; in seconds|
+|control   |autoOn       |Number   |r/w      |Sets a timer to turn the device ON after every OFF command; in sec     |
+|          |autoOff      |Number   |r/w      |Sets a timer to turn the device OFF after every ON command; in sec     |
 |          |timerActive  |Switch   |yes      |ON: An auto-on/off timer is active                                     |
 |channel1  |power        |Switch   |r/w      |Channel 1: Turn channel on/off                                         |
 |          |brightness   |Dimmer   |r/w      |Channel 1: Brightness: 0..100                                          |
@@ -495,7 +495,7 @@ Maybe an upcoming firmware release adds this attribute, then the correct value i
 |          |vibration    |Switch   |yes      |ON: Vibration detected                                                 |
 |          |wakeupReason |String   |yes      |Last reason for a device wake-up (battery, button, periodic, poweron, sensor or alarm) |
 |          |lastUpdate   |DateTime |yes      |Timestamp of the last update (any sensor value changed)                |
-|          |lastError    |String   |yes      |Last device error.                                                     |
+|          |lastError    |String   |yes      |Last device error                                                      |
 |battery   |batteryLevel |Number   |yes      |Battery Level in %                                                     |
 |          |voltage      |Number   |yes      |Voltage of the battery                                                 |
 |          |lowBattery   |Switch   |yes      |Low battery alert (< 20%)                                              |
@@ -508,7 +508,7 @@ Maybe an upcoming firmware release adds this attribute, then the correct value i
 |          |smoke        |Number   |yes      |ON: Smoke detected                                                     |
 |          |wakeupReason |String   |yes      |Last reason for a device wake-up (battery, button, periodic, poweron, sensor or alarm) |
 |          |lastUpdate   |DateTime |yes      |Timestamp of the last update (any sensor value changed)                |
-|          |lastError    |String   |yes      |Last device error.                                                     |
+|          |lastError    |String   |yes      |Last device error                                                      |
 |battery   |batteryLevel |Number   |yes      |Battery Level in %                                                     |
 |          |voltage      |Number   |yes      |Voltage of the battery                                                 |
 |          |lowBattery   |Switch   |yes      |Low battery alert (< 20%)                                              |
