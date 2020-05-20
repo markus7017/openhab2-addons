@@ -107,7 +107,7 @@ public class CarNetVehicleHandler extends BaseThingHandler implements CarNetDevi
 
     @Override
     public void stateChanged(ThingStatus status, ThingStatusDetail detail, String message) {
-        if (status == ThingStatus.ONLINE) {
+        if (status != ThingStatus.ONLINE) {
             initializeThing();
         }
         updateStatus(status, detail, message);

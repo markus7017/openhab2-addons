@@ -164,6 +164,7 @@ public class CarNetApi {
         headers.put(CNAPI_HEADER_APP, CNAPI_HEADER_APP_MYAUDI);
         headers.put(CNAPI_HEADER_CLIENTID, "77869e21-e30a-4a92-b016-48ab7d3db1d8");
         headers.put(CNAPI_HEADER_HOST, "mbboauth-1d.prd.ece.vwg-connect.com");
+        headers.put("Accept", "*/*");
 
         Map<String, String> data = new TreeMap<>();
         data.put("grant_type", "id_token");
@@ -171,12 +172,17 @@ public class CarNetApi {
         data.put("scope", "sc2:fal");
 
         // process token
-        String json = httpPost(CNAPI_URL_GET_SEC_TOKEN, headers, data, "", true);
-        CarNetApiToken token = gson.fromJson(json, CarNetApiToken.class);
-        if ((token.accessToken == null) || token.accessToken.isEmpty()) {
-            throw new CarNetException("Authentication failed: Unable to get access token!");
+        try {
+            String json = httpPost(CNAPI_URL_GET_SEC_TOKEN, headers, data, "", false);
+            CarNetApiToken token = gson.fromJson(json, CarNetApiToken.class);
+            if ((token.accessToken == null) || token.accessToken.isEmpty()) {
+                throw new CarNetException("Authentication failed: Unable to get access token!");
+            }
+            securityToken = new CarNetAccessToken(token);
+        } catch (CarNetException e) {
+            logger.warn("Error retrieving security token {}", e.getMessage(), e.getStackTrace());
+            throw e;
         }
-        securityToken = new CarNetAccessToken(token);
         return securityToken;
     }
 
@@ -310,16 +316,23 @@ public class CarNetApi {
             @Nullable String data, String vin) throws CarNetException {
         Request request = null;
         String url = "";
+
         try {
             url = getBrandUrl(uri, parms, vin);
             CarNetApiResult apiResult = new CarNetApiResult(method.toString(), url);
             request = httpClient.newRequest(url).method(method).timeout(CNAPI_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             if (headers != null) {
                 for (Map.Entry<String, String> h : headers.entrySet()) {
-                    Validate.notNull(h.getKey());
+                    String key = h.getKey();
+                    Validate.notNull(key);
                     String value = h.getValue();
-                    if ((value != null) && !value.isEmpty()) {
-                        request.header(h.getKey(), h.getValue());
+                    if (key == HttpHeader.USER_AGENT.toString()) {
+                        request.agent(value);
+                    } else {
+                        if ((value != null) && !value.isEmpty()) {
+                            request.header(key, value);
+                        }
+
                     }
                 }
             }
@@ -328,10 +341,14 @@ public class CarNetApi {
                 request.header(HttpHeader.CONTENT_TYPE.toString(),
                         json ? CNAPI_ACCEPTT_JSON : CNAPI_CONTENTT_FORM_URLENC);
                 request.content(new StringContentProvider(data, StandardCharsets.UTF_8));
+                byte[] postData = data.getBytes(StandardCharsets.UTF_8);
+                int postDataLength = postData.length;
+                request.header("Content-Length", Integer.toString(postDataLength));
             }
 
             // Do request and get response
-            logger.debug("HTTP {} {}, data='{}', headers={}", method, url, data, headers);
+            logger.debug("HTTP {} {}, data='{}', headers={}", request.getMethod(), request.getURI(), data,
+                    request.getHeaders());
             ContentResponse contentResponse = request.send();
             apiResult = new CarNetApiResult(contentResponse);
             String response = contentResponse.getContentAsString().replaceAll("\t", "").replaceAll("\r\n", "").trim();
@@ -345,16 +362,18 @@ public class CarNetApi {
                         "Authentication failed (" + error.code + ", " + error.error + "): " + error.description);
             }
             if (contentResponse.getStatus() != HttpStatus.OK_200) {
-                throw new CarNetException("API Call failed", apiResult);
+                throw new CarNetException("API Call failed (HTTPCode)", apiResult);
             }
             if (response.isEmpty()) {
                 throw new CarNetException("Invalid result received from API, maybe URL problem", apiResult);
             }
             return response;
         } catch (ExecutionException | InterruptedException | TimeoutException | MalformedURLException e) {
+            logger.error("API call failed: {} {}", e.getMessage(), e.getStackTrace());
             CarNetApiResult apiResult = new CarNetApiResult(request, e);
             throw new CarNetException("API call failed!", apiResult, e);
         } catch (Exception e) {
+            logger.error("Unable to process API result: {} {}", e.getMessage(), e.getStackTrace());
             CarNetApiResult apiResult = new CarNetApiResult(request, e);
             throw new CarNetException("Unable to process API result!", apiResult, e);
         }
