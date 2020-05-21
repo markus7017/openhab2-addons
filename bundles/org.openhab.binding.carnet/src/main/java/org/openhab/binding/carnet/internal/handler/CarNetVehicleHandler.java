@@ -48,7 +48,7 @@ import org.openhab.binding.carnet.internal.CarNetException;
 import org.openhab.binding.carnet.internal.CarNetTextResources;
 import org.openhab.binding.carnet.internal.CarNetVehicleInformation;
 import org.openhab.binding.carnet.internal.api.CarNetApi;
-import org.openhab.binding.carnet.internal.api.CarNetApiGSonDTO.CarNetApiErrorMessage;
+import org.openhab.binding.carnet.internal.api.CarNetApiGSonDTO.CarNetApiError;
 import org.openhab.binding.carnet.internal.api.CarNetApiGSonDTO.CarNetVehiclePosition;
 import org.openhab.binding.carnet.internal.api.CarNetApiGSonDTO.CarNetVehicleStatus;
 import org.openhab.binding.carnet.internal.api.CarNetApiGSonDTO.CarNetVehicleStatus.CNStoredVehicleDataResponse.CNVehicleData.CNStatusData;
@@ -168,7 +168,7 @@ public class CarNetVehicleHandler extends BaseThingHandler implements CarNetDevi
 
             // CarNetHistory history = api.getHistory(vin);
         } catch (CarNetException e) {
-            CarNetApiErrorMessage res = e.getApiResult().getApiError();
+            CarNetApiError res = e.getApiResult().getApiError();
             if (res.description.contains("disabled ")) {
                 // Status service in the vehicle is disabled
                 String message = "Status service is disabled, check data privacy settings in MMI: " + res;
@@ -199,12 +199,13 @@ public class CarNetVehicleHandler extends BaseThingHandler implements CarNetDevi
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        try {
-            if (command instanceof RefreshType) {
-                return;
-            }
+        if (command instanceof RefreshType) {
+            return;
+        }
 
-            switch (channelUID.getIdWithoutGroup()) {
+        String channelId = channelUID.getIdWithoutGroup();
+        try {
+            switch (channelId) {
                 case CHANNEL_GENERAL_UPDATE:
                     updateVehicleStatus();
                     updateState(channelUID.getId(), OnOffType.OFF);
@@ -216,7 +217,12 @@ public class CarNetVehicleHandler extends BaseThingHandler implements CarNetDevi
                     break;
             }
         } catch (CarNetException e) {
-            logger.info("Unable to process command: {}", e.toString());
+            CarNetApiError res = e.getApiResult().getApiError();
+            logger.info("{}: Unable to process command {} for channel {}: {}", vin, command, channelId, res);
+            if (!res.details.reason.isEmpty()) {
+                logger.debug("{}: {} (user={})", vin, res.details.reason, res.details.user);
+            }
+            logger.trace("{}: {}", vin, e.toString(), e);
         }
     }
 
