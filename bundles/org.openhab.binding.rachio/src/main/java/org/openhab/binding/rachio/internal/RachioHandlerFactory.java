@@ -28,7 +28,6 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
 import org.openhab.binding.rachio.internal.api.RachioApiException;
-import org.openhab.binding.rachio.internal.api.RachioNetwork;
 import org.openhab.binding.rachio.internal.api.json.RachioEventGsonDTO;
 import org.openhab.binding.rachio.internal.handler.RachioBridgeHandler;
 import org.openhab.binding.rachio.internal.handler.RachioDeviceHandler;
@@ -60,7 +59,6 @@ public class RachioHandlerFactory extends BaseThingHandlerFactory {
     private final Logger logger = LoggerFactory.getLogger(RachioHandlerFactory.class);
     private final HashMap<String, RachioBridge> bridgeList;
     private final RachioConfiguration bindingConfig = new RachioConfiguration();
-    private final RachioNetwork rachioNetwork = new RachioNetwork();
 
     /**
      * OSGi activation callback.
@@ -75,12 +73,6 @@ public class RachioHandlerFactory extends BaseThingHandlerFactory {
 
         logger.debug("RachioBridge: Activate, configurarion:");
         bindingConfig.updateConfig(configProperties);
-        try {
-            // Load list of AWS IP address ranges
-            rachioNetwork.initializeAwsList();
-        } catch (RachioApiException | RuntimeException e) {
-            logger.warn("Unable to activate Rachio Service: {}", e.getMessage());
-        }
     }
 
     @Override
@@ -134,10 +126,6 @@ public class RachioHandlerFactory extends BaseThingHandlerFactory {
     public boolean webHookEvent(String ipAddress, RachioEventGsonDTO event) {
         try {
             logger.debug("Rachio Cloud Event for device '{}' received", event.deviceId);
-            if (!RachioNetwork.isIpInSubnet(ipAddress, getIpFilter()) && !rachioNetwork.isIpInAwsList(ipAddress)) {
-                logger.warn("RachioBridge: Request from unknown IP address range, might be abuse! Request rejected");
-                return false;
-            }
 
             // process event parameters
             for (HashMap.Entry<String, RachioBridge> be : bridgeList.entrySet()) {
@@ -160,26 +148,6 @@ public class RachioHandlerFactory extends BaseThingHandlerFactory {
         logger.debug("Unable to route event to bridge, externalId='{}', deviceId='{}'", event.externalId,
                 event.deviceId);
         return false;
-    }
-
-    /**
-     * Get ipFilter as a list from all bridge things configurations
-     *
-     * @return ipFilter list - single ip, single subnet or list of ips/subnets
-     */
-    @SuppressWarnings("null")
-    public String getIpFilter() {
-        String ipList = "";
-        for (HashMap.@Nullable Entry<String, RachioBridge> be : bridgeList.entrySet()) {
-            RachioBridge bridge = be.getValue();
-            Validate.notNull(bridge);
-            Validate.notNull(bridge.cloudHandler);
-            String ipFilter = bridge.cloudHandler.getIpFilter();
-            if ((ipFilter != null) && !ipFilter.isEmpty()) {
-                ipList = ipList + ";" + ipFilter;
-            }
-        }
-        return ipList;
     }
 
     @Nullable
