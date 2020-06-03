@@ -417,13 +417,6 @@ public class RachioBridgeHandler extends ConfigStatusBridgeHandler {
     }
 
     /**
-     *
-     */
-    public String getIpFilter() {
-        return getConfigAs(RachioConfiguration.class).ipFilter;
-    }
-
-    /**
      * Retrieve the default runtime from Thing config
      *
      * @return the polling interval in seconds
