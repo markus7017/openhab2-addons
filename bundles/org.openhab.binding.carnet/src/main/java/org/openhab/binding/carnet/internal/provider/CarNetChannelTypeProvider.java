@@ -21,7 +21,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.carnet.internal.provider.CarNetIChanneldMapper.ChannelIdMapEntry;
-import org.openhab.binding.carnet.internal.services.CarNetVehicleBaseService;
 import org.openhab.core.thing.ThingUID;
 import org.openhab.core.thing.type.ChannelGroupType;
 import org.openhab.core.thing.type.ChannelGroupTypeProvider;
@@ -33,8 +32,6 @@ import org.openhab.core.thing.type.ChannelTypeUID;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Extends the ChannelTypeProvider for user defined channel and channel group types.
@@ -44,8 +41,6 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 @Component(service = { ChannelTypeProvider.class, CarNetChannelTypeProvider.class })
 public class CarNetChannelTypeProvider implements ChannelTypeProvider, ChannelGroupTypeProvider {
-    private final Logger logger = LoggerFactory.getLogger(CarNetVehicleBaseService.class);
-
     private final CarNetIChanneldMapper channelIdMapper;
     private List<ChannelType> channelTypes = new CopyOnWriteArrayList<ChannelType>();
     private List<ChannelGroupType> channelGroupTypes = new CopyOnWriteArrayList<ChannelGroupType>();
@@ -64,7 +59,6 @@ public class CarNetChannelTypeProvider implements ChannelTypeProvider, ChannelGr
     public @Nullable ChannelType getChannelType(ChannelTypeUID channelTypeUID, @Nullable Locale locale) {
         String channelId = channelTypeUID.getId();
         ChannelIdMapEntry channelDef = channelIdMapper.find(channelId);
-        logger.debug("Getting channel type for: {}", channelTypeUID.getAsString());
         if ((channelDef != null) && !channelDef.channelName.isEmpty()) {
             String category = channelDef.getChannelAttribute("category");
             String group = channelDef.getGroup();
