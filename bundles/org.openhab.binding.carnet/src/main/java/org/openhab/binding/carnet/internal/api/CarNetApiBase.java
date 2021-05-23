@@ -192,7 +192,6 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
             }
         }
         return null;
-
     }
 
     public CarNetUserRoleRights getRoleRights() throws CarNetException {
@@ -319,7 +318,7 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
         return fromJson(gson, json, CarNetTripData.class);
     }
 
-    public CarNetOperationList getOperationList() throws CarNetException {
+    public @Nullable CarNetOperationList getOperationList() throws CarNetException {
         return config.vehicle.operationList != null ? config.vehicle.operationList
                 : callApi(config.vehicle.rolesRightsUrl + "/rolesrights/operationlist/v3/vehicles/{2}?scope=ALL",
                         "getOperationList", CNOperationList.class).operationList;
@@ -408,7 +407,6 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
             return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/climater/actions", CNAPI_SERVICE_REMOTE_HEATING, action,
                     true, contentType, body);
         }
-
     }
 
     public String controlVentilation(boolean start, int duration) throws CarNetException {
@@ -416,10 +414,12 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
         final String action = start ? CNAPI_ACTION_REMOTE_HEATING_QUICK_START : CNAPI_ACTION_REMOTE_HEATING_QUICK_STOP;
         if (config.account.apiLevelVentilation == 2) {
             // Version 2.0.2 format
+            String hardCodedDuration = "30";
             contentType = "application/vnd.vwg.mbb.RemoteStandheizung_v2_0_2+json";
             body = start
                     ? "{\"performAction\":{\"quickstart\":{\"startMode\":\"ventilation\",\"active\":true,\"climatisationDuration\":"
-                            + duration + "}}}"
+
+                            + hardCodedDuration + "}}}"
                     : "{\"performAction\":{\"quickstop\":{\"active\":false}}}";
             return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/action", CNAPI_SERVICE_REMOTE_HEATING, action, true,
                     contentType, body);
@@ -476,7 +476,7 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
                 + "\",\"userPosition\":{\"latitude\":" + position.getLatitude() + ", \"longitude\":"
                 + position.getLongitude() + "}}}";
         String contentType = "application/json; charset=UTF-8";
-        return sendAction("bs/rhf/v1/{0}/{1}/vehicles/{2}/honkAndFlash", CNAPI_SERVICE_REMOTE_HONK_AND_FLASH, "honk",
+        return sendAction("bs/rhf/v1/{0}/{1}/vehicles/{2}/honkAndFlash", CNAPI_SERVICE_REMOTE_HONK_AND_FLASH, action,
                 false, contentType, body);
     }
 
