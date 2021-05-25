@@ -32,6 +32,8 @@ import org.openhab.binding.carnet.internal.handler.CarNetVehicleHandler;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.unit.SIUnits;
 import org.openhab.core.library.unit.Units;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link CarRemoteServiceTripData} implements the drip data service (short-term + long-term).
@@ -40,6 +42,8 @@ import org.openhab.core.library.unit.Units;
  */
 @NonNullByDefault
 public class CarRemoteServiceTripData extends CarNetRemoteBaseService {
+    private final Logger logger = LoggerFactory.getLogger(CarRemoteServiceTripData.class);
+
     public CarRemoteServiceTripData(CarNetVehicleHandler thingHandler, CarNetApiBase api) {
         super(CNAPI_SERVICE_REMOTE_TRIP_STATISTICS, thingHandler, api);
     }
@@ -49,14 +53,14 @@ public class CarRemoteServiceTripData extends CarNetRemoteBaseService {
         try {
             boolean updated = false;
             if (getConfig().vehicle.numShortTrip > 0) {
-                update("shortTerm", channels);
+                updated |= update("shortTerm", channels);
             }
             if (getConfig().vehicle.numLongTrip > 0) {
                 updated |= update("longTerm", channels);
             }
             return updated;
         } catch (CarNetException e) {
-
+            logger.debug("{}: Unable to create channels for service {}", thingId, serviceId);
         }
         return false;
     }

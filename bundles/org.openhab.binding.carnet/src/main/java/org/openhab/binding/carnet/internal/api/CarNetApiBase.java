@@ -346,6 +346,7 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
     public String controlClimater(boolean start, String heaterSource) throws CarNetException {
         String contentType = "application/vnd.vwg.mbb.ClimaterAction_v1_0_0+xml;charset=utf-8";
         String body = "", action = "";
+        boolean secToken = !CNAPI_HEATER_SOURCE_ELECTRIC.equals(heaterSource);
         if (start) {
             if ((config.account.apiLevelClimatisation == 1) || heaterSource.isEmpty()) {
                 // simplified format without header source
@@ -354,8 +355,9 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
                 // standard format with header source
                 // body = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><action><type>startClimatisation</type>"
                 // + "<settings><heaterSource>" + heaterSource + "</heaterSource></settings></action>";
+                contentType = "application/vnd.vwg.mbb.ClimaterAction_v1_0_2+json";
                 body = "{\"action\": {\"settings\": {\"climatisationWithoutHVpower\": \"without_hv_power\", \"heaterSource\": \""
-                        + heaterSource + "\"}, \"type\": \"startClimatisation\"}}";
+                        + heaterSource + "\"}, \"type\": \"startClimatisation\"}";
             }
             action = CNAPI_HEATER_SOURCE_ELECTRIC.equalsIgnoreCase(heaterSource)
                     ? CNAPI_ACTION_REMOTE_PRETRIP_CLIMATISATION_START_ELECTRIC
@@ -366,7 +368,7 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
         }
         return sendAction("bs/climatisation/v1/{0}/{1}/vehicles/{2}/climater/actions",
                 CNAPI_SERVICE_REMOTE_PRETRIP_CLIMATISATION, start ? action : CNAPI_ACTION_REMOTE_HEATING_QUICK_STOP,
-                true, contentType, body);
+                secToken, contentType, body);
     }
 
     public String controlClimaterTemp(double tempC, String heaterSource) throws CarNetException {
@@ -385,45 +387,33 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
         }
     }
 
-    public String controlPreHeating(boolean start) throws CarNetException {
+    public String controlPreHeating(boolean start, int duration) throws CarNetException {
         String contentType = "", body = "";
         final String action = start ? CNAPI_ACTION_REMOTE_HEATING_QUICK_START : CNAPI_ACTION_REMOTE_HEATING_QUICK_STOP;
-        if (config.account.apiLevelVentilation == 2) {
-            // Version 2.0.2 format
-            String hardCodedDuration = "30";
-            contentType = "application/vnd.vwg.mbb.RemoteStandheizung_v2_0_2+json";
-            body = start
-                    ? "{\"performAction\":{\"quickstart\":{\"startMode\":\"heating\",\"active\":true,\"climatisationDuration\":"
-                            + hardCodedDuration + "}}}"
-                    : "{\"performAction\":{\"quickstop\":{\"active\":false}}}";
-            return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/action", CNAPI_SERVICE_REMOTE_HEATING, action, true,
-                    contentType, body);
-        } else {
+        if (config.account.apiLevelVentilation == 1) {
             // Version 2.0 format
             contentType = "application/vnd.vwg.mbb.RemoteStandheizung_v2_0_0+xml";
             body = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
                     + "<performAction xmlns=\"http://audi.de/connect/rs\"><quickstart>" + "<active>"
                     + (start ? "true" : "false") + "</active>" + "</quickstart></performAction>";
-            return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/climater/actions", CNAPI_SERVICE_REMOTE_HEATING, action,
-                    true, contentType, body);
+            return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/action", CNAPI_SERVICE_REMOTE_HEATING, action, true,
+                    contentType, body);
+        } else {
+            // Version 2.0.2 format
+            contentType = "application/vnd.vwg.mbb.RemoteStandheizung_v2_0_2+json";
+            body = start
+                    ? "{\"performAction\":{\"quickstart\":{\"startMode\":\"heating\",\"active\":true,\"climatisationDuration\":"
+                            + duration + "}}}"
+                    : "{\"performAction\":{\"quickstop\":{\"active\":false}}}";
+            return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/action", CNAPI_SERVICE_REMOTE_HEATING, action, true,
+                    contentType, body);
         }
     }
 
     public String controlVentilation(boolean start, int duration) throws CarNetException {
         String contentType = "", body = "";
         final String action = start ? CNAPI_ACTION_REMOTE_HEATING_QUICK_START : CNAPI_ACTION_REMOTE_HEATING_QUICK_STOP;
-        if (config.account.apiLevelVentilation == 2) {
-            // Version 2.0.2 format
-            String hardCodedDuration = "30";
-            contentType = "application/vnd.vwg.mbb.RemoteStandheizung_v2_0_2+json";
-            body = start
-                    ? "{\"performAction\":{\"quickstart\":{\"startMode\":\"ventilation\",\"active\":true,\"climatisationDuration\":"
-
-                            + hardCodedDuration + "}}}"
-                    : "{\"performAction\":{\"quickstop\":{\"active\":false}}}";
-            return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/action", CNAPI_SERVICE_REMOTE_HEATING, action, true,
-                    contentType, body);
-        } else {
+        if (config.account.apiLevelVentilation == 1) {
             // Version 2.0 format
             contentType = "application/vnd.vwg.mbb.RemoteStandheizung_v2_0_0+xml";
             body = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?><performAction xmlns=\"http://audi.de/connect/rs\">"
@@ -433,6 +423,15 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
                     + "</performAction>";
             return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/climater/actions", CNAPI_SERVICE_REMOTE_HEATING, action,
                     true, contentType, body);
+        } else {
+            // Version 2.0.2 format
+            contentType = "application/vnd.vwg.mbb.RemoteStandheizung_v2_0_2+json";
+            body = start
+                    ? "{\"performAction\":{\"quickstart\":{\"startMode\":\"ventilation\",\"active\":true,\"climatisationDuration\":"
+                            + duration + "}}}"
+                    : "{\"performAction\":{\"quickstop\":{\"active\":false}}}";
+            return sendAction("bs/rs/v1/{0}/{1}/vehicles/{2}/action", CNAPI_SERVICE_REMOTE_HEATING, action, true,
+                    contentType, body);
         }
     }
 
@@ -485,6 +484,8 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
         logger.debug("{}: Sending action request for {}.{}, reqSecToken={}, contentType={}", config.vehicle.vin,
                 service, action, reqSecToken, contentType);
         Map<String, String> headers = fillActionHeaders(contentType, createVwToken(),
+                CNAPI_ACTION_REMOTE_PRETRIP_CLIMATISATION_START_AUX_OR_AUTO.equals(action) ? " X-securityToken"
+                        : "x-mbbSecToken",
                 reqSecToken ? createSecurityToken(service, action) : "");
         String json = http.post(uri, headers, body);
         logger.debug("{}: Action response={}", config.vehicle.vin, json);
@@ -674,8 +675,8 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
         return status;
     }
 
-    protected Map<String, String> fillActionHeaders(String contentType, String accessToken, String securityToken)
-            throws CarNetException {
+    protected Map<String, String> fillActionHeaders(String contentType, String accessToken, String secTokenHeader,
+            String securityToken) throws CarNetException {
         // "User-Agent": "okhttp/3.7.0",
         // "Host": "msg.volkswagen.de",
         // "X-App-Version": "3.14.0",
@@ -702,7 +703,7 @@ public abstract class CarNetApiBase implements CarNetBrandAuthenticator {
         String host = substringBetween(config.api.apiDefaultUrl, "//", "/");
         headers.put(HttpHeader.HOST.toString(), host);
         if (!securityToken.isEmpty()) {
-            headers.put("x-mbbSecToken", securityToken);
+            headers.put(secTokenHeader, securityToken);
         }
         return headers;
     }
